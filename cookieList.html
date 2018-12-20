@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html class="extension-cookieList">
+  <head>
+    <meta charset="UTF-8">
+    <link rel="StyleSheet" href="cookieRipper.css" type="text/css">
+    <script src="lib/browser-polyfill.min.js" type="text/javascript"></script>
+    <script src="js/common.js" type="text/javascript"></script>
+    <script src="js/cookieList.js"></script>
+    <title>Cookies</title>
+    <div class="header">
+      <a href="options.html">Options</a>
+      <a class="selectedHeaderTab" href="cookieList.html">Cookies</a>
+      <a href="whitelist.html">Whitelist</a>
+      <a href="siteExceptions.html">Site Exceptions</a>
+      <a href="manual.html">Manual</a>
+    </div>
+  </head>
+  <body>
+    <h1>Cookie Store</h1>
+    <select id="cookieStoreSelect"></select>
+    <img src="/icons/info-circle.svg" alt="info" class="infoIcon" title="A cookie store is a container for cookies. There may be multiple of these containers to provide isolation e.g. between normal browsing and private mode.">
+    <h1>Cookie Editor</h1>
+    <div id="cookieEditor">
+      <div id="nameArea">Name:<br>
+        <input id="nameTextBox" class="editorTextbox" type="text"></div>
+      <div id="valueArea">Value:
+        <br>
+        <input id="valueTextBox" class="editorTextbox" type="text"></div>
+      <div id="domainArea">
+        Domain:
+        <br>
+        <input id="domainTextBox" class="editorTextbox" type="text">
+        <br>
+        <input type="checkbox" id="cookieHostOnly">
+        <label for="cookieHostOnly">Host Only
+        </label><img
+          src="/icons/info-circle.svg"
+          alt="info"
+          class="infoIcon"
+          id="infoIconHostOnly"
+          title="Restricts the cookie to the exact domain excluding subdomains.
+Example: a non-host-only cookie from sub.example.com can be read by sub.example.com, testing.sub.example.com or www.sub.example.com.
+A host-only cookie from sub.example.com can only be read by sub.example.com and not by testing.sub.example.com or www.sub.example.com.
+In any case, the cookie cannot be read by example.com or stuff.example.com.
+Without this option, a dot will be added in front of the domain name if there is none already for legacy reasons."></div>
+      <div id="firstPartyDomainArea" class="hidden">
+        First Party Domain:
+        <img
+          src="/icons/info-circle.svg"
+          alt="info"
+          class="infoIcon"
+          id="infoFirstPartyDomain"
+          title="This is the site you visited when you got this cookie. It might be the same site or a third party site (e.g. from an ad). Also used for the first party isolation browser feature.">
+        <br>
+        <input id="firstPartyDomainTextBox" class="editorTextbox" type="text">
+      </div>
+      <div id="validityArea">Validity:
+        <br>
+        <input type="radio" name="validity" id="sessionCookie">
+        <label for="sessionCookie">Session Cookie</label>
+        <img src="/icons/info-circle.svg" alt="info" class="infoIcon" id="infoIconSessionCookie" title="Deletes the cookie when the browser session ends (browser is closed).">
+        <div id="cookieEditorDate">
+          <input type="radio" name="validity" id="persistentCookie">
+          <label for="persistentCookie">Keep Until</label>&nbsp;&nbsp;
+          <!-- TODO: replace with fancy html5 datetime once available in ff -->
+          <input id="date" type="date">
+          <input id="time" type="time"></div>
+      </div>
+      <div id="pathArea">Path:
+        <img
+          src="/icons/info-circle.svg"
+          alt="info"
+          class="infoIcon"
+          id="infoIconPath"
+          title="Restricts the cookie to a certain path on the server.
+Example: a cookie from example.com with the path /news/ can be read by example.com/news/, example.com/news/today/ but not example.com/ or example.com/contact/.">
+        <input id="pathTextBox" class="editorTextbox" type="text"></div>
+      <div id="secureHttpOnlyArea">Other:<br><input type="checkbox" id="cookieSecure">
+        <label for="cookieSecure">Secure
+        </label><img src="/icons/info-circle.svg" alt="info" class="infoIcon" id="infoIconSecure" title="Restricts the cookie to secure connections (typically https)."><br>
+        <input type="checkbox" id="cookieHttpOnly">
+        <label for="cookieHttpOnly">Http Only</label>
+        <img src="/icons/info-circle.svg" alt="info" class="infoIcon" id="infoIconHttpOnly" title="Prevents the cookie from being accessed from client side scripts to increase security."></div>
+      <div id="buttonArea">
+        <div id="cookieEditorError" class="errorText"></div>
+        <button id="saveButton" type="button">Add</button>
+        <button id="clearButton" type="button">Clear</button>
+      </div>
+    </div>
+    <h1>Cookie List</h1>
+    * only contains http cookies; dom storage cannot be displayed like this due to technical limitations<br><br>
+    <input type="button" id="deleteButton" value="Delete Selected">
+    &emsp;Page:
+    <input type="number" id="pageSpinner" min="1" value="1">
+    <span id="tableText">
+      <span id="tableHint"></span>
+      Click any entry to open it in the cookie editor.</span>
+    <table class="dataTable" id="cookieTable">
+      <colgroup>
+        <col span="1" id="colgroup1"/>
+        <col span="1" id="colgroup2"/>
+        <col span="1" id="colgroup3"/>
+        <col span="1" id="colgroup4"/>
+        <col span="1" id="colgroup5"/>
+        <col span="1" id="colgroup6"/>
+        <col span="4" id="colgroup7"/>
+      </colgroup>
+      <thead>
+        <tr>
+          <td id="selectAllCheckBoxTd"><br><input type="checkbox" id="selectAll"></td>
+          <td>Domain<br><input type="text" class="filterTextBox" id="filterDomain"></td>
+          <td>Name<br><input type="text" class="filterTextBox" id="filterName"></td>
+          <td>Value<br><input type="text" class="filterTextBox" id="filterValue"></td>
+          <td>Keep Until<br><input type="text" class="filterTextBox" id="filterDate"></td>
+          <td>Path<br><input type="text" class="filterTextBox" id="filterPath"></td>
+          <td>Host Only<br>
+            <select id="filterHostOnly" class="filterSelect">
+              <option value="">any</option>
+              <option value="true">true</option>
+              <option value="false">false</option>
+            </select>
+          </td>
+          <td>Secure<br>
+            <select id="filterSecure" class="filterSelect">
+              <option value="">any</option>
+              <option value="true">true</option>
+              <option value="false">false</option>
+            </select>
+          </td>
+          <td>Http Only<br>
+            <select id="filterHttpOnly" class="filterSelect">
+              <option value="">any</option>
+              <option value="true">true</option>
+              <option value="false">false</option>
+            </select>
+          </td>
+          <td>White-listed<br>
+            <select id="filterWhitelisted" class="filterSelect">
+              <option value="">any</option>
+              <option value="true">true</option>
+              <option value="false">false</option>
+            </select>
+          </td>
+        </tr>
+      </thead>
+      <tbody id="cookieTableBody"></tbody>
+    </body>
+  </html>

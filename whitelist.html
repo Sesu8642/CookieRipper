@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html class="extension-whitelist">
+  <head>
+    <meta charset="UTF-8">
+    <link rel="StyleSheet" href="cookieRipper.css" type="text/css">
+    <script src="lib/browser-polyfill.min.js" type="text/javascript"></script>
+    <script src="js/common.js"></script>
+    <script src="js/whitelist.js"></script>
+    <title>Whitelist</title>
+    <div class="header">
+      <a href="options.html">Options</a>
+      <a href="cookieList.html">Cookies</a>
+      <a class="selectedHeaderTab" href="whitelist.html">Whitelist</a>
+      <a href="siteExceptions.html">Site Exceptions</a>
+      <a href="manual.html">Manual</a>
+    </div>
+  </head>
+  <body>
+    <h1>Entry Editor</h1>
+    <div id="entryEditor">
+      <div id="typeArea">Type:
+        <br>
+        <input type="radio" name="type" id="http" checked="true">
+        <label for="http">Http Cookie</label><br>
+        <input type="radio" name="type" id="dom">
+        <label for="dom">Web Storage</label>
+      </div>
+      <div id="domainArea">
+        Domain:
+        <br>
+        <input id="domainTextBox" class="editorTextbox" type="text"></div>
+      <div id="nameArea">Name:<br>
+        <input id="nameTextBox" class="editorTextbox" type="text"></div>
+      <div id="buttonArea">
+        <div id="entryEditorError" class="errorText"></div>
+        <button id="saveButton" type="button">Add</button>
+        <button id="clearButton" type="button">Clear</button>
+      </div>
+    </div>
+  </div>
+  <h1>Whitelist</h1>
+  <input type="button" id="deleteButton" value="Delete Selected">
+  &emsp;Page:
+  <input type="number" id="pageSpinner" min="1" value="1">
+  <span id="tableText">
+    <span id="tableHint"></span>
+    Click any entry to open it in the entry editor.</span>
+  <table class="dataTable" id="whitelistTable">
+    <colgroup>
+      <col span="1" id="colgroup1"/>
+      <col span="1" id="colgroup2"/>
+      <col span="1" id="colgroup3"/>
+      <col span="1" id="colgroup4"/>
+    </colgroup>
+    <thead>
+      <tr>
+        <td id="selectAllCheckBoxTd"><br><input type="checkbox" id="selectAll"></td>
+        <td>Domain<br><input type="text" class="filterTextBox" id="filterDomain"></td>
+        <td>Name<br><input type="text" class="filterTextBox" id="filterName"></td>
+        <td>Type<br>
+          <select id="filterType" class="filterSelect">
+            <option value="">any</option>
+            <option value="c">Http Cookie</option>
+            <option value="d">Web Storage</option>
+          </select>
+        </td>
+      </tr>
+    </thead>
+    <tbody id="whitelistTableBody"></tbody>
+  </body>
+</html>

@@ -1,0 +1,594 @@
+/* colors */
+
+:root {
+  /* from https://design.firefox.com/photon/visuals/color.html */
+  --bg-color-general: #f9f9fa; /* grey 10 */
+  --bg-color-menu: #ffffff; /* white */
+  --hover-color-primary: #d7d7db; /* grey 30 */
+  --hover-color-secondary: #ededf0; /* grey 20 */
+  --icon-color-primary: rgba(12, 12, 13, 0.8); /* grey90 a80 */
+  --icon-color-secondary: rgba(12, 12, 13, 0.6); /* grey90 a80 */
+  --text-color-primary: #0c0c0d; /* grey 90 */
+  --text-color-secondary: #4a4a4f; /* grey 60 */
+  --highlighted-color-primary: #0a84ff; /* blue 50 */
+  --highlighted-color-secondary: #45a1ff; /* blue 40 */
+  --highlighted-color-text: #0060df; /* blue 60 */
+  --error-color-text: #ff0039; /* red 50 */
+}
+
+:root {
+  background-color: var(--bg-color-general);
+  color: var(--text-color-primary);
+}
+
+/* general */
+
+label {
+  vertical-align: middle;
+}
+
+input {
+  box-sizing: border-box;
+}
+
+input[type="radio"] {
+  vertical-align: text-bottom;
+}
+
+input[type="checkbox"] {
+  vertical-align: text-top;
+}
+
+button {
+  min-width: 15ch;
+}
+
+img.infoIcon {
+  width: 1.7ex;
+  opacity: 0.4;
+  vertical-align: baseline;
+}
+
+.errorText {
+  color: var(--error-color-text);
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* extension pages common*/
+
+.editorTextbox {
+  width: 100%;
+}
+
+#tableText {
+  float: right;
+}
+
+#deleteButton {
+  margin-bottom: 0.5ex;
+}
+
+#pageSpinner {
+  width: 5ch;
+}
+
+/* header */
+
+.header a {
+  float: left;
+  text-align: center;
+  padding: 1.5ch;
+  padding-bottom: 0.5ch;
+  text-decoration: none;
+  font-weight: bold;
+  color: var(--text-color-primary);
+}
+
+.header {
+  overflow: hidden;
+}
+
+.header .selectedHeaderTab {
+  border-bottom: 0.5ch solid var(--highlighted-color-secondary);
+}
+
+.header a:hover {
+  background-color: var(--hover-color-primary);
+}
+
+@media screen and (max-width: 60ch) {
+  .header a {
+    float: none;
+    display: block;
+    text-align: left;
+    padding: 0.8ch;
+  }
+}
+
+/* data tables */
+
+.dataTable {
+  border-collapse: collapse;
+}
+
+.dataTable td {
+  overflow: hidden;
+  word-wrap: break-word;
+  border: thin solid var(--hover-color-primary);
+}
+
+.dataTable tbody tr:nth-child(even) {
+  background-color: var(--hover-color-secondary);
+}
+
+.dataTable tbody tr:hover {
+  background-color: var(--hover-color-primary);
+}
+
+.dataTable tbody tr.selectedRow {
+  background-color: var(--highlighted-color-primary);
+  color: white;
+}
+
+.dataTable {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 80ch;
+}
+
+.dataTable thead {
+  font-weight: bold;
+  text-align: center;
+  vertical-align: bottom;
+  background-color: var(--hover-color-secondary);
+}
+
+.dataTable .filterTextBox {
+  width: 100%;
+  background-image: url("/icons/filter.svg");
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: contain;
+  padding: 0 0 0 2.5ch;
+  box-sizing: border-box;
+}
+
+.dataTable .filterSelect {
+  width: 100%;
+}
+
+/* selection area (used in popup and options page) */
+
+.selectionArea {
+  display: grid;
+  grid-template-rows: auto auto auto;
+  grid-template-columns: 2fr 2fr 2fr 2fr 2fr 2fr;
+  grid-template-areas:
+    ". slider slider slider slider ."
+    "denyOption denyOption sessionOption sessionOption allowOption allowOption";
+  max-width: 70ch;
+}
+
+.selectionArea #slider {
+  grid-area: slider;
+  width: 100%;
+  justify-self: center;
+}
+
+.selectionArea #denyOption {
+  grid-area: denyOption;
+}
+
+.selectionArea #sessionOption {
+  grid-area: sessionOption;
+}
+
+.selectionArea #allowOption {
+  grid-area: allowOption;
+}
+
+.selectionArea .selectedBehaviour {
+  color: var(--highlighted-color-text);
+}
+
+.selectionArea .optionArea:hover {
+  background-color: var(--hover-color-secondary);
+}
+
+.selectionArea img.selectIcon {
+  width: 40%;
+  display: block;
+  margin: 0 auto;
+}
+
+.selectionArea .iconText {
+  text-align: center;
+}
+
+/* popup */
+
+.extension-popup {
+  background-color: var(--bg-color-menu);
+}
+
+.extension-popup body {
+  width: 60ch;
+  margin: 1ch;
+  font-size: 80%;
+}
+
+#useSiteBehaviourArea,
+#useTempBehaviourArea {
+  margin-left: 0.5ex;
+}
+
+.extension-popup .tableScrollArea {
+  max-height: 20ex;
+  overflow-y: auto;
+}
+
+.extension-popup tbody tr:nth-child(even) {
+  background-color: var(--hover-color-secondary);
+}
+
+.extension-popup table {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.extension-popup table thead tr td {
+  position: sticky;
+  background-color: var(--hover-color-secondary);
+  top: 0;
+  z-index: +1;
+}
+
+.extension-popup table tr.blocked {
+  text-decoration: line-through;
+  color: var(--text-color-secondary);
+}
+
+.extension-popup table td {
+  white-space: nowrap;
+  overflow: hidden;
+  border: thin solid none;
+}
+
+.extension-popup table td.checkbox-td {
+  text-align: center;
+}
+
+.extension-popup input[type="text"] {
+  width: 100%;
+}
+
+.extension-popup input[type="radio"],
+.extension-popup input[type="checkbox"] {
+  transform: scale(0.8);
+}
+
+.extension-popup input[type="checkbox"] {
+  vertical-align: sub;
+}
+
+.extension-popup input[type="radio"] {
+  vertical-align: text-bottom;
+}
+
+.extension-popup .spoiler {
+  font-weight: normal;
+  font-style: italic;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.extension-popup h1 {
+  font-size: larger;
+  margin: 0;
+  display: inline-block;
+}
+
+.extension-popup #optionsImage {
+  cursor: pointer;
+  width: 3ch;
+}
+
+.extension-popup #optionsImage.active {
+  fill: var(--highlighted-color-primary);
+}
+
+.extension-popup #optionsImage:hover {
+  fill: var(--highlighted-color-primary);
+}
+
+.extension-popup .dropdown {
+  float: right;
+  position: relative;
+  display: inline-block;
+}
+
+.extension-popup #optionsDropdown {
+  position: absolute;
+  background-color: var(--hover-color-secondary);
+  min-width: 30ch;
+  box-shadow: -0.5ch 1ex 2ch var(--hover-color-primary);
+  right: 0;
+  cursor: default;
+  z-index: +1;
+}
+
+.extension-popup #optionsDropdown .dropdownItem {
+  padding: 1.5ch 4ex;
+  display: block;
+}
+
+.extension-popup .dropdown .dropdownItem:hover {
+  background-color: var(--hover-color-primary);
+}
+
+.extension-popup thead {
+  font-weight: bold;
+}
+
+.extension-popup img.tableIcon {
+  width: 100%;
+  display: block;
+}
+
+.extension-popup img.tableIconDisabled {
+  width: 100%;
+  display: block;
+  opacity: 0.5;
+}
+
+.extension-popup input.tableCheckBox {
+  transform: scale(1);
+  margin: 0;
+}
+
+.extension-popup img.deleteRuleIcon {
+  width: 1.8ch;
+  vertical-align: middle;
+}
+
+.extension-popup .selectedBehaviourArea {
+  box-shadow: -0.5ex 0 0 0 var(--highlighted-color-secondary);
+}
+
+.extension-popup .colgroup1 {
+  width: 23%;
+}
+.extension-popup .colgroup2 {
+  width: 20%;
+}
+.extension-popup .colgroup3 {
+  width: 45%;
+}
+.extension-popup .colgroup4 {
+  width: 4%;
+}
+
+.extension-popup #mainView {
+  display: grid;
+  grid-template-areas:
+    "siteInfo"
+    "cookieArea"
+    "domStorageArea";
+  grid-gap: 2ch;
+}
+
+.extension-popup #siteInfo {
+  grid-area: siteInfo;
+  overflow: auto;
+}
+
+.extension-popup #cookieArea {
+  grid-area: cookieArea;
+  overflow: auto;
+}
+
+.extension-popup #domStorageArea {
+  grid-area: domStorageArea;
+}
+
+/* options page */
+
+.extension-options .selectionArea {
+  max-width: 70ch;
+}
+
+/* cookie list */
+
+.extension-cookieList #colgroup1 {
+  width: 3ch;
+}
+.extension-cookieList #colgroup2 {
+  width: 16%;
+}
+.extension-cookieList #colgroup3 {
+  width: 22%;
+}
+.extension-cookieList #colgroup4 {
+  width: 51%;
+}
+.extension-cookieList #colgroup5 {
+  width: 11ch;
+}
+.extension-cookieList #colgroup6 {
+  width: 11%;
+}
+.extension-cookieList #colgroup7 {
+  width: 7ch;
+}
+
+/* cookie editor */
+.extension-cookieList #cookieEditor {
+  display: grid;
+  grid-template-columns: 50fr 35fr 15fr;
+  grid-template-rows: auto;
+  grid-template-areas:
+    "name value value"
+    "domain path path"
+    "firstPartyDomain validity secureHttp"
+    "buttons buttons buttons";
+  grid-gap: 1.5ex 3ch;
+}
+
+@media screen and (max-width: 150ch) {
+  .extension-cookieList #cookieEditor {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "name value"
+      "domain path"
+      "firstPartyDomain ."
+      "validity secureHttp"
+      "buttons buttons";
+  }
+}
+
+@media screen and (max-width: 80ch) {
+  .extension-cookieList #cookieEditor {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "name"
+      "value"
+      "domain"
+      "firstPartyDomain"
+      "path"
+      "validity"
+      "secureHttp"
+      "buttons";
+  }
+}
+
+.extension-cookieList #domainArea {
+  grid-area: domain;
+}
+
+.extension-cookieList #firstPartyDomainArea {
+  grid-area: firstPartyDomain;
+}
+
+.extension-cookieList #nameArea {
+  grid-area: name;
+}
+
+.extension-cookieList #valueArea {
+  grid-area: value;
+}
+
+.extension-cookieList #validityArea {
+  grid-area: validity;
+}
+
+.extension-cookieList #pathArea {
+  grid-area: path;
+}
+
+.extension-cookieList #secureHttpOnlyArea {
+  grid-area: secureHttp;
+}
+
+.extension-cookieList #buttonArea {
+  grid-area: buttons;
+}
+
+/* whitelist */
+
+.extension-whitelist #colgroup1 {
+  width: 3ch;
+}
+.extension-whitelist #colgroup3 {
+  width: 60%;
+}
+.extension-whitelist #colgroup4 {
+  width: 12ch;
+}
+
+/* entry editor */
+.extension-whitelist #entryEditor {
+  display: grid;
+  grid-template-columns: 9fr 40fr 51fr;
+  grid-template-rows: auto;
+  grid-template-areas:
+    "type domain name"
+    "buttons buttons buttons";
+  grid-gap: 1.5ex 3ch;
+}
+
+@media screen and (max-width: 150ch) {
+  .extension-whitelist #entryEditor {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "type ."
+      "domain name"
+      "buttons buttons";
+  }
+}
+
+@media screen and (max-width: 80ch) {
+  .extension-whitelist #entryEditor {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "type"
+      "domain"
+      "name"
+      "buttons";
+  }
+}
+
+.extension-whitelist #domainArea {
+  grid-area: domain;
+}
+
+.extension-whitelist #nameArea {
+  grid-area: name;
+}
+
+.extension-whitelist #typeArea {
+  grid-area: type;
+}
+
+.extension-whitelist #buttonArea {
+  grid-area: buttons;
+}
+
+/* site exceptions */
+
+.extension-siteExceptions #colgroup1 {
+  width: 3ch;
+}
+.extension-siteExceptions #colgroup2 {
+  width: 100%;
+}
+.extension-siteExceptions #colgroup3 {
+  width: 25ch;
+}
+
+/* exception editor */
+.extension-siteExceptions #exceptionEditor {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto;
+  grid-template-areas:
+    "domain"
+    "rule"
+    "buttons";
+  grid-gap: 1.5ex 3ch;
+}
+
+.extension-siteExceptions #domainArea {
+  grid-area: domain;
+}
+
+.extension-siteExceptions #ruleArea {
+  grid-area: rule;
+}
+
+.extension-siteExceptions #buttonArea {
+  grid-area: buttons;
+}
