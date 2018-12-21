@@ -2,7 +2,7 @@
 	"manifest_version": 2,
 	"name": "Cookie Ripper",
 	"description": "Allows you to set cookie preferences on a global, per domain and per cookie level. Also supports web storage.",
-	"version": "0.1",
+	"version": "0.1.1",
 	"author": "Sesu8642",
 	"homepage_url": "https://github.com/Sesu8642/CookieRipper",
 	"developer": {
