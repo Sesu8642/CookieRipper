@@ -9,57 +9,6 @@ async function initialize() {
   await checkFirstPartyIsolationSupport();
   loadSettings();
   populateOpenHostnamesUnwantedCookies();
-  // add event listeners
-  browser.runtime.onInstalled.addListener(function() {
-    // check if this is the first install and greet the user if it is
-    var getting = browser.storage.sync.get({
-      // default
-      version: '0'
-    });
-    getting.then(function(items) {
-      if (items.version === '0') {
-        // if version is not set, this must be the first install
-        browser.tabs.create({
-          url: '/firstInstall.html'
-        }).then(function() {}, logError);
-      }
-      // set version info to current version
-      var setting = browser.storage.sync.set({
-        version: browser.app.getDetails().version
-      });
-      setting.then(function() {}, logError);
-    }, logError);
-    injectJsInAllTabs();
-    updateAllTabsIcons();
-    updateActiveTabsCounts();
-  });
-  browser.cookies.onChanged.addListener(handleCookieEvent);
-  browser.webNavigation.onCommitted.addListener(async function(details) {
-    if (details.transitionType !== 'auto_subframe' && details.transitionType !== 'manual_subframe') {
-      // update icon and count and delete undwanted cookies
-      updateTabIcon(details.tabId);
-      var cookieStore = await getTabCookieStore(details.tabId);
-      await deleteUnwantedCookies(details.url, cookieStore);
-      updateActiveTabsCounts();
-      // if new hostname --> add it to list
-      var newHostname = trimSubdomains(details.url);
-      if (!openHostnamesUnwantedCookies.hasOwnProperty(newHostname)) {
-        openHostnamesUnwantedCookies[newHostname] = {
-          hostname: newHostname,
-          unwantedCookies: {}
-        }
-      }
-      removeClosedHostnamesFromOpenHostnamesUnwantedCookies();
-    }
-  });
-  browser.webNavigation.onCompleted.addListener(function(details) {
-    updateActiveTabsCounts();
-  });
-  browser.tabs.onActivated.addListener(function(activeInfo) {
-    updateActiveTabsCounts();
-  });
-  browser.tabs.onRemoved.addListener(removeClosedHostnamesFromOpenHostnamesUnwantedCookies);
-  browser.runtime.onMessage.addListener(handleMessage);
 }
 
 function loadSettings() {
@@ -135,3 +84,44 @@ function handleMessage(request, sender) {
       logError(`Unknown request type: ${request.type}`);
   }
 }
+/*
+ * add event listeners (at least onInstalled must not be in a separate function to work properly in ff)
+ */
+browser.runtime.onInstalled.addListener(function(details) {
+  // shows the user a welcome message and opens the settings page; also injects js in open tabs and takes care of the extension icon
+  if (details.reason === "install") {
+    browser.tabs.create({
+      url: '/firstInstall.html'
+    }).then(function() {}, logError);
+  }
+  injectJsInAllTabs();
+  updateAllTabsIcons();
+  updateActiveTabsCounts();
+});
+browser.cookies.onChanged.addListener(handleCookieEvent);
+browser.webNavigation.onCommitted.addListener(async function(details) {
+  if (details.transitionType !== 'auto_subframe' && details.transitionType !== 'manual_subframe') {
+    // update icon and count and delete undwanted cookies
+    updateTabIcon(details.tabId);
+    var cookieStore = await getTabCookieStore(details.tabId);
+    await deleteUnwantedCookies(details.url, cookieStore);
+    updateActiveTabsCounts();
+    // if new hostname --> add it to list
+    var newHostname = trimSubdomains(details.url);
+    if (!openHostnamesUnwantedCookies.hasOwnProperty(newHostname)) {
+      openHostnamesUnwantedCookies[newHostname] = {
+        hostname: newHostname,
+        unwantedCookies: {}
+      }
+    }
+    removeClosedHostnamesFromOpenHostnamesUnwantedCookies();
+  }
+});
+browser.webNavigation.onCompleted.addListener(function(details) {
+  updateActiveTabsCounts();
+});
+browser.tabs.onActivated.addListener(function(activeInfo) {
+  updateActiveTabsCounts();
+});
+browser.tabs.onRemoved.addListener(removeClosedHostnamesFromOpenHostnamesUnwantedCookies);
+browser.runtime.onMessage.addListener(handleMessage);
