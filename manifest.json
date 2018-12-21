@@ -11,7 +11,13 @@
 	},
 	"browser_action": {
 		"browser_style": false,
-		"default_icon": "icons/cookieRipper.svg",
+		"default_icon": {
+			"16": "icons/cookieRipper_16.png",
+			"32": "icons/cookieRipper_32.png",
+			"48": "icons/cookieRipper_48.png",
+			"96": "icons/cookieRipper_96.png",
+			"128": "icons/cookieRipper_128.png"
+		},
 		"default_popup": "popup.html",
 		"default_title": "Cookie Ripper is active!",
 		"default_area": "navbar"
