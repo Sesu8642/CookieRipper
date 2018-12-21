@@ -26,7 +26,7 @@ function addCookie(name, value, domain, path, session, date, time, hostOnly, sec
     // create new cookie
     var url = (domain.startsWith('.') ? `https://${domain.substr(1)}` : `https://${domain}`);
     var parameters = {
-      // url is mainly used for creating host only cookies (do this by specifying no domain) which are only accessable for the exact (sub-)domain
+      // url is mainly used for creating host only cookies (do this by specifying no domain) which are only accessible for the exact (sub-)domain
       url: url,
       // deal with host only --> do not supply domain if host only
       domain: (hostOnly ? null : domain),
@@ -79,7 +79,7 @@ function addCookieFromObject(cookie, cookieStore) {
   var result = new Promise(async function(resolve, reject) {
     // create new cookie
     var parameters = {
-      // url is mainly used for creating host only cookies (do this by specifying no domain) which are only accessable for the exact (sub-)domain
+      // url is mainly used for creating host only cookies (do this by specifying no domain) which are only accessible for the exact (sub-)domain
       // create url from domain (remove leading . first)
       url: (cookie.domain.startsWith('.') ? `https://${cookie.domain.substr(1)}` : `https://${cookie.domain}`),
       // deal with host only --> do not supply domain if host only

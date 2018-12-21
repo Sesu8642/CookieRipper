@@ -1,6 +1,6 @@
 'use strict';
 /*
- * this script is injected into websites because dom storage is only accessable from there (i think)
+ * this script is injected into websites because dom storage is only accessible from there (i think)
  */
 deleteUnwantedStorage();
 // only answer messages if in the top frame
@@ -104,7 +104,7 @@ function deleteUnwantedStorage() {
         }, logError);
       }
     } catch (e) {
-      // if storage is not accessable, there is nothing to do
+      // if storage is not accessible, there is nothing to do
     }
     // iterate session storage
     try {
@@ -125,7 +125,7 @@ function deleteUnwantedStorage() {
         }, logError);
       }
     } catch (e) {
-      // if storage is not accessable, there is nothing to do
+      // if storage is not accessible, there is nothing to do
     }
   }, logError);
 }
