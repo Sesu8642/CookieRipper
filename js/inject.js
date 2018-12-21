@@ -98,7 +98,6 @@ function deleteUnwantedStorage() {
           // decide deletion
           if (!(behaviour == 2 || response.whitelisted)) {
             // delete
-            console.log("deleted" + response.name);
             localStorage.removeItem(response.name);
           }
         }, logError);
