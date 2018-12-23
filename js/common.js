@@ -549,6 +549,7 @@ function sendBehaviour(request) {
  */
 function getObjectWhitelistedState(domain, name, type) {
   // returns wether a whitelist entry exists
+  domain = domain.startsWith('.') ? domain.substr(1) : domain;
   var result = new Promise(function(resolve, reject) {
     var key = `wl|${encodeURI(domain)}|${encodeURI(name)}|${type}`;
     var getting = browser.storage.local.get({
@@ -568,6 +569,7 @@ function getObjectWhitelistedState(domain, name, type) {
 
 function addWhitelistEntry(domain, name, type, overwriteEntry) {
   // adds a new whitelist with the given data
+  domain = domain.startsWith('.') ? domain.substr(1) : domain;
   var result = new Promise(async function(resolve, reject) {
     try {
       // make sure the domain is valid
@@ -598,6 +600,7 @@ function addWhitelistEntry(domain, name, type, overwriteEntry) {
 
 function deleteWhitelistEntry(domain, name, type) {
   // removes a whitelist entry matching the given data
+  domain = domain.startsWith('.') ? domain.substr(1) : domain;
   var result = new Promise(function(resolve, reject) {
     var key = `wl|${encodeURI(domain)}|${encodeURI(name)}|${type}`;
     browser.storage.local.remove(key).then(resolve, logError);
