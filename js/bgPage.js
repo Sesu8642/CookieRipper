@@ -1,14 +1,6 @@
 'use strict';
 var tempSiteExceptions = {};
 var openHostnamesUnwantedCookies = {};
-initialize();
-async function initialize() {
-  // loads setting, adds listeners and does some other initializing
-  // check FirstPartyIsolation support
-  await checkFirstPartyIsolationSupport();
-  loadSettings();
-  populateOpenHostnamesUnwantedCookies();
-}
 var defaultBehaviour, enableCookieCounter;
 
 function loadSettings() {
@@ -279,26 +271,29 @@ function handleMessage(request, sender) {
   }
 }
 /*
- * add event listeners (at least onInstalled must not be in a separate function to work properly in ff)
+ * intialization (parts of it must not be in a separate function to work properly in ff)
  */
-browser.runtime.onInstalled.addListener(function(details) {
+populateOpenHostnamesUnwantedCookies();
+browser.runtime.onMessage.addListener(handleMessage);
+browser.webNavigation.onCompleted.addListener(function(details) {
+  updateActiveTabsCounts();
+});
+browser.tabs.onActivated.addListener(function(activeInfo) {
+  updateActiveTabsCounts();
+});
+browser.runtime.onInstalled.addListener(async function(details) {
   // shows the user a welcome message and opens the settings page; also injects js in open tabs and takes care of the extension icon
   if (details.reason === "install") {
     browser.tabs.create({
       url: '/firstInstall.html'
     }).then(function() {}, logError);
   }
+  await loadSettings();
   injectJsInAllTabs();
-  updateAllTabsIcons();
-  updateActiveTabsCounts();
 });
 browser.cookies.onChanged.addListener(handleCookieEvent);
 browser.webNavigation.onCommitted.addListener(async function(details) {
-  if (details.transitionType !== 'auto_subframe' && details.transitionType !== 'manual_subframe') {
-    // update icon and count and delete undwanted cookies
-    updateTabIcon(details.tabId);
-    var cookieStore = await getTabCookieStore(details.tabId);
-    updateActiveTabsCounts();
+  if (!['auto_subframe', 'manual_subframe'].includes(details.transitionType)) {
     // if new hostname --> add it to list
     var newHostname = trimSubdomains(details.url);
     if (!openHostnamesUnwantedCookies.hasOwnProperty(newHostname)) {
@@ -306,16 +301,12 @@ browser.webNavigation.onCommitted.addListener(async function(details) {
         hostname: newHostname,
         unwantedCookies: {}
       }
+      removeClosedHostnamesFromOpenHostnamesUnwantedCookies();
     }
-    removeClosedHostnamesFromOpenHostnamesUnwantedCookies();
+    // update icon and count and delete unwanted cookies
+    updateTabIcon(details.tabId);
+    var cookieStore = await getTabCookieStore(details.tabId);
     await deleteExistingUnwantedCookies(details.url, cookieStore);
+    updateActiveTabsCounts();
   }
 });
-browser.webNavigation.onCompleted.addListener(function(details) {
-  updateActiveTabsCounts();
-});
-browser.tabs.onActivated.addListener(function(activeInfo) {
-  updateActiveTabsCounts();
-});
-browser.tabs.onRemoved.addListener(removeClosedHostnamesFromOpenHostnamesUnwantedCookies);
-browser.runtime.onMessage.addListener(handleMessage);
