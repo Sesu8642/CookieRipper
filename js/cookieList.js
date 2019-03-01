@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
   fillCookieEditor(null);
   fillCookieStores();
   fillCookieList();
-  if (bgPage.firstPartyIsolationSupported) {
+  if (firstPartyIsolationSupported) {
     firstPartyDomainArea.classList.remove('hidden');
   }
 });

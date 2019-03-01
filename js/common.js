@@ -3,14 +3,83 @@
  * This file contains functions that may be used by all the other js files.
  *
  */
-/* for accessing variables from background page */
+/* for accessing variables from background page if not in private mode */
 var bgPage = browser.extension.getBackgroundPage();
+/* whether firstPartyIsolation is supported */
+var firstPartyIsolationSupported = checkFirstPartyIsolationSupport();
+
+function checkFirstPartyIsolationSupport() {
+  // checks whether the first party domain cookie property is supported
+  var getting = browser.cookies.get({
+    name: '',
+    url: '',
+    firstPartyDomain: ''
+  });
+  getting.then(function() {
+    return true
+  }, function() {
+    return false
+  });
+}
+/*
+ * functions for getting settings from background page
+ * getting them from the background page is better than storing them in a variable because only the background page reloads the settings when changed by the user
+ * it is also less limited and probably faster than reading from the disk even when using the messaging api
+ * the functions either call a funtion in the background page directly or send a message to do their job
+ */
+function callGetDefaultBehaviour() {
+  // gets default behaviour from background page
+  var result = new Promise(async function(resolve, reject) {
+    // use function directly or send message depending on the availability of bgPage
+    if (bgPage !== null) {
+      resolve(bgPage.defaultBehaviour);
+    } else {
+      var getting = browser.runtime.sendMessage({
+        type: 'getDefaultBehaviour'
+      });
+      getting.then(resolve, logError);
+    }
+  });
+  return result;
+}
+
+function callGetEnableCookieCounter() {
+  // gets default behaviour from background page
+  var result = new Promise(async function(resolve, reject) {
+    // use function directly or send message depending on the availability of bgPage
+    if (bgPage !== null) {
+      resolve(bgPage.enableCookieCounter);
+    } else {
+      var getting = browser.runtime.sendMessage({
+        type: 'getEnableCookieCounter'
+      });
+      getting.then(resolve, logError);
+    }
+  });
+  return result;
+}
+
+function callLoadSettings() {
+  // reloads settings in background page
+  var result = new Promise(async function(resolve, reject) {
+    // use function directly or send message depending on the availability of bgPage
+    if (bgPage !== null) {
+      bgPage.loadSettings();
+    } else {
+      var getting = browser.runtime.sendMessage({
+        type: 'loadSettings'
+      });
+      getting.then(resolve, logError);
+    }
+  });
+  return result;
+}
 /*
  *cookie functions
  */
 function getAllCookies(parameters) {
   // returns all cookies matching the given criteria
-  if (bgPage.firstPartyIsolationSupported) {
+  if (firstPartyIsolationSupported) {
     parameters.firstPartyDomain = null;
   }
   return browser.cookies.getAll(parameters);
@@ -39,7 +108,7 @@ function addCookie(name, value, domain, path, session, date, time, hostOnly, sec
       expirationDate: (session ? null : ((date.getTime() + time.getTime() + new Date().getTimezoneOffset() * 60000) / 1000)),
       storeId: cookieStore
     };
-    if (bgPage.firstPartyIsolationSupported) {
+    if (firstPartyIsolationSupported) {
       parameters.firstPartyDomain = firstPartyDomain;
     }
     var setting = browser.cookies.set(parameters);
@@ -59,7 +128,7 @@ function addCookie(name, value, domain, path, session, date, time, hostOnly, sec
       if (allowed) {
         resolve();
       } else {
-        await addCookieToUnwantedList(newCookie);
+        await callAddUnwantedCookie(newCookie);
         await deleteCookie(newCookie);
         resolve();
       }
@@ -92,7 +161,7 @@ function addCookieFromObject(cookie, cookieStore) {
       expirationDate: cookie.expirationDate,
       storeId: cookieStore
     };
-    if (bgPage.firstPartyIsolationSupported) {
+    if (firstPartyIsolationSupported) {
       parameters.firstPartyDomain = cookie.firstPartyDomain;
     }
     var setting = browser.cookies.set(parameters);
@@ -100,7 +169,8 @@ function addCookieFromObject(cookie, cookieStore) {
   });
   return result;
 }
-async function deleteCookie(cookie) {
+
+function deleteCookie(cookie) {
   // deletes the provided cookie
   var result = new Promise(function(resolve, reject) {
     var parameters = {
@@ -108,7 +178,7 @@ async function deleteCookie(cookie) {
       name: cookie.name,
       storeId: cookie.storeId
     };
-    if (bgPage.firstPartyIsolationSupported) {
+    if (firstPartyIsolationSupported) {
       parameters.firstPartyDomain = cookie.firstPartyDomain;
     }
     var removing = browser.cookies.remove(parameters);
@@ -129,8 +199,7 @@ function deleteAllCookies(url, cookieStore) {
         return deleteCookie(cookie);
       });
       // also remove unwanted cookies from memory
-      var hostname = trimSubdomains(url);
-      bgPage.openHostnamesUnwantedCookies[hostname].unwantedCookies = {};
+      promises.push(callClearUnwantedCookiesforHostname(url));
       await Promise.all(promises);
       resolve();
     }, logError);
@@ -138,7 +207,7 @@ function deleteAllCookies(url, cookieStore) {
   return result;
 }
 
-function deleteUnwantedCookies(url, cookieStore) {
+function deleteExistingUnwantedCookies(url, cookieStore) {
   // deletes all existung but unwanted cookies from a given url
   var result = new Promise(async function(resolve, reject) {
     var hostname = trimSubdomains(url);
@@ -153,7 +222,7 @@ function deleteUnwantedCookies(url, cookieStore) {
           return getObjectWhitelistedState(cookie.domain, cookie.name, 'c').then(async function(whitelisted) {
             if (!whitelisted) {
               await deleteCookie(cookie);
-              await addCookieToUnwantedList(cookie);
+              await callAddUnwantedCookie(cookie);
             }
           });
         }
@@ -165,15 +234,15 @@ function deleteUnwantedCookies(url, cookieStore) {
   return result;
 }
 
-function deleteAllTabsUnwantedCookies() {
-  // deletes all existung but unwanted cookies all open tabs
+function deleteAllTabsExistingUnwantedCookies() {
+  // deletes all existung but unwanted cookies from all open tabs
   var result = new Promise(function(resolve, reject) {
     var querying = browser.tabs.query({});
     querying.then(async function(tabs) {
       var promises = tabs.map(function(tab) {
         if (tab.url.startsWith('http')) {
           return getTabCookieStore(tab.id).then(async function(cookieStore) {
-            await deleteUnwantedCookies(tab.url, cookieStore);
+            await deleteExistingUnwantedCookies(tab.url, cookieStore);
           });
         }
       });
@@ -222,95 +291,6 @@ function getCookieAllowedState(cookie) {
   });
   return result;
 }
-
-function restoreCookiesFromUnwantedList(hostname) {
-  // re-creates cookies from unwanted list in case the user changes the behaviour for a site
-  var result = new Promise(async function(resolve, reject) {
-    // get behaviour for site
-    var behaviour = await getSiteBehaviour(hostname);
-    // resolve if behaviour is 'deny'
-    if (behaviour === 0) {
-      resolve();
-    }
-    // iterate all unwanted cookies
-    for (var key in bgPage.openHostnamesUnwantedCookies[hostname].unwantedCookies) {
-      var cookie = JSON.parse(bgPage.openHostnamesUnwantedCookies[hostname].unwantedCookies[key]);
-      // check if cookie should be restored
-      if (behaviour === 2 || behaviour === 1 && cookie.session) {
-        await addCookieFromObject(cookie, cookie.storeId);
-        delete bgPage.openHostnamesUnwantedCookies[hostname].unwantedCookies[key];
-      }
-    }
-    resolve();
-  });
-  return result;
-}
-
-function restoreAllTabsCookiesFromUnwantedList() {
-  // re-creates cookies from unwanted list in case the user changes the behaviour for multiple sites
-  var result = new Promise(async function(resolve, reject) {
-    for (var hostname in bgPage.openHostnamesUnwantedCookies) {
-      await restoreCookiesFromUnwantedList(bgPage.openHostnamesUnwantedCookies[hostname].hostname);
-    }
-    resolve();
-  });
-  return result;
-}
-
-function restoreWhitelistedCookieFromUnwantedList(domain, name, cookieStore) {
-  // re-creates a cookie from unwanted list in case the user whitelisted it
-  var result = new Promise(async function(resolve, reject) {
-    var hostname = trimSubdomains(`http://${domain}`);
-    await addCookieFromObject(JSON.parse(bgPage.openHostnamesUnwantedCookies[hostname].unwantedCookies[`${encodeURI(domain)}|${encodeURI(name)}`]), cookieStore);
-    delete bgPage.openHostnamesUnwantedCookies[hostname].unwantedCookies[`${encodeURI(domain)}|${encodeURI(name)}`];
-    resolve();
-  });
-  return result;
-}
-
-function addCookieToUnwantedList(cookie) {
-  // adds a cookie to the list of unwanted cookies
-  var result = new Promise(function(resolve, reject) {
-    var cookieHostname = trimSubdomains(`http://${cookie.domain}`);
-    // only do it if the site is opened in a tab
-    // stringify to prevent some weird ff dead object issue
-    bgPage.openHostnamesUnwantedCookies[cookieHostname].unwantedCookies[`${encodeURI(cookie.domain)}|${encodeURI(cookie.name)}`] = JSON.stringify(cookie);
-    resolve();
-  });
-  return result;
-}
-
-function populateOpenHostnamesUnwantedCookies() {
-  // adds all open sites to the openHostnamesUnwantedCookies variable
-  var querying = browser.tabs.query({});
-  querying.then(function(tabs) {
-    tabs.forEach(function(tab) {
-      var hostname = trimSubdomains(tab.url);
-      bgPage.openHostnamesUnwantedCookies[hostname] = {
-        hostname: hostname,
-        unwantedCookies: {}
-      }
-    });
-  }, logError);
-}
-
-function removeClosedHostnamesFromOpenHostnamesUnwantedCookies() {
-  // removes all sites from openHostnamesUnwantedCookies that are not open anymore
-  // create array of all open hostnames
-  var openTabsHostnames = [];
-  var querying = browser.tabs.query({});
-  querying.then(function(tabs) {
-    tabs.forEach(function(tab) {
-      openTabsHostnames.push(trimSubdomains(tab.url));
-    });
-    // iterate all entries in openHostnamesUnwantedCookies and remove them if the hostname is not open in a tab anymore
-    for (var property in bgPage.openHostnamesUnwantedCookies) {
-      if (!(openTabsHostnames.includes(property))) {
-        delete bgPage.openHostnamesUnwantedCookies[property];
-      }
-    }
-  }, logError);
-}
 async function handleCookieEvent(changeInfo) {
   // is used when a cookie change event needs to be handled
   // determines the correct action to take and executes it
@@ -321,14 +301,137 @@ async function handleCookieEvent(changeInfo) {
   }
   var allowed = await getCookieAllowedState(changeInfo.cookie);
   if (!allowed) {
-    addCookieToUnwantedList(changeInfo.cookie);
+    callAddUnwantedCookie(changeInfo.cookie);
     await deleteCookie(changeInfo.cookie);
     updateActiveTabsCounts();
   }
 }
 /*
+ * unwanted cookie functions
+ * the functions either call a funtion in the background page directly or send a message to do their job
+ */
+function callGetUnwantedCookiesForHostname(hostname) {
+  // returns the object that stores the cookies for the given hostname in unwanted list
+  var result = new Promise(async function(resolve, reject) {
+    // use function directly or send message depending on the availability of bgPage
+    if (bgPage !== null) {
+      var getting = bgPage.getUnwantedCookiesForHostname({
+        hostname: hostname
+      });
+    } else {
+      getting = browser.runtime.sendMessage({
+        type: 'getUnwantedCookiesForHostname',
+        hostname: hostname
+      });
+    }
+    getting.then(resolve, logError);
+  });
+  return result;
+}
+
+function callAddUnwantedCookie(cookie) {
+  // adds a cookie to the list of unwanted cookies
+  var result = new Promise(function(resolve, reject) {
+    // only do it if the site is opened in a tab
+    // stringify to prevent some weird ff dead object issue
+    // use function directly or send message depending on the availability of bgPage
+    if (bgPage !== null) {
+      var adding = bgPage.addUnwantedCookie({
+        cookie: cookie
+      });
+    } else {
+      adding = browser.runtime.sendMessage({
+        type: 'addUnwantedCookie',
+        cookie: cookie
+      });
+    }
+    adding.then(resolve, logError);
+  });
+  return result;
+}
+
+function callRestoreUnwantedCookie(domain, name, cookieStore) {
+  // re-creates a cookie from unwanted list in case the user whitelists it
+  var result = new Promise(async function(resolve, reject) {
+    // use function directly or send message depending on the availability of bgPage
+    if (bgPage !== null) {
+      var getting = bgPage.restoreUnwantedCookie({
+        domain: domain,
+        name: name,
+        cookieStore: cookieStore
+      });
+    } else {
+      getting = browser.runtime.sendMessage({
+        type: 'restoreUnwantedCookie',
+        domain: domain,
+        name: name,
+        cookieStore: cookieStore
+      });
+    }
+    getting.then(resolve, logError);
+  });
+  return result;
+}
+
+function callRestoreAllHostnamesUnwantedCookies() {
+  // re-creates cookies from unwanted list in case the user changes the behaviour for a hostname
+  var result = new Promise(async function(resolve, reject) {
+    // use function directly or send message depending on the availability of bgPage
+    if (bgPage !== null) {
+      var restoring = bgPage.restoreAllHostnamesUnwantedCookies();
+    } else {
+      restoring = browser.runtime.sendMessage({
+        type: 'restoreAllHostnamesUnwantedCookies'
+      });
+    }
+    restoring.then(resolve, logError);
+  });
+  return result;
+}
+
+function callDeleteUnwantedCookie(domain, name) {
+  // deletes a cookie from the list of unwanted cookies
+  var result = new Promise(function(resolve, reject) {
+    // use function directly or send message depending on the availability of bgPage
+    if (bgPage !== null) {
+      var adding = bgPage.deleteUnwantedCookie({
+        domain: domain,
+        name: name
+      });
+    } else {
+      adding = browser.runtime.sendMessage({
+        type: 'deleteUnwantedCookie',
+        domain: domain,
+        name: name
+      });
+    }
+    adding.then(resolve, logError);
+  });
+  return result;
+}
+
+function callClearUnwantedCookiesforHostname(url) {
+  // clears all unwanted cookies from the list of unwanted cookies for a hostname
+  var result = new Promise(function(resolve, reject) {
+    var hostname = trimSubdomains(url);
+    // use function directly or send message depending on the availability of bgPage
+    if (bgPage !== null) {
+      var deleting = bgPage.clearUnwantedCookiesforHostname({
+        hostname: hostname
+      });
+    } else {
+      deleting = browser.runtime.sendMessage({
+        type: 'clearUnwantedCookiesforHostname',
+        hostname: hostname
+      });
+    }
+    deleting.then(resolve, logError);
+  });
+  return result;
+}
+/*
  * dom storage functions
- * The functions communicate with injected js in the tab in order to do their job
+ * the functions communicate with injected js in the tab in order to do their job
  */
 function getTabDomStorage(tabId) {
   // returns both local and session storage from a given tab
@@ -395,17 +498,31 @@ function clearTabDomStorage(tabId) {
 /*
  * site exception functions
  */
-function getPermSiteException(hostname) {
-  // returns the permanent exception for the given hostname
-  // returns null if there is none
+function getSiteException(hostname, temporary) {
+  // returns the exception for the given hostname; returns null if there is none
   var result = new Promise(function(resolve, reject) {
-    var key = `ex|${encodeURI(hostname)}`;
-    var getting = browser.storage.local.get({
-      [key]: null
-    });
-    getting.then(function(items) {
-      resolve(items[key]);
-    }, logError);
+    if (temporary) {
+      // use function directly or send message depending on the availability of bgPage
+      if (bgPage !== null) {
+        var getting = bgPage.getTempSiteException({
+          hostname: hostname
+        });
+      } else {
+        getting = browser.runtime.sendMessage({
+          type: 'getTempSiteException',
+          hostname: hostname
+        });
+      }
+      getting.then(resolve, logError);
+    } else {
+      var key = `ex|${encodeURI(hostname)}`;
+      getting = browser.storage.local.get({
+        [key]: null
+      });
+      getting.then(function(items) {
+        resolve(items[key]);
+      }, logError);
+    }
   });
   return result;
 }
@@ -417,21 +534,30 @@ function addSiteException(url, rule, temporary, overwriteException) {
     if (overwriteException !== null) {
       await deleteSiteException(`https://${overwriteException.domain}`, false);
     }
-    var site = trimSubdomains(url);
+    var hostname = trimSubdomains(url);
     if (temporary) {
-      bgPage.tempSiteExceptions[encodeURI(site)] = rule;
-      await Promise.all([restoreAllTabsCookiesFromUnwantedList(),
-        deleteAllTabsUnwantedCookies()
-      ]);
-      resolve();
-      updateAllTabsIcons();
-      updateActiveTabsCounts();
+      // use function directly or send message depending on the availability of bgPage
+      if (bgPage !== null) {
+        var adding = bgPage.addTempSiteException({
+          hostname: hostname,
+          rule: rule
+        });
+      } else {
+        adding = browser.runtime.sendMessage({
+          type: 'addTempSiteException',
+          hostname: hostname,
+          rule: rule
+        });
+      }
+      adding.then(function() {
+        resolve();
+      }, logError);
     } else {
-      var saving = savePermSiteException(site, rule);
+      var saving = savePermSiteException(hostname, rule);
       saving.then(async function() {
-        delete bgPage.tempSiteExceptions[site];
-        await Promise.all([restoreAllTabsCookiesFromUnwantedList(),
-          deleteAllTabsUnwantedCookies()
+        await deleteSiteException(`https://${hostname}`, true);
+        await Promise.all([callRestoreAllHostnamesUnwantedCookies(),
+          deleteAllTabsExistingUnwantedCookies()
         ]);
         resolve();
         updateAllTabsIcons();
@@ -492,22 +618,47 @@ function deleteSiteException(url, temporary) {
   var result = new Promise(async function(resolve, reject) {
     var hostname = trimSubdomains(url);
     if (temporary) {
-      delete bgPage.tempSiteExceptions[encodeURI(hostname)];
-      await Promise.all([restoreAllTabsCookiesFromUnwantedList(),
-        deleteAllTabsUnwantedCookies()
-      ]);
-      resolve();
-      updateAllTabsIcons();
-      updateActiveTabsCounts();
+      // use function directly or send message depending on the availability of bgPage
+      if (bgPage !== null) {
+        var deleting = bgPage.deleteTempSiteException({
+          hostname: hostname
+        });
+      } else {
+        deleting = browser.runtime.sendMessage({
+          type: 'deleteTempSiteException',
+          hostname: hostname
+        });
+      }
+      deleting.then(resolve, logError);
     } else {
       await deletePermSiteException(hostname);
-      await Promise.all([restoreAllTabsCookiesFromUnwantedList(),
-        deleteAllTabsUnwantedCookies()
+      await Promise.all([callRestoreAllHostnamesUnwantedCookies(),
+        deleteAllTabsExistingUnwantedCookies()
       ]);
       resolve();
       updateAllTabsIcons();
       updateActiveTabsCounts();
     }
+  });
+  return result;
+}
+
+function clearTempSiteExceptions(url) {
+  // deletes all temp site exceptions
+  var result = new Promise(async function(resolve, reject) {
+    var hostname = trimSubdomains(url);
+    // use function directly or send message depending on the availability of bgPage
+    if (bgPage !== null) {
+      var deleting = bgPage.deleteTempSiteException({
+        hostname: hostname
+      });
+    } else {
+      deleting = browser.runtime.sendMessage({
+        type: 'clearTempSiteExceptions',
+        hostname: hostname
+      });
+    }
+    deleting.then(resolve, logError);
   });
   return result;
 }
@@ -515,34 +666,23 @@ function deleteSiteException(url, temporary) {
 function getSiteBehaviour(hostname) {
   // returns the behaviour for a given hostname
   // takes temporary and permanent exceptions as well as whitelist entries into account
-  var result = new Promise(function(resolve, reject) {
+  var result = new Promise(async function(resolve, reject) {
     // first check if there is a temporary exception
-    if (hostname in bgPage.tempSiteExceptions) {
-      resolve(bgPage.tempSiteExceptions[hostname]);
+    var tempException = await getSiteException(hostname, true);
+    if (tempException !== null) {
+      return resolve(tempException);
     } else {
       // if there is no temporary exception, check for a permanent one
-      var getting = getPermSiteException(hostname);
-      getting.then(function(permSiteException) {
-        if (permSiteException !== null) {
-          resolve(permSiteException);
-        } else {
-          // if there is no permanent exception either, use default behaviour
-          resolve(bgPage.defaultBehaviour);
-        }
-      }, logError);
+      var permSiteException = await getSiteException(hostname, false);
+      if (permSiteException !== null) {
+        return resolve(permSiteException);
+      } else {
+        // if there is no permanent exception either, use default behaviour
+        return resolve(await callGetDefaultBehaviour());
+      }
     }
   });
   return result;
-}
-
-function sendBehaviour(request) {
-  // returns the requested behaviour for a given site
-  var answer = new Promise(async function(resolve, reject) {
-    var domain = trimSubdomains(request.url);
-    await getSiteBehaviour(domain);
-    resolve();
-  });
-  return answer;
 }
 /*
  * whitelist functions
@@ -608,7 +748,7 @@ function deleteWhitelistEntry(domain, name, type) {
   return result;
 }
 
-function sendDomstorageEntryWhitelistedState(request) {
+function getDomstorageEntryWhitelistedStateAsResponse(request) {
   // returns whether a dom storage entry from a request is whitelisted and also the name of the entry itself
   var answer = new Promise(async function(resolve, reject) {
     var whitelisted = await getObjectWhitelistedState(request.domain, request.name, 'd');
@@ -710,7 +850,7 @@ function updateAllTabsIcons() {
 }
 async function updateActiveTabsCounts() {
   // sets cookie count on icon batch according to the behaviour for the active tab
-  if (!bgPage.enableCookieCounter) {
+  if (!await callGetEnableCookieCounter()) {
     // exit if feature is disabled
     return;
   }

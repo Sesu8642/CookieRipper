@@ -21,7 +21,7 @@ function saveOptions() {
       successText.textContent = '';
     }, 1000);
   }, logError);
-  browser.extension.getBackgroundPage().loadSettings();
+  callLoadSettings();
 }
 
 function restoreOptions() {

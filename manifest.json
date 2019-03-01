@@ -56,7 +56,7 @@
 		"run_at": "document_start",
 		"js": [
 			"lib/browser-polyfill.min.js",
-			"js/inject.js"
+			"js/contentScript.js"
 		]
 	}],
 	"icons": {

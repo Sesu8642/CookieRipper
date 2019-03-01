@@ -1,5 +1,4 @@
 'use strict';
-var bgPage = browser.extension.getBackgroundPage();
 var activeTabUrl, activeTabId, activeTabCookieStore;
 //selected cookie for the cookie editor
 var cookieInEditor = null;
@@ -17,7 +16,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   activeTabId = tab.id;
   activeTabCookieStore = await getTabCookieStore(activeTabId);
   fillSiteInfo();
-  if (bgPage.firstPartyIsolationSupported) {
+  if (firstPartyIsolationSupported) {
     firstPartyDomainArea.classList.remove('hidden');
   }
 });
@@ -58,13 +57,14 @@ function enableSiteException(temp) {
 }
 async function fillSiteInfo() {
   // puts site specific info in ui including cookies and dom storage
-  function depictPermException(exception) {
+  async function depictPermException() {
     // deal with permanent exception
-    if (exception === null) {
-      useSiteBehaviourLbl.textContent = `use site behaviour (default; ${getBehaviourString(bgPage.defaultBehaviour)})`;
+    var tempSiteException = await getSiteException(hostname, false)
+    if (tempSiteException === null) {
+      useSiteBehaviourLbl.textContent = `use site behaviour (default; ${getBehaviourString(await callGetDefaultBehaviour())})`;
       useSiteBehaviourIcon.innerHTML = '';
     } else {
-      useSiteBehaviourLbl.textContent = `use site behaviour (${getBehaviourString(exception)})`;
+      useSiteBehaviourLbl.textContent = `use site behaviour (${getBehaviourString(tempSiteException)})`;
       var deleteRuleIcon;
       deleteRuleIcon = document.createElement('IMG');
       deleteRuleIcon.src = '/icons/trash-alt.svg';
@@ -78,18 +78,16 @@ async function fillSiteInfo() {
       useSiteBehaviourIcon.innerHTML = '';
       useSiteBehaviourIcon.appendChild(deleteRuleIcon);
     }
-    depictTempException(exception);
+    depictTempException(tempSiteException);
   }
-
-  function depictTempException(permException) {
+  async function depictTempException(permException) {
     // deal with temporary exception
-    var option = null;
-    if (hostname in bgPage.tempSiteExceptions) {
+    var tempSiteException = await getSiteException(hostname, true);
+    if (tempSiteException !== null) {
       useTempBehaviourArea.classList.add('selectedBehaviourArea');
       useSiteBehaviourArea.classList.remove('selectedBehaviourArea');
-      option = bgPage.tempSiteExceptions[hostname];
-      slider.value = option;
-      highlightActiveOption(option);
+      slider.value = tempSiteException;
+      highlightActiveOption(tempSiteException);
       useTempBehaviour.checked = true;
       useSiteBehaviour.checked = false;
     } else if (permException !== null) {
@@ -102,10 +100,10 @@ async function fillSiteInfo() {
     } else {
       useTempBehaviourArea.classList.remove('selectedBehaviourArea');
       useSiteBehaviourArea.classList.add('selectedBehaviourArea');
-      slider.value = bgPage.defaultBehaviour;
+      slider.value = await callGetDefaultBehaviour();
       useTempBehaviour.checked = false;
       useSiteBehaviour.checked = true;
-      highlightActiveOption(bgPage.defaultBehaviour);
+      highlightActiveOption(await callGetDefaultBehaviour());
     }
   }
   if (activeTabUrl.startsWith('http')) {
@@ -116,7 +114,7 @@ async function fillSiteInfo() {
     var hostname = trimSubdomains(activeTabUrl);
     headline.textContent = `Settings For ${hostname}`;
     cookieStore.textContent = `Cookie Store ID: ${activeTabCookieStore}`;
-    depictPermException(await getPermSiteException(hostname));
+    depictPermException();
   } else {
     nonHttpInfo.classList.remove('hidden');
     mainView.classList.add('hidden');
@@ -143,20 +141,19 @@ function fillCookieList() {
     fillUnwantedCookieList();
   }, logError);
 }
-
-function fillUnwantedCookieList() {
+async function fillUnwantedCookieList() {
   // gets unwanted cookies and stores them in cookieList
   unwantedCookieList = [];
   var fullDomain = (new URL(activeTabUrl)).hostname;
   var hostname = trimSubdomains(activeTabUrl);
-  for (var key in bgPage.openHostnamesUnwantedCookies[hostname].unwantedCookies) {
-    var cookie = JSON.parse(bgPage.openHostnamesUnwantedCookies[hostname].unwantedCookies[key]);
-    // remove leading . from cookie domain
+  var unwantedCookies = await callGetUnwantedCookiesForHostname(hostname);
+  unwantedCookies.forEach(function(cookie) {
+    // remove leading . from cookie domain for comparison
     var cookieDomain = (cookie.domain.startsWith('.') ? cookie.domain.substring(1) : cookie.domain);
     if (fullDomain === cookieDomain || (!cookie.hostOnly && fullDomain.endsWith(`${cookieDomain}`))) {
       unwantedCookieList.push(cookie);
     }
-  }
+  });
   buildCookieTableBody();
 }
 
@@ -284,7 +281,7 @@ function buildCookieTableBody() {
       } else {
         await deleteWhitelistEntry(e.target.parentElement.parentElement.attachedCookie.domain, e.target.parentElement.parentElement.attachedCookie.name, 'c', null);
         // could be optimized with function that only checks that one cookie
-        await deleteUnwantedCookies(activeTabUrl, activeTabCookieStore);
+        await deleteExistingUnwantedCookies(activeTabUrl, activeTabCookieStore);
         updateActiveTabsCounts();
         fillSiteInfo();
       }
@@ -367,7 +364,7 @@ function buildCookieTableBody() {
     whitelistedCheckBox.addEventListener('change', async function(e) {
       if (e.target.checked) {
         await addWhitelistEntry(e.target.parentElement.parentElement.attachedCookie.domain, e.target.parentElement.parentElement.attachedCookie.name, 'c', null);
-        await restoreWhitelistedCookieFromUnwantedList(e.target.parentElement.parentElement.attachedCookie.domain, e.target.parentElement.parentElement.attachedCookie.name, activeTabCookieStore);
+        await callRestoreUnwantedCookie(e.target.parentElement.parentElement.attachedCookie.domain, e.target.parentElement.parentElement.attachedCookie.name, activeTabCookieStore);
         updateActiveTabsCounts();
         fillSiteInfo();
       }
@@ -399,8 +396,8 @@ function buildCookieTableBody() {
     deleteIcon.alt = 'delete';
     deleteIcon.title = 'delete';
     deleteIcon.classList.add('tableIcon');
-    deleteIcon.addEventListener('click', function(e) {
-      delete bgPage.openHostnamesUnwantedCookies[trimSubdomains(activeTabUrl)].unwantedCookies[`${encodeURI(e.target.parentElement.parentElement.attachedCookie.domain)}|${encodeURI(e.target.parentElement.parentElement.attachedCookie.name)}`];
+    deleteIcon.addEventListener('click', async function(e) {
+      await callDeleteUnwantedCookie(e.target.parentElement.parentElement.attachedCookie.domain, e.target.parentElement.parentElement.attachedCookie.name);
       fillSiteInfo();
     });
     td = document.createElement('TD');
@@ -826,15 +823,8 @@ function addEventlisteners() {
     creating.then(function() {}, logError);
   });
   dropdownItemClearTemp.addEventListener('click', async function() {
-    Object.keys(bgPage.tempSiteExceptions).forEach(function(key) {
-      delete bgPage.tempSiteExceptions[key];
-    });
-    updateAllTabsIcons();
-    await Promise.all([restoreAllTabsCookiesFromUnwantedList(),
-      deleteAllTabsUnwantedCookies()
-    ]);
+    await clearTempSiteExceptions();
     fillSiteInfo();
-    updateActiveTabsCounts();
   });
   // info icons
   var infoIcons = document.getElementsByClassName('infoIcon');
