@@ -120,9 +120,12 @@ function addUnwantedCookie(request) {
   // adds a single cookie to unwanted list
   var result = new Promise(function(resolve, reject) {
     var cookieHostname = trimSubdomains(`http://${request.cookie.domain}`);
-    var key = `${encodeURI(request.cookie.domain)}|${encodeURI(request.cookie.name)}`;
-    var value = JSON.stringify(request.cookie);
-    openHostnamesUnwantedCookies[cookieHostname].unwantedCookies[key] = value;
+    // if it is undefined, it is a third party cookie which does not need to be recorded
+    if (openHostnamesUnwantedCookies[cookieHostname] != undefined) {
+      var key = `${encodeURI(request.cookie.domain)}|${encodeURI(request.cookie.name)}`;
+      var value = JSON.stringify(request.cookie);
+      openHostnamesUnwantedCookies[cookieHostname].unwantedCookies[key] = value;
+    }
     resolve();
   });
   return result;
@@ -292,7 +295,7 @@ browser.runtime.onInstalled.addListener(async function(details) {
   injectJsInAllTabs();
 });
 browser.cookies.onChanged.addListener(handleCookieEvent);
-browser.webNavigation.onCommitted.addListener(async function(details) {
+browser.webNavigation.onBeforeNavigate.addListener(async function(details) {
   if (!['auto_subframe', 'manual_subframe'].includes(details.transitionType)) {
     // if new hostname --> add it to list
     var newHostname = trimSubdomains(details.url);
@@ -301,12 +304,14 @@ browser.webNavigation.onCommitted.addListener(async function(details) {
         hostname: newHostname,
         unwantedCookies: {}
       }
-      removeClosedHostnamesFromOpenHostnamesUnwantedCookies();
     }
-    // update icon and count and delete unwanted cookies
-    updateTabIcon(details.tabId);
-    var cookieStore = await getTabCookieStore(details.tabId);
-    await deleteExistingUnwantedCookies(details.url, cookieStore);
-    updateActiveTabsCounts();
   }
+});
+browser.webNavigation.onCommitted.addListener(async function(details) {
+  // update icon and count and delete unwanted cookies
+  updateTabIcon(details.tabId);
+  var cookieStore = await getTabCookieStore(details.tabId);
+  await deleteExistingUnwantedCookies(details.url, cookieStore);
+  updateActiveTabsCounts();
+  removeClosedHostnamesFromOpenHostnamesUnwantedCookies();
 });
