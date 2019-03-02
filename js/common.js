@@ -94,6 +94,7 @@ function addCookie(name, value, domain, path, session, date, time, hostOnly, sec
     }
     // create new cookie
     var url = (domain.startsWith('.') ? `https://${domain.substr(1)}` : `https://${domain}`);
+    var expirationDate = (session ? null : ((date.getTime() + time.getTime() + new Date().getTimezoneOffset() * 60000) / 1000));
     var parameters = {
       // url is mainly used for creating host only cookies (do this by specifying no domain) which are only accessible for the exact (sub-)domain
       url: url,
@@ -105,7 +106,7 @@ function addCookie(name, value, domain, path, session, date, time, hostOnly, sec
       secure: secure,
       httpOnly: httpOnly,
       // if not a session cookie convert date to seconds since 1980
-      expirationDate: (session ? null : ((date.getTime() + time.getTime() + new Date().getTimezoneOffset() * 60000) / 1000)),
+      expirationDate: expirationDate,
       storeId: cookieStore
     };
     if (firstPartyIsolationSupported) {
@@ -114,15 +115,24 @@ function addCookie(name, value, domain, path, session, date, time, hostOnly, sec
     var setting = browser.cookies.set(parameters);
     setting.then(async function() {
       // make sure that if the cookie is unwanted, it is deleted before resolving to prevent the ui from refreshing too early with incorrect data
-      // cookie.set returns a cookie object but seems to be unreliable in both chromium and ff so just use the input date instead
+      // cookie.set returns a cookie object but seems to be unreliable in both chromium and ff so just use the input data instead
       if (!domain.startsWith(".")) {
         var newDomain = hostOnly ? domain : `.${domain}`;
       } else {
         newDomain = hostOnly ? domain.slice(1) : domain;
       }
       var newCookie = {
+        url: url,
+        // deal with host only --> do not supply domain if host only
+        domain: newDomain,
+        path: path,
         name: name,
-        domain: newDomain
+        value: value,
+        secure: secure,
+        httpOnly: httpOnly,
+        // if not a session cookie convert date to seconds since 1980
+        expirationDate: expirationDate,
+        storeId: cookieStore
       };
       var allowed = await getCookieAllowedState(newCookie);
       if (allowed) {
