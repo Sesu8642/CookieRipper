@@ -315,3 +315,6 @@ browser.webNavigation.onCommitted.addListener(async function(details) {
   updateActiveTabsCounts();
   removeClosedHostnamesFromOpenHostnamesUnwantedCookies();
 });
+browser.tabs.onCreated.addListener(function(tab) {
+  updateTabIcon(tab.id);
+});
