@@ -277,7 +277,7 @@ function addEventlisteners() {
   var i;
   for (i = 0; i < infoIcons.length; i++) {
     infoIcons[i].addEventListener('click', function(e) {
-      alert(e.target.title);
+      sendInfoMessage(e.target.title);
     });
   }
   // cookie Store select

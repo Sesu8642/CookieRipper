@@ -288,8 +288,10 @@ browser.runtime.onInstalled.addListener(async function(details) {
   // shows the user a welcome message and opens the settings page; also injects js in open tabs and takes care of the extension icon
   if (details.reason === "install") {
     browser.tabs.create({
-      url: '/firstInstall.html'
-    }).then(function() {}, logError);
+      url: '/options.html'
+    }).then(function() {
+      sendInfoMessage('Thank you for installing Cookie Ripper!\nMake sure cookies are enabled in your browser and the third party cookie setting is adjusted to your liking (I suggest not accepting those). After that, adjust the cookie ripper default behaviour and you are good to go!');
+    }, logError);
   }
   await loadSettings();
   injectJsInAllTabs();

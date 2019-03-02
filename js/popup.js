@@ -825,7 +825,7 @@ function addEventlisteners() {
   for (i = 0; i < infoIcons.length; i++) {
     infoIcons[i].addEventListener('click', function(e) {
       e.stopPropagation();
-      alert(e.target.title);
+      sendInfoMessage(e.target.title);
     });
   }
 }

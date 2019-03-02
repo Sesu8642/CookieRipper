@@ -997,3 +997,12 @@ function getTabCookieStore(tabId) {
   });
   return result
 }
+
+function sendInfoMessage(message) {
+  // sends a message to the user
+  browser.notifications.create(null, {
+    type: 'basic',
+    message: message,
+    title: "Cookie Ripper Info"
+  });
+}
