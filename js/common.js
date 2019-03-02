@@ -864,13 +864,10 @@ async function updateActiveTabsCounts() {
         if (tab.url.startsWith('http')) {
           var cookieStore = await getTabCookieStore(tab.id);
           // get cookies
-          var getting = getAllCookies({
+          countCookies(await getAllCookies({
             url: tab.url,
             storeId: cookieStore
-          });
-          getting.then(function(cookies) {
-            countCookies(cookies, tab);
-          });
+          }), tab);
         } else {
           setBadgeText(tab.id, '');
         }
