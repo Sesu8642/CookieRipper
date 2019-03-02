@@ -62,21 +62,10 @@ async function fillSiteInfo() {
     var tempSiteException = await getSiteException(hostname, false)
     if (tempSiteException === null) {
       useSiteBehaviourLbl.textContent = `use site behaviour (default; ${getBehaviourString(await callGetDefaultBehaviour())})`;
-      useSiteBehaviourIcon.innerHTML = '';
+      useSiteBehaviourIcon.classList.add('hidden');
     } else {
       useSiteBehaviourLbl.textContent = `use site behaviour (${getBehaviourString(tempSiteException)})`;
-      var deleteRuleIcon;
-      deleteRuleIcon = document.createElement('IMG');
-      deleteRuleIcon.src = '/icons/trash-alt.svg';
-      deleteRuleIcon.alt = 'delete';
-      deleteRuleIcon.title = 'delete this rule and use default';
-      deleteRuleIcon.classList.add('deleteRuleIcon');
-      deleteRuleIcon.addEventListener('click', async function() {
-        await deleteSiteException(activeTabUrl, false);
-        fillSiteInfo();
-      });
-      useSiteBehaviourIcon.innerHTML = '';
-      useSiteBehaviourIcon.appendChild(deleteRuleIcon);
+      useSiteBehaviourIcon.classList.remove('hidden');
     }
     depictTempException(tempSiteException);
   }
@@ -729,6 +718,10 @@ function addEventlisteners() {
   });
   useSiteBehaviour.addEventListener('click', async function() {
     await deleteSiteException(activeTabUrl, true);
+    fillSiteInfo();
+  });
+  useSiteBehaviourIcon.addEventListener('click', async function() {
+    await deleteSiteException(activeTabUrl, false);
     fillSiteInfo();
   });
   cookieCancelButton.addEventListener('click', function() {

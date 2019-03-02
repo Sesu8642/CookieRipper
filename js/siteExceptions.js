@@ -171,14 +171,14 @@ function saveEntry() {
     fillExceptionList();
     fillRuleEditor(null);
   }, function(error) {
-    entryEditorError.innerHTML = `${error}<br><br>`;
+    entryEditorError.innerText = `${error}\r\n\r\n`;
   });
 }
 
 function fillRuleEditor(entry) {
   // fills the rule editor ui elements with the given values
   // reset error text
-  entryEditorError.innerHTML = '';
+  entryEditorError.innerText = '';
   if (entry !== null) {
     // existing entry
     saveButton.innerText = 'Save';

@@ -154,14 +154,14 @@ function saveEntry() {
     fillWhitelist();
     fillEntryEditor(null);
   }, function(error) {
-    entryEditorError.innerHTML = `${error.message}<br><br>`;
+    entryEditorError.innerText = `${error.message}\r\n\r\n`;
   });
 }
 
 function fillEntryEditor(entry) {
   // fills the entry editor ui elements with the given values
   // reset error text
-  entryEditorError.innerHTML = '';
+  entryEditorError.innerText = '';
   if (entry !== null) {
     // existing entry
     saveButton.innerText = 'Save';

@@ -185,7 +185,7 @@ async function deleteSelectedCookies() {
 function fillCookieEditor(cookie) {
   // fills the cookie editor ui elements with the given values
   // reset error text
-  cookieEditorError.innerHTML = '';
+  cookieEditorError.innerText = '';
   if (cookie !== null) {
     // existing cookie
     saveButton.innerText = 'Save';
@@ -338,7 +338,7 @@ function addEventlisteners() {
       fillCookieList();
       fillCookieEditor(null);
     }, function(error) {
-      cookieEditorError.innerHTML = `${error.message}<br><br>`;
+      cookieEditorError.innerText = `${error.message}\r\n\r\n`;
     });
   });
   // clear button

@@ -51,6 +51,7 @@ img.infoIcon {
 
 .errorText {
   color: var(--error-color-text);
+  white-space: pre-line;
 }
 
 .hidden {
