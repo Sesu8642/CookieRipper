@@ -699,8 +699,8 @@ function getSiteBehaviour(hostname) {
  */
 function getObjectWhitelistedState(domain, name, type) {
   // returns wether a whitelist entry exists
-  domain = domain.startsWith('.') ? domain.substr(1) : domain;
   var result = new Promise(function(resolve, reject) {
+    domain = domain.startsWith('.') ? domain.substr(1) : domain;
     var key = `wl|${encodeURI(domain)}|${encodeURI(name)}|${type}`;
     var getting = browser.storage.local.get({
       [key]: null
