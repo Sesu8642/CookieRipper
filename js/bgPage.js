@@ -220,6 +220,27 @@ function removeClosedHostnamesFromOpenHostnamesUnwantedCookies() {
   }, logError);
 }
 
+function getTabDomStorageItemsAllowedStates(request) {
+  // returns an array of booleans meaning whether a dom storage entry is allowed or not
+  var result = new Promise(async function(resolve, reject) {
+    var behaviour = await getSiteBehaviour(trimSubdomains('http://' + request.domain));
+    // if behaviour is allow all --> return true for all items
+    if (behaviour == 2) {
+      return resolve(request.items.map(function() {
+        return true
+      }));
+    }
+    // if behaviour is not allow all --> check whitelisted state and storage type
+    var promises = request.items.map(function(item) {
+      return getObjectWhitelistedState(request.domain, item.name, 'd').then(function(whitelisted) {
+        return (whitelisted || (behaviour == 1 && item.storage == 'session'))
+      });
+    });
+    resolve(Promise.all(promises));
+  });
+  return result;
+}
+
 function handleMessage(request, sender) {
   // those messages are sent from the content scripts and other js files
   // call the correct function to respond to them
@@ -263,11 +284,8 @@ function handleMessage(request, sender) {
     case 'loadSettings':
       return loadSettings();
       break;
-    case 'getSiteBehaviour':
-      return getSiteBehaviour(trimSubdomains(request.url));
-      break;
-    case 'getWhitelisted':
-      return getDomstorageEntryWhitelistedStateAsResponse(request);
+    case 'getTabDomStorageItemsAllowedStates':
+      return getTabDomStorageItemsAllowedStates(request);
       break;
     default:
       logError(`Unknown request type: ${request.type}`);

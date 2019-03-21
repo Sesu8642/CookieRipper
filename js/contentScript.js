@@ -77,56 +77,43 @@ function addStorageEntry(request) {
 
 function deleteUnwantedStorage() {
   // deletes all unwanted storage entries from both local and session storage
-  // get correct behaviour for the domain from extension background page
-  var sending = browser.runtime.sendMessage({
-    type: 'getSiteBehaviour',
-    url: `${window.location}`
-  });
-  sending.then(function(behaviour) {
-    var domain = window.location.host;
-    // iterate local storage
-    try {
-      for (var i = 0; i < localStorage.length; i++) {
-        // check if whitelisted
-        var name = localStorage.key(i);
-        var sending = browser.runtime.sendMessage({
-          type: 'getWhitelisted',
-          name: name,
-          domain: domain
-        });
-        sending.then(async function(response) {
-          // decide deletion
-          if (!(behaviour == 2 || response.whitelisted)) {
-            // delete
-            localStorage.removeItem(response.name);
-          }
-        }, logError);
-      }
-    } catch (e) {
-      // if storage is not accessible, there is nothing to do
+  var domain = window.location.host;
+  try {
+    // create list of storage items and send them to the background page
+    var storageItems = [];
+    for (var i = 0; i < localStorage.length; i++) {
+      storageItems.push({
+        name: localStorage.key(i),
+        storage: 'local'
+      });
     }
-    // iterate session storage
-    try {
-      for (i = 0; i < sessionStorage.length; i++) {
-        // check if whitelisted
-        name = sessionStorage.key(i);
-        sending = browser.runtime.sendMessage({
-          type: 'getWhitelisted',
-          name: name,
-          domain: domain
-        });
-        sending.then(function(response) {
-          // decide deletion
-          if (!(behaviour == 2 || behaviour == 1 || response.whitelisted)) {
-            // delete
-            sessionStorage.removeItem(response.name);
-          }
-        }, logError);
-      }
-    } catch (e) {
-      // if storage is not accessible, there is nothing to do
+    for (i = 0; i < sessionStorage.length; i++) {
+      storageItems.push({
+        name: sessionStorage.key(i),
+        storage: 'session'
+      });
     }
-  }, logError);
+    var sending = browser.runtime.sendMessage({
+      type: 'getTabDomStorageItemsAllowedStates',
+      items: storageItems,
+      domain: domain
+    });
+    sending.then(async function(response) {
+      // delete the unwanted items
+      console.log(response)
+      for (i = 0; i < response.length; i++) {
+        if (!response[i]) {
+          if (storageItems[i].storage == 'local') {
+            localStorage.removeItem(storageItems[i].name);
+          } else {
+            sessionStorage.removeItem(storageItems[i].name);
+          }
+        }
+      }
+    }, logError);
+  } catch (e) {
+    // if storage is not accessible, there is nothing to do
+  }
 }
 
 function logError(error) {
