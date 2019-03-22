@@ -23,7 +23,7 @@ function fillExceptionList() {
       if (result.startsWith('ex|')) {
         var resultContent = result.split('|');
         var resultObj = {};
-        resultObj.domain = decodeURI(resultContent[1]);
+        resultObj.domain = resultContent[1];
         resultObj.ruleId = results[result];
         switch (resultObj.ruleId) {
           case 0:

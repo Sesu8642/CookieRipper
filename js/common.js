@@ -525,7 +525,7 @@ function getSiteException(hostname, temporary) {
       }
       getting.then(resolve, logError);
     } else {
-      var key = `ex|${encodeURI(hostname)}`;
+      var key = `ex|${hostname}`;
       getting = browser.storage.local.get({
         [key]: null
       });
@@ -603,7 +603,7 @@ function addSiteException(url, rule, temporary, overwriteException) {
         }
         var setting = browser.storage.local.set({
           // use prefix 'ex' for exceptions and hostname as key
-          [`ex|${encodeURI(hostname)}`]: rule
+          [`ex|${hostname}`]: rule
         });
         setting.then(resolve, logError);
       });
