@@ -85,7 +85,7 @@ function getAllCookies(parameters) {
   return browser.cookies.getAll(parameters);
 }
 
-function addCookie(name, value, domain, path, session, date, time, hostOnly, secure, httpOnly, cookieStore, firstPartyDomain, overwriteCookie) {
+function addCookie(name, value, domain, path, session, date, time, hostOnly, secure, httpOnly, cookieStore, firstPartyDomain, overwriteCookie = null) {
   // creates a new cookie from the given data; also makes sure the provided overwrite-cookie gets actually overwritten or deleted
   var result = new Promise(async function(resolve, reject) {
     // delete overwriteCookie
@@ -458,7 +458,7 @@ function getTabDomStorage(tabId) {
   return result;
 }
 
-function addDomStorageEntry(tabId, persistent, name, value, overwriteEntry) {
+function addDomStorageEntry(tabId, persistent, name, value, overwriteEntry = null) {
   // adds a new dom storage entry to a given tab
   var result = new Promise(async function(resolve, reject) {
     // delete overwriteEntry
@@ -475,7 +475,7 @@ function addDomStorageEntry(tabId, persistent, name, value, overwriteEntry) {
     sending.then(resolve, async function(error) {
       // restore overwriteEntry if new entry could not be set
       if (overwriteEntry !== null) {
-        await addDomStorageEntry(tabId, overwriteEntry.permanence, overwriteEntry.name, overwriteEntry.value, null);
+        await addDomStorageEntry(tabId, overwriteEntry.permanence, overwriteEntry.name, overwriteEntry.value);
       }
       reject(error);
     });
@@ -537,7 +537,7 @@ function getSiteException(hostname, temporary) {
   return result;
 }
 
-function addSiteException(url, rule, temporary, overwriteException) {
+function addSiteException(url, rule, temporary, overwriteException = null) {
   // adds a new site exception for the given domain
   var result = new Promise(async function(resolve, reject) {
     // delete overwriteException
@@ -575,7 +575,7 @@ function addSiteException(url, rule, temporary, overwriteException) {
       }, async function(error) {
         // restore overwriteException if new exception could not be set
         if (overwriteException !== null) {
-          await addSiteException(`https://${overwriteException.domain}`, overwriteException.ruleId, false, null);
+          await addSiteException(`https://${overwriteException.domain}`, overwriteException.ruleId, false);
         }
         reject(error);
       });
@@ -717,7 +717,7 @@ function getObjectWhitelistedState(domain, name, type) {
   return result;
 }
 
-function addWhitelistEntry(domain, name, type, overwriteEntry) {
+function addWhitelistEntry(domain, name, type, overwriteEntry = null) {
   // adds a new whitelist with the given data
   domain = domain.startsWith('.') ? domain.substr(1) : domain;
   var result = new Promise(async function(resolve, reject) {
@@ -740,7 +740,7 @@ function addWhitelistEntry(domain, name, type, overwriteEntry) {
     setting.then(resolve, async function(error) {
       // restore overwriteEntry if new entry could not be set
       if (overwriteEntry !== null) {
-        await addWhitelistEntry(overwriteEntry.domain, overwriteEntry.name, overwriteEntry.type, null);
+        await addWhitelistEntry(overwriteEntry.domain, overwriteEntry.name, overwriteEntry.type);
       }
       reject(error);
     });

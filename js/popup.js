@@ -50,7 +50,7 @@ function highlightActiveOption(option) {
 function enableSiteException(temp) {
   // adds a site exception
   var option = Number(slider.value);
-  var adding = addSiteException(activeTabUrl, option, temp, null);
+  var adding = addSiteException(activeTabUrl, option, temp);
   adding.then(function() {
     fillSiteInfo();
   }, logError);
@@ -264,7 +264,7 @@ function buildCookieTableBody() {
     whitelistedCheckBox.classList.add('tableCheckBox');
     whitelistedCheckBox.addEventListener('change', async function(e) {
       if (e.target.checked) {
-        await addWhitelistEntry(e.target.parentElement.parentElement.attachedCookie.domain, e.target.parentElement.parentElement.attachedCookie.name, 'c', null);
+        await addWhitelistEntry(e.target.parentElement.parentElement.attachedCookie.domain, e.target.parentElement.parentElement.attachedCookie.name, 'c');
         updateActiveTabsCounts();
         fillSiteInfo();
       } else {
@@ -352,7 +352,7 @@ function buildCookieTableBody() {
     whitelistedCheckBox.classList.add('tableCheckBox');
     whitelistedCheckBox.addEventListener('change', async function(e) {
       if (e.target.checked) {
-        await addWhitelistEntry(e.target.parentElement.parentElement.attachedCookie.domain, e.target.parentElement.parentElement.attachedCookie.name, 'c', null);
+        await addWhitelistEntry(e.target.parentElement.parentElement.attachedCookie.domain, e.target.parentElement.parentElement.attachedCookie.name, 'c');
         await callRestoreUnwantedCookie(e.target.parentElement.parentElement.attachedCookie.domain, e.target.parentElement.parentElement.attachedCookie.name, activeTabCookieStore);
         updateActiveTabsCounts();
         fillSiteInfo();
@@ -467,7 +467,7 @@ async function buildDomStorageTableBody() {
     whitelistedCheckBox.classList.add('tableCheckBox');
     whitelistedCheckBox.addEventListener('change', async function(e) {
       if (e.target.checked) {
-        var adding = addWhitelistEntry(e.target.parentElement.parentElement.attachedEntry.domain, e.target.parentElement.parentElement.attachedEntry.name, 'd', null);
+        var adding = addWhitelistEntry(e.target.parentElement.parentElement.attachedEntry.domain, e.target.parentElement.parentElement.attachedEntry.name, 'd');
         adding.then(function() {
           updateActiveTabsCounts();
           fillSiteInfo();
