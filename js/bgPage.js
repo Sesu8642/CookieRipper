@@ -144,25 +144,30 @@ function restoreUnwantedCookie(request) {
 }
 
 function restoreAllHostnamesUnwantedCookies(request) {
-  // re-creates all hostnames wanted cookies from unwanted list
+  // re-creates all hostnames' wanted cookies from unwanted list
   var result = new Promise(async function(resolve, reject) {
-    // TODO: make more efficient
-    for (var hostname in openHostnamesUnwantedCookies) {
+    var hostnamePromises = Object.keys(openHostnamesUnwantedCookies).map(function(hostname) {
       // get behaviour for hostname
-      var behaviour = await getSiteBehaviour(hostname);
-      // break if behaviour is 'deny'
-      if (!(behaviour === 0)) {
-        // iterate all unwanted cookies
-        for (var key in openHostnamesUnwantedCookies[hostname].unwantedCookies) {
-          var cookie = JSON.parse(openHostnamesUnwantedCookies[hostname].unwantedCookies[key]);
-          // check if cookie should be restored
-          if (behaviour === 2 || behaviour === 1 && cookie.session) {
-            await addCookieFromObject(cookie, cookie.storeId);
-            delete openHostnamesUnwantedCookies[hostname].unwantedCookies[key];
-          }
+      return getSiteBehaviour(hostname).then(async function(behaviour) {
+        // break if behaviour is 'deny'
+        if (!(behaviour === 0)) {
+          // iterate all unwanted cookies
+          var cookiePromises = Object.keys(openHostnamesUnwantedCookies[hostname].unwantedCookies).map(async function(key) {
+            return new Promise(async function(resolve, reject) {
+              var cookie = JSON.parse(openHostnamesUnwantedCookies[hostname].unwantedCookies[key]);
+              // check if cookie should be restored
+              if (behaviour === 2 || behaviour === 1 && cookie.session) {
+                await addCookieFromObject(cookie, cookie.storeId);
+                delete openHostnamesUnwantedCookies[hostname].unwantedCookies[key];
+              }
+              resolve();
+            });
+          });
+          await Promise.all(cookiePromises);
         }
-      }
-    }
+      })
+    });
+    await Promise.all(hostnamePromises);
     resolve();
   });
   return result;
