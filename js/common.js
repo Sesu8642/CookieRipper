@@ -295,7 +295,7 @@ function getCookieAllowedState(cookie) {
       default:
         // invalid
         logError({
-          message: `Error: invalid Behaviour: &{caseBehaviour}`
+          message: `Error: invalid Behaviour: ${caseBehaviour}`
         });
     }
   });
