@@ -3,8 +3,8 @@ var activeTabUrl, activeTabId, activeTabCookieStore;
 //selected cookie for the cookie editor
 var cookieInEditor = null;
 var domStorageEntryInEditor = null;
+var domain;
 var cookieList = [];
-var unwantedCookieList = [];
 var domList = [];
 // ui elements
 var firstPartyDomainArea, denyOption, sessionOption, allowOption, slider, useSiteBehaviourLbl, useSiteBehaviourIcon, useTempBehaviourArea, useSiteBehaviourArea, useTempBehaviour, useSiteBehaviour, headline, cookieStore, nonHttpInfo, mainView, cookieTable, domStorageTable, cookieDomainTextBox, cookieHostOnly, cookieNameTextBox, cookieValueTextBox, cookieSessionCookie, cookiePersistent, cookieDate, cookieTime, cookiePathTextBox, cookieFirstPartyDomainTextBox, cookieSecure, cookieHttpOnly, cookieDeleteButton, domStorageDomainTextBox, domStorageNameTextBox, domStorageValueTextBox, domStorageTemporary, domStoragePermanent, domStorageDeleteButton, makeRulePerm, cookieEditor, domStorageEditor, advancedCookieProperties, cookieAdvancedToggle, cookieCancelButton, domStorageCancelButton, cookieSaveButton, cookieEditorError, domStorageEditorError, domStorageSaveButton, cookieAddIcon, domAddIcon, cookieDeleteAllIcon, domDeleteAllIcon, optionsDropdown, optionsImage, dropdownItemSettings, dropdownItemClearTemp;
@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   var tab = await getActiveTab();
   activeTabUrl = tab.url;
   activeTabId = tab.id;
+  domain = trimSubdomains(activeTabUrl);
   activeTabCookieStore = await getTabCookieStore(activeTabId);
   fillSiteInfo();
   if (firstPartyIsolationSupported) {
@@ -127,23 +128,8 @@ function fillCookieList() {
       });
     });
     await Promise.all(promises);
-    fillUnwantedCookieList();
+    buildCookieTableBody();
   }, logError);
-}
-async function fillUnwantedCookieList() {
-  // gets unwanted cookies and stores them in cookieList
-  unwantedCookieList = [];
-  var fullDomain = (new URL(activeTabUrl)).hostname;
-  var hostname = trimSubdomains(activeTabUrl);
-  var unwantedCookies = await callGetUnwantedCookiesForHostname(hostname);
-  unwantedCookies.forEach(function(cookie) {
-    // remove leading . from cookie domain for comparison
-    var cookieDomain = (cookie.domain.startsWith('.') ? cookie.domain.substring(1) : cookie.domain);
-    if (fullDomain === cookieDomain || (!cookie.hostOnly && fullDomain.endsWith(`${cookieDomain}`))) {
-      unwantedCookieList.push(cookie);
-    }
-  });
-  buildCookieTableBody();
 }
 
 function fillDomStorageList() {
@@ -192,9 +178,8 @@ function fillDomStorageList() {
       }, 50);
     });
 }
-
-function buildCookieTableBody() {
-  // fills the table using the existing cookieList, unwantedCookieList
+async function buildCookieTableBody() {
+  // fills the table using the existing cookieList
   var newTableBody = document.createElement('tbody');
   newTableBody.id = 'cookieTableBody';
   // sort cookies by whitelisted and name
@@ -204,30 +189,31 @@ function buildCookieTableBody() {
     } else if (cookie1.whitelisted > cookie2.whitelisted) {
       return -1;
     } else {
-      if (cookie1.name.toUpperCase() > cookie2.name.toUpperCase()) {
+      if (cookie1.session < cookie2.session) {
         return 1;
-      } else if (cookie1.name.toUpperCase() < cookie2.name.toUpperCase()) {
+      } else if (cookie1.session > cookie2.session) {
         return -1;
       } else {
-        return 0;
+        if (cookie1.name.toUpperCase() > cookie2.name.toUpperCase()) {
+          return 1;
+        } else if (cookie1.name.toUpperCase() < cookie2.name.toUpperCase()) {
+          return -1;
+        } else {
+          return 0;
+        }
       }
     }
   });
-  // sort unwanted cookies by name (cant be whitelisted)
-  unwantedCookieList.sort(function(cookie1, cookie2) {
-    if (cookie1.name.toUpperCase() > cookie2.name.toUpperCase()) {
-      return 1;
-    } else if (cookie1.name.toUpperCase() < cookie2.name.toUpperCase()) {
-      return -1;
-    } else {
-      return 0;
-    }
-  });
+  // get site behaviour for determining background color of column
+  var behaviour = await getSiteBehaviour(domain);
   // add cookies to list
   cookieList.forEach(function(cookie) {
     var tr = document.createElement('TR');
     var td;
     var editIcon, deleteIcon, whitelistedCheckBox;
+    if (!(cookie.whitelisted || behaviour == 2 || (behaviour == 1 && cookie.session))) {
+      tr.classList.add('blocked');
+    }
     Object.defineProperty(tr, 'attachedCookie', {
       value: cookie,
       writable: true,
@@ -270,7 +256,6 @@ function buildCookieTableBody() {
       } else {
         await deleteWhitelistEntry(e.target.parentElement.parentElement.attachedCookie.domain, e.target.parentElement.parentElement.attachedCookie.name, 'c', null);
         // could be optimized with function that only checks that one cookie
-        await deleteExistingUnwantedCookies(activeTabUrl, activeTabCookieStore);
         updateActiveTabsCounts();
         fillSiteInfo();
       }
@@ -318,83 +303,6 @@ function buildCookieTableBody() {
     // add row to table body
     newTableBody.appendChild(tr);
   });
-  // add unwanted cookies to list
-  unwantedCookieList.forEach(function(cookie) {
-    var tr = document.createElement('TR');
-    var td = document.createElement('TD');
-    var editIcon, deleteIcon, whitelistedCheckBox;
-    tr.classList.add('blocked');
-    Object.defineProperty(tr, 'attachedCookie', {
-      value: cookie,
-      writable: true,
-      enumerable: true,
-      configurable: true
-    });
-    // name and value can cause lag when too long (especially in chromium based browsers) and therefore get cut
-    // name
-    td.appendChild(document.createTextNode(cookie.name.substr(0, 50)));
-    tr.appendChild(td);
-    // keep until
-    td = document.createElement('TD');
-    if (typeof(cookie.expirationDate) != 'undefined') {
-      td.appendChild(document.createTextNode(formatDate(new Date(cookie.expirationDate * 1000))));
-    } else {
-      td.appendChild(document.createTextNode('session ends'));
-    }
-    tr.appendChild(td);
-    // value
-    td = document.createElement('TD');
-    td.appendChild(document.createTextNode(cookie.value.substr(0, 50)));
-    tr.appendChild(td);
-    // whitelisted checkbox
-    whitelistedCheckBox = document.createElement('INPUT');
-    whitelistedCheckBox.type = 'checkbox';
-    whitelistedCheckBox.classList.add('tableCheckBox');
-    whitelistedCheckBox.addEventListener('change', async function(e) {
-      if (e.target.checked) {
-        await addWhitelistEntry(e.target.parentElement.parentElement.attachedCookie.domain, e.target.parentElement.parentElement.attachedCookie.name, 'c');
-        await callRestoreUnwantedCookie(e.target.parentElement.parentElement.attachedCookie.domain, e.target.parentElement.parentElement.attachedCookie.name, activeTabCookieStore);
-        updateActiveTabsCounts();
-        fillSiteInfo();
-      }
-    });
-    td = document.createElement('TD');
-    td.appendChild(whitelistedCheckBox);
-    td.addEventListener('click', function(e) {
-      if (e.target !== this) {
-        return;
-      }
-      this.children[0].checked = !this.children[0].checked;
-      var evt = document.createEvent('HTMLEvents');
-      evt.initEvent('change', false, true);
-      this.children[0].dispatchEvent(evt);
-    });
-    tr.appendChild(td);
-    // edit icon
-    editIcon = document.createElement('IMG');
-    editIcon.src = '/icons/edit.svg';
-    editIcon.alt = 'edit';
-    editIcon.title = 'edit';
-    editIcon.classList.add('tableIconDisabled');
-    td = document.createElement('TD');
-    td.appendChild(editIcon);
-    tr.appendChild(td);
-    // delete icon
-    deleteIcon = document.createElement('IMG');
-    deleteIcon.src = '/icons/trash-alt.svg';
-    deleteIcon.alt = 'delete';
-    deleteIcon.title = 'delete';
-    deleteIcon.classList.add('tableIcon');
-    deleteIcon.addEventListener('click', async function(e) {
-      await callDeleteUnwantedCookie(e.target.parentElement.parentElement.attachedCookie.domain, e.target.parentElement.parentElement.attachedCookie.name);
-      fillSiteInfo();
-    });
-    td = document.createElement('TD');
-    td.appendChild(deleteIcon);
-    tr.appendChild(td);
-    // add row to table body
-    newTableBody.appendChild(tr);
-  });
   // replace old table body with new one
   cookieTable.replaceChild(newTableBody, cookieTable.childNodes[0]);
 }
@@ -425,7 +333,6 @@ async function buildDomStorageTableBody() {
     }
   });
   // get site behaviour for determining background color of column
-  var domain = trimSubdomains(activeTabUrl);
   var behaviour = await getSiteBehaviour(domain);
   // add entries to list
   domList.forEach(function(entry) {

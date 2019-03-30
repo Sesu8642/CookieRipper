@@ -113,42 +113,7 @@ function addCookie(name, value, domain, path, session, date, time, hostOnly, sec
       parameters.firstPartyDomain = firstPartyDomain;
     }
     var setting = browser.cookies.set(parameters);
-    setting.then(async function() {
-      // make sure that if the cookie is unwanted, it is deleted before resolving to prevent the ui from refreshing too early with incorrect data
-      // cookie.set returns a cookie object but seems to be unreliable in both chromium and ff so just use the input data instead
-      if (!domain.startsWith(".")) {
-        var newDomain = hostOnly ? domain : `.${domain}`;
-      } else {
-        newDomain = hostOnly ? domain.slice(1) : domain;
-      }
-      var newCookie = {
-        url: url,
-        // deal with host only --> do not supply domain if host only
-        domain: newDomain,
-        path: path,
-        name: name,
-        value: value,
-        secure: secure,
-        httpOnly: httpOnly,
-        // if not a session cookie convert date to seconds since 1980
-        expirationDate: expirationDate,
-        storeId: cookieStore
-      };
-      var allowed = await getCookieAllowedState(newCookie);
-      if (allowed) {
-        resolve();
-      } else {
-        await callAddUnwantedCookie(newCookie);
-        await deleteCookie(newCookie);
-        resolve();
-      }
-    }, async function(error) {
-      // restore overwriteCookie if new cookie could not be set
-      if (overwriteCookie !== null) {
-        await addCookieFromObject(overwriteCookie);
-      }
-      reject(error);
-    });
+    setting.then(resolve, logError);
   });
   return result;
 }
@@ -205,57 +170,7 @@ function deleteAllCookies(url, cookieStore) {
       storeId: cookieStore
     });
     getting.then(async function(siteCookies) {
-      var promises = siteCookies.map(function(cookie) {
-        return deleteCookie(cookie);
-      });
-      // also remove unwanted cookies from memory
-      promises.push(callClearUnwantedCookiesforHostname(url));
-      await Promise.all(promises);
-      resolve();
-    }, logError);
-  });
-  return result;
-}
-
-function deleteExistingUnwantedCookies(url, cookieStore) {
-  // deletes all existung but unwanted cookies from a given url
-  var result = new Promise(async function(resolve, reject) {
-    var hostname = trimSubdomains(url);
-    var behaviour = await getSiteBehaviour(hostname);
-    var getting = getAllCookies({
-      url: url,
-      storeId: cookieStore
-    });
-    getting.then(async function(siteCookies) {
-      var promises = siteCookies.map(function(cookie) {
-        if (behaviour == 0 || (behaviour == 1 && !cookie.session)) {
-          return getObjectWhitelistedState(cookie.domain, cookie.name, 'c').then(async function(whitelisted) {
-            if (!whitelisted) {
-              await deleteCookie(cookie);
-              await callAddUnwantedCookie(cookie);
-            }
-          });
-        }
-      });
-      await Promise.all(promises);
-      resolve();
-    }, logError);
-  });
-  return result;
-}
-
-function deleteAllTabsExistingUnwantedCookies() {
-  // deletes all existung but unwanted cookies from all open tabs
-  var result = new Promise(function(resolve, reject) {
-    var querying = browser.tabs.query({});
-    querying.then(async function(tabs) {
-      var promises = tabs.map(function(tab) {
-        if (tab.url.startsWith('http')) {
-          return getTabCookieStore(tab.id).then(async function(cookieStore) {
-            await deleteExistingUnwantedCookies(tab.url, cookieStore);
-          });
-        }
-      });
+      var promises = siteCookies.map(deleteCookie);
       await Promise.all(promises);
       resolve();
     }, logError);
@@ -298,144 +213,6 @@ function getCookieAllowedState(cookie) {
           message: `Error: invalid Behaviour: ${caseBehaviour}`
         });
     }
-  });
-  return result;
-}
-async function handleCookieEvent(changeInfo) {
-  // is used when a cookie change event needs to be handled
-  // determines the correct action to take and executes it
-  // note: .removed is also true when overwriting as the cookie is removed completely first
-  // exit if remove event (no cookie is added / changed)
-  if (changeInfo.removed) {
-    return;
-  }
-  var allowed = await getCookieAllowedState(changeInfo.cookie);
-  if (!allowed) {
-    callAddUnwantedCookie(changeInfo.cookie);
-    await deleteCookie(changeInfo.cookie);
-    updateActiveTabsCounts();
-  }
-}
-/*
- * unwanted cookie functions
- * the functions either call a funtion in the background page directly or send a message to do their job
- */
-function callGetUnwantedCookiesForHostname(hostname) {
-  // returns the object that stores the cookies for the given hostname in unwanted list
-  var result = new Promise(async function(resolve, reject) {
-    // use function directly or send message depending on the availability of bgPage
-    if (bgPage !== null) {
-      var getting = bgPage.getUnwantedCookiesForHostname({
-        hostname: hostname
-      });
-    } else {
-      getting = browser.runtime.sendMessage({
-        type: 'getUnwantedCookiesForHostname',
-        hostname: hostname
-      });
-    }
-    getting.then(resolve, logError);
-  });
-  return result;
-}
-
-function callAddUnwantedCookie(cookie) {
-  // adds a cookie to the list of unwanted cookies
-  var result = new Promise(function(resolve, reject) {
-    // only do it if the site is opened in a tab
-    // stringify to prevent some weird ff dead object issue
-    // use function directly or send message depending on the availability of bgPage
-    if (bgPage !== null) {
-      var adding = bgPage.addUnwantedCookie({
-        cookie: cookie
-      });
-    } else {
-      adding = browser.runtime.sendMessage({
-        type: 'addUnwantedCookie',
-        cookie: cookie
-      });
-    }
-    adding.then(resolve, logError);
-  });
-  return result;
-}
-
-function callRestoreUnwantedCookie(domain, name, cookieStore) {
-  // re-creates a cookie from unwanted list in case the user whitelists it
-  var result = new Promise(async function(resolve, reject) {
-    // use function directly or send message depending on the availability of bgPage
-    if (bgPage !== null) {
-      var getting = bgPage.restoreUnwantedCookie({
-        domain: domain,
-        name: name,
-        cookieStore: cookieStore
-      });
-    } else {
-      getting = browser.runtime.sendMessage({
-        type: 'restoreUnwantedCookie',
-        domain: domain,
-        name: name,
-        cookieStore: cookieStore
-      });
-    }
-    getting.then(resolve, logError);
-  });
-  return result;
-}
-
-function callRestoreAllHostnamesUnwantedCookies() {
-  // re-creates cookies from unwanted list in case the user changes the behaviour for a hostname
-  var result = new Promise(async function(resolve, reject) {
-    // use function directly or send message depending on the availability of bgPage
-    if (bgPage !== null) {
-      var restoring = bgPage.restoreAllHostnamesUnwantedCookies();
-    } else {
-      restoring = browser.runtime.sendMessage({
-        type: 'restoreAllHostnamesUnwantedCookies'
-      });
-    }
-    restoring.then(resolve, logError);
-  });
-  return result;
-}
-
-function callDeleteUnwantedCookie(domain, name) {
-  // deletes a cookie from the list of unwanted cookies
-  var result = new Promise(function(resolve, reject) {
-    // use function directly or send message depending on the availability of bgPage
-    if (bgPage !== null) {
-      var adding = bgPage.deleteUnwantedCookie({
-        domain: domain,
-        name: name
-      });
-    } else {
-      adding = browser.runtime.sendMessage({
-        type: 'deleteUnwantedCookie',
-        domain: domain,
-        name: name
-      });
-    }
-    adding.then(resolve, logError);
-  });
-  return result;
-}
-
-function callClearUnwantedCookiesforHostname(url) {
-  // clears all unwanted cookies from the list of unwanted cookies for a hostname
-  var result = new Promise(function(resolve, reject) {
-    var hostname = trimSubdomains(url);
-    // use function directly or send message depending on the availability of bgPage
-    if (bgPage !== null) {
-      var deleting = bgPage.clearUnwantedCookiesforHostname({
-        hostname: hostname
-      });
-    } else {
-      deleting = browser.runtime.sendMessage({
-        type: 'clearUnwantedCookiesforHostname',
-        hostname: hostname
-      });
-    }
-    deleting.then(resolve, logError);
   });
   return result;
 }
@@ -566,9 +343,6 @@ function addSiteException(url, rule, temporary, overwriteException = null) {
       var saving = savePermSiteException(hostname, rule);
       saving.then(async function() {
         await deleteSiteException(`https://${hostname}`, true);
-        await Promise.all([callRestoreAllHostnamesUnwantedCookies(),
-          deleteAllTabsExistingUnwantedCookies()
-        ]);
         resolve();
         updateAllTabsIcons();
         updateActiveTabsCounts();
@@ -642,13 +416,10 @@ function deleteSiteException(url, temporary) {
       deleting.then(resolve, logError);
     } else {
       await deletePermSiteException(hostname);
-      await Promise.all([callRestoreAllHostnamesUnwantedCookies(),
-        deleteAllTabsExistingUnwantedCookies()
-      ]);
       resolve();
-      updateAllTabsIcons();
-      updateActiveTabsCounts();
     }
+    updateAllTabsIcons();
+    updateActiveTabsCounts();
   });
   return result;
 }
@@ -860,71 +631,114 @@ function updateAllTabsIcons() {
 }
 async function updateActiveTabsCounts() {
   // sets cookie count on icon batch according to the behaviour for the active tab
-  if (!await callGetEnableCookieCounter()) {
-    // exit if feature is disabled
-    return;
-  }
-  // get active tab in every window
-  var querying = browser.tabs.query({
-    active: true
-  });
-  querying.then(async function(tabs) {
-    for (var tab of tabs) {
-      if (typeof tab !== 'undefined') {
-        if (tab.url.startsWith('http')) {
-          var cookieStore = await getTabCookieStore(tab.id);
-          // get cookies
-          countCookies(await getAllCookies({
-            url: tab.url,
-            storeId: cookieStore
-          }), tab);
-        } else {
-          setBadgeText(tab.id, '');
-        }
-      }
+  var result = new Promise(async function(resolve, reject) {
+    if (!await callGetEnableCookieCounter()) {
+      // exit if feature is disabled
+      return;
     }
-  }, logError);
+    // get active tab in every window
+    var querying = browser.tabs.query({
+      active: true
+    });
+    querying.then(async function(tabs) {
+      var promises = tabs.map(function(tab) {
+        return updateTabCount(tab);
+      });
+      await Promise.all(promises);
+    }, logError);
+    resolve();
 
-  function countCookies(cookies, tab) {
-    // count cookies
-    var count = cookies.length;
-    // get dom storage
-    var getting = getTabDomStorage(tab.id);
-    getting.then(async function(response) {
+    function updateTabCount(tab) {
+      var result = new Promise(async function(resolve, reject) {
+        if (typeof tab == 'undefined') {
+          return;
+        }
+        if (!tab.url.startsWith('http')) {
+          setBadgeText(tab.id, '');
+          return;
+        }
         // get behaviour
         var behaviour = await getSiteBehaviour(trimSubdomains(tab.url));
-        // count dom storage, ignore unwanted entries
-        if (behaviour == 2) {
-          // if behaviour is 'allow all' just count all
-          count = count + Object.keys(response.localStorage).length + Object.keys(response.sessionStorage).length;
-        } else {
-          // if it is a different behaviour, check whitelisted status and permanency
-          for (var storageEntry in response.localStorage) {
-            var whitelisted = await getObjectWhitelistedState((new URL(tab.url)).hostname, storageEntry, 'd');
-            if (whitelisted) {
-              count++;
-            }
-          }
-          for (storageEntry in response.sessionStorage) {
-            whitelisted = await getObjectWhitelistedState((new URL(tab.url)).hostname, storageEntry, 'd');
-            if (behaviour == 1 || whitelisted) {
-              count++;
-            }
-          }
-        }
-        setBadgeText(tab.id, count);
-      },
-      function() {
-        setBadgeText(tab.id, count);
+        var cookieCounting = countTabCookies(tab, behaviour);
+        var domStorageCounting = countTabDomStorage(tab, behaviour);
+        var counts = await Promise.all([cookieCounting, domStorageCounting]);
+        setBadgeText(tab.id, counts[0] + counts[1]);
+        resolve();
       });
-  }
+      return result;
+    }
 
-  function setBadgeText(tabId, count) {
-    browser.browserAction.setBadgeText({
-      text: `${count}`,
-      tabId: tabId
-    });
-  }
+    function countTabDomStorage(tab, behaviour) {
+      var result = new Promise(async function(resolve, reject) {
+        // get dom storage
+        var getting = getTabDomStorage(tab.id);
+        getting.then(async function(response) {
+            // count dom storage, ignore unwanted entries
+            if (behaviour == 2) {
+              // if behaviour is 'allow all' just count all
+              return resolve(Object.keys(response.localStorage).length + Object.keys(response.sessionStorage).length);
+            }
+            // if it is a different behaviour, check whitelisted status and permanency
+            var domStorageCount = 0;
+            for (var storageEntry in response.localStorage) {
+              var whitelisted = await getObjectWhitelistedState((new URL(tab.url)).hostname, storageEntry, 'd');
+              if (whitelisted) {
+                domStorageCount++;
+              }
+            }
+            for (storageEntry in response.sessionStorage) {
+              whitelisted = await getObjectWhitelistedState((new URL(tab.url)).hostname, storageEntry, 'd');
+              if (behaviour == 1 || whitelisted) {
+                domStorageCount++;
+              }
+            }
+            resolve(domStorageCount);
+          },
+          function() {
+            resolve(0);
+          });
+      });
+      return result;
+    }
+
+    function countTabCookies(tab, behaviour) {
+      var result = new Promise(async function(resolve, reject) {
+        var cookieStore = await getTabCookieStore(tab.id);
+        // get cookies
+        var getting = getAllCookies({
+          url: tab.url,
+          storeId: cookieStore
+        });
+        getting.then(async function(cookies) {
+          // count cookies, ignore unwanted cookies
+          if (behaviour == 2) {
+            // if behaviour is 'allow all' just count all
+            return resolve(cookies.length);
+          }
+          // if it is a different behaviour, check whitelisted status and permanency
+          var cookieCount = 0;
+          var cookiePromises = cookies.map(function(cookie) {
+            return getObjectWhitelistedState(cookie.domain, cookie.name, 'c').then(function(whitelisted) {
+              if ((cookie.session && behaviour == 1) || whitelisted) {
+                cookieCount++;
+              }
+            });
+          });
+          await Promise.all(cookiePromises);
+          resolve(cookieCount);
+        }, logError);
+      });
+      return result;
+    }
+
+    function setBadgeText(tabId, count) {
+      browser.browserAction.setBadgeText({
+        text: `${count}`,
+        tabId: tabId
+      });
+    }
+  });
+  return result;
 }
 
 function removeAllTabsCounts() {
