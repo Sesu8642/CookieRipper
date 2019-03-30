@@ -116,6 +116,39 @@ function getTabDomStorageItemsAllowedStates(request) {
   return result;
 }
 
+function filterCookiesInHttpRequestHeader(details) {
+  // modifies a request header to include only the allowed cookies
+  var result = new Promise(function(resolve, reject) {
+    // filtering the cookies already included does not make much sense since reading the actual cookie in necessary anyway to find out if it should be sent
+    var getting = getAllCookies({
+      url: details.url
+    });
+    getting.then(async function(existingCookies) {
+      var cookiesToSend = '';
+      var promises = existingCookies.map(function(cookie) {
+        return getCookieAllowedState(cookie).then(function(allowed) {
+          if (allowed) {
+            if (cookiesToSend !== '') {
+              cookiesToSend += ';'
+            }
+            cookiesToSend += `${cookie.name}=${cookie.value}`;
+          }
+        });
+      });
+      await Promise.all(promises);
+      for (var header of details.requestHeaders) {
+        if (header.name.toLowerCase() === "cookie") {
+          header.value = cookiesToSend;
+        }
+      }
+      resolve({
+        requestHeaders: details.requestHeaders
+      });
+    }, logError);
+  });
+  return result;
+}
+
 function handleMessage(request, sender) {
   // those messages are sent from the content scripts and other js files
   // call the correct function to respond to them
@@ -152,6 +185,10 @@ function handleMessage(request, sender) {
  * intialization (parts of it must not be in a separate function to work properly in ff)
  */
 browser.runtime.onMessage.addListener(handleMessage);
+browser.webRequest.onBeforeSendHeaders.addListener(filterCookiesInHttpRequestHeader, {
+    urls: ["<all_urls>"]
+  },
+  ["blocking", "requestHeaders"]);
 browser.webNavigation.onCompleted.addListener(function(details) {
   updateActiveTabsCounts();
 });
