@@ -100,7 +100,6 @@ function deleteUnwantedStorage() {
     });
     sending.then(async function(response) {
       // delete the unwanted items
-      console.log(response)
       for (i = 0; i < response.length; i++) {
         if (!response[i]) {
           if (storageItems[i].storage == 'local') {
