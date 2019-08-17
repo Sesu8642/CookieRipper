@@ -3,10 +3,34 @@
  * this script is injected into websites because dom storage is only accessible from there (i think)
  */
 deleteUnwantedStorage();
-// only answer messages if in the top frame
+injectScript();
+// only answer messages from content script if in the top frame
 if (window == window.top) {
   browser.runtime.onMessage.addListener(handleMessage);
 }
+window.addEventListener('message', function(event) {
+  if (event.data.type && (event.data.type == 'cookieRipper_domStorageSet')) {
+    var storageItems = [{
+      name: event.data.key,
+      storage: event.data.storageType
+    }];
+    var sending = browser.runtime.sendMessage({
+      type: 'getTabDomStorageItemsAllowedStates',
+      items: storageItems,
+      domain: window.location.host
+    });
+    sending.then(async function(response) {
+      // delete the item if unwanted
+      if (!response[0]) {
+        if (event.data.storageType == 'localStorage') {
+          localStorage.removeItem(event.data.key);
+        } else {
+          sessionStorage.removeItem(event.data.key);
+        }
+      }
+    }, logError);
+  }
+});
 
 function handleMessage(request) {
   // when a message is received, decides how to respond
@@ -113,6 +137,36 @@ function deleteUnwantedStorage() {
   } catch (e) {
     // if storage is not accessible, there is nothing to do
   }
+}
+
+function injectScript() {
+  // adds a script tag into the html document to prevent the site from reading data it is not supposed to read
+  // using a string loads faster than the js from the website; using a separate js file does not
+  var injectJS = `
+  console.log("script injected");
+  var _setItem = Storage.prototype.setItem;
+  Storage.prototype.setItem = function(key, value) {
+    var storageType;
+    if (this === window.localStorage) {
+      storageType = 'localStorage';
+    } else if (this === window.sessionStorage) {
+      storageType = 'sessionStorage';
+    }
+    window.postMessage({
+      type: 'cookieRipper_domStorageSet',
+      storageType: storageType,
+      key: key,
+      value: value
+    }, window.location.href);
+    _setItem.apply(this, arguments);
+  }
+  console.log('injected script is done!');
+  `
+  var script = document.createElement('script');
+  script.textContent = injectJS;
+  // Add the script tag to the DOM
+  (document.head || document.documentElement).appendChild(script);
+  script.remove();
 }
 
 function logError(error) {
