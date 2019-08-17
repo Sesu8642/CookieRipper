@@ -891,27 +891,8 @@ async function updateActiveTabsCounts() {
     // get dom storage
     var getting = getTabDomStorage(tab.id);
     getting.then(async function(response) {
-        // get behaviour
-        var behaviour = await getSiteBehaviour(trimSubdomains(tab.url));
-        // count dom storage, ignore unwanted entries
-        if (behaviour == 2) {
-          // if behaviour is 'allow all' just count all
-          count = count + Object.keys(response.localStorage).length + Object.keys(response.sessionStorage).length;
-        } else {
-          // if it is a different behaviour, check whitelisted status and permanency
-          for (var storageEntry in response.localStorage) {
-            var whitelisted = await getObjectWhitelistedState((new URL(tab.url)).hostname, storageEntry, 'd');
-            if (whitelisted) {
-              count++;
-            }
-          }
-          for (storageEntry in response.sessionStorage) {
-            whitelisted = await getObjectWhitelistedState((new URL(tab.url)).hostname, storageEntry, 'd');
-            if (behaviour == 1 || whitelisted) {
-              count++;
-            }
-          }
-        }
+        // count dom storage
+        count = count + Object.keys(response.localStorage).length + Object.keys(response.sessionStorage).length;
         setBadgeText(tab.id, count);
       },
       function() {
