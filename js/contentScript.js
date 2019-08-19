@@ -2,6 +2,7 @@
 /*
  * this script is injected into websites because dom storage is only accessible from there (i think)
  */
+var unwantedDomStorageEntries = [];
 deleteUnwantedStorage();
 injectScript();
 // only answer messages from content script if in the top frame
@@ -38,6 +39,8 @@ function handleMessage(request) {
     case 'getStorage':
       return sendStorage();
       break;
+    case 'getUnwantedStorage':
+      return Promise.resolve(unwantedDomStorageEntries);
     case 'deleteEntry':
       return deleteStorageEntry(request);
       break;

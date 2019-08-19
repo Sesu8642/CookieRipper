@@ -458,6 +458,19 @@ function getTabDomStorage(tabId) {
   return result;
 }
 
+function getUnwantedDomStoregeEntries(tabId) {
+  // the unwanted dom storage entries from a given tab
+  var result = new Promise(function(resolve, reject) {
+    var sending = browser.tabs.sendMessage(tabId, {
+      type: 'getUnwantedStorage'
+    });
+    sending.then(function(result) {
+      resolve(result);
+    }, reject);
+  });
+  return result;
+}
+
 function addDomStorageEntry(tabId, persistent, name, value, overwriteEntry = null) {
   // adds a new dom storage entry to a given tab
   var result = new Promise(async function(resolve, reject) {
