@@ -2,6 +2,7 @@
 /*
  * this script is injected into websites because dom storage is only accessible from there (i think)
  */
+console.log("reset")
 var unwantedDomStorageEntries = [];
 deleteUnwantedStorage();
 injectScript();
@@ -43,6 +44,9 @@ function handleMessage(request) {
       return Promise.resolve(unwantedDomStorageEntries);
     case 'deleteEntry':
       return deleteStorageEntry(request);
+      break;
+    case 'deleteUnwantedEntry':
+      return deleteUnwantedStorageEntry(request);
       break;
     case 'addEntry':
       return addStorageEntry(request);
@@ -150,6 +154,20 @@ function deleteUnwantedStorage() {
   } catch (e) {
     // if storage is not accessible, there is nothing to do
   }
+}
+
+function deleteUnwantedStorageEntry(request) {
+  // adds the given entry to the given storage
+  var answer = new Promise(function(resolve, reject) {
+    unwantedDomStorageEntries = unwantedDomStorageEntries.filter(function(entry) {
+      if (entry.name === request.entry.name && entry.permanence === request.entry.permanence) {
+        return false;
+      }
+      return true;
+    });
+    resolve();
+  });
+  return answer;
 }
 
 function injectScript() {

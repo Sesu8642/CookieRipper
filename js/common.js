@@ -508,6 +508,18 @@ function deleteDomStorageEntry(tabId, entry) {
   return result;
 }
 
+function deleteUnwantedDomStorageEntry(tabId, entry) {
+  // deletes a given dom storage entry from a given tab
+  var result = new Promise(function(resolve, reject) {
+    var sending = browser.tabs.sendMessage(tabId, {
+      type: 'deleteUnwantedEntry',
+      entry: entry
+    });
+    sending.then(resolve, logError);
+  });
+  return result;
+}
+
 function clearTabDomStorage(tabId) {
   // deletes all dom storage entries from a given tab
   var answer = new Promise(function(resolve, reject) {

@@ -615,7 +615,7 @@ async function buildDomStorageTableBody() {
     deleteIcon.title = 'delete';
     deleteIcon.classList.add('tableIcon');
     deleteIcon.addEventListener('click', async function(e) {
-      await deleteDomStorageEntry(activeTabId, e.target.parentElement.parentElement.attachedEntry);
+      await deleteUnwantedDomStorageEntry(activeTabId, e.target.parentElement.parentElement.attachedEntry);
       fillSiteInfo();
       updateActiveTabsCounts();
     });
