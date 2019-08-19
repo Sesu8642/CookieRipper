@@ -93,6 +93,7 @@ function clearStorage() {
   var answer = new Promise(function(resolve, reject) {
     localStorage.clear();
     sessionStorage.clear();
+    unwantedDomStorageEntries = [];
     resolve();
   });
   return answer;
