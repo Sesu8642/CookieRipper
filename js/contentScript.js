@@ -157,7 +157,7 @@ function deleteUnwantedStorage() {
 }
 
 function deleteUnwantedStorageEntry(request) {
-  // adds the given entry to the given storage
+  // deletes an entry from unwanted list
   var answer = new Promise(function(resolve, reject) {
     unwantedDomStorageEntries = unwantedDomStorageEntries.filter(function(entry) {
       if (entry.name === request.entry.name && entry.permanence === request.entry.permanence) {
