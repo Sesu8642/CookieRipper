@@ -138,7 +138,17 @@ function restoreUnwantedStorageEntry(request) {
         }
       }
     });
-    await deleteUnwantedStorageEntry(request);
+    await Promise.all([deleteUnwantedStorageEntry({
+      entry: {
+        name: request.entry.name,
+        permanence: 'permanent'
+      }
+    }), deleteUnwantedStorageEntry({
+      entry: {
+        name: request.entry.name,
+        permanence: 'temporary'
+      }
+    })]);
     resolve();
   });
   return answer;
