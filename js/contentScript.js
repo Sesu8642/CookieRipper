@@ -2,9 +2,8 @@
 /*
  * this script is injected into websites because dom storage is only accessible from there (i think)
  */
-console.log("reset")
 var unwantedDomStorageEntries = [];
-deleteUnwantedStorage();
+deleteExistingUnwantedStorageEntries();
 injectScript();
 // only answer messages from content script if in the top frame
 if (window == window.top) {
@@ -47,6 +46,12 @@ function handleMessage(request) {
       break;
     case 'deleteUnwantedEntry':
       return deleteUnwantedStorageEntry(request);
+      break;
+    case 'restoreUnwantedEntry':
+      return restoreUnwantedStorageEntry(request);
+      break;
+    case 'deleteExistingUnwantedEntries':
+      return deleteExistingUnwantedStorageEntries();
       break;
     case 'addEntry':
       return addStorageEntry(request);
@@ -106,56 +111,6 @@ function addStorageEntry(request) {
   return answer;
 }
 
-function deleteUnwantedStorage() {
-  // deletes all unwanted storage entries from both local and session storage
-  var domain = window.location.host;
-  try {
-    // create list of storage items and send them to the background page
-    var storageItems = [];
-    for (var i = 0; i < localStorage.length; i++) {
-      storageItems.push({
-        name: localStorage.key(i),
-        storage: 'local'
-      });
-    }
-    for (i = 0; i < sessionStorage.length; i++) {
-      storageItems.push({
-        name: sessionStorage.key(i),
-        storage: 'session'
-      });
-    }
-    var sending = browser.runtime.sendMessage({
-      type: 'getTabDomStorageItemsAllowedStates',
-      items: storageItems,
-      domain: domain
-    });
-    sending.then(async function(response) {
-      // delete the unwanted items
-      for (i = 0; i < response.length; i++) {
-        if (!response[i]) {
-          if (storageItems[i].storage == 'local') {
-            unwantedDomStorageEntries.push({
-              name: storageItems[i].name,
-              value: localStorage.getItem(storageItems[i].name),
-              permanence: 'permanent'
-            });
-            localStorage.removeItem(storageItems[i].name);
-          } else {
-            unwantedDomStorageEntries.push({
-              name: storageItems[i].name,
-              value: sessionStorage.getItem(storageItems[i].name),
-              permanence: 'temporary'
-            });
-            sessionStorage.removeItem(storageItems[i].name);
-          }
-        }
-      }
-    }, logError);
-  } catch (e) {
-    // if storage is not accessible, there is nothing to do
-  }
-}
-
 function deleteUnwantedStorageEntry(request) {
   // deletes an entry from unwanted list
   var answer = new Promise(function(resolve, reject) {
@@ -166,6 +121,81 @@ function deleteUnwantedStorageEntry(request) {
       return true;
     });
     resolve();
+  });
+  return answer;
+}
+
+function restoreUnwantedStorageEntry(request) {
+  // re-creates a single entry from unwanted list
+  var answer = new Promise(async function(resolve, reject) {
+    unwantedDomStorageEntries.forEach(function(entry) {
+      // permanence is not considered here because the whitelist doesn't either
+      if (entry.name === request.entry.name) {
+        if (entry.permanence === 'permanent') {
+          localStorage.setItem(entry.name, entry.value);
+        } else {
+          sessionStorage.setItem(entry.name, entry.value);
+        }
+      }
+    });
+    await deleteUnwantedStorageEntry(request);
+    resolve();
+  });
+  return answer;
+}
+
+function deleteExistingUnwantedStorageEntries() {
+  // deletes all existung but unwanted entries
+  var answer = new Promise(function(resolve, reject) {
+    // deletes all unwanted storage entries from both local and session storage
+    var domain = window.location.host;
+    try {
+      // create list of storage items and send them to the background page
+      var storageItems = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        storageItems.push({
+          name: localStorage.key(i),
+          storage: 'local'
+        });
+      }
+      for (i = 0; i < sessionStorage.length; i++) {
+        storageItems.push({
+          name: sessionStorage.key(i),
+          storage: 'session'
+        });
+      }
+      var sending = browser.runtime.sendMessage({
+        type: 'getTabDomStorageItemsAllowedStates',
+        items: storageItems,
+        domain: domain
+      });
+      sending.then(async function(response) {
+        // delete the unwanted items
+        for (i = 0; i < response.length; i++) {
+          if (!response[i]) {
+            if (storageItems[i].storage == 'local') {
+              unwantedDomStorageEntries.push({
+                name: storageItems[i].name,
+                value: localStorage.getItem(storageItems[i].name),
+                permanence: 'permanent'
+              });
+              localStorage.removeItem(storageItems[i].name);
+            } else {
+              unwantedDomStorageEntries.push({
+                name: storageItems[i].name,
+                value: sessionStorage.getItem(storageItems[i].name),
+                permanence: 'temporary'
+              });
+              sessionStorage.removeItem(storageItems[i].name);
+            }
+          }
+        }
+        resolve();
+      }, logError);
+    } catch (e) {
+      // if storage is not accessible, there is nothing to do
+      reject();
+    }
   });
   return answer;
 }

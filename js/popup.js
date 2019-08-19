@@ -194,7 +194,11 @@ function fillDomStorageList() {
 }
 async function fillUnwantedDomStorageList() {
   // gets unwanted dom storage entries and stores them in unwantedDomList
-  unwantedDomList = await getUnwantedDomStoregeEntries(activeTabId);
+  var response = await getUnwantedDomStoregeEntries(activeTabId);
+  unwantedDomList = response.map(function(entry) {
+    entry.domain = (new URL(activeTabUrl)).hostname;
+    return entry;
+  });
   // (re)build table
   buildDomStorageTableBody();
 }
@@ -487,13 +491,12 @@ async function buildDomStorageTableBody() {
     whitelistedCheckBox.classList.add('tableCheckBox');
     whitelistedCheckBox.addEventListener('change', async function(e) {
       if (e.target.checked) {
-        var adding = addWhitelistEntry(e.target.parentElement.parentElement.attachedEntry.domain, e.target.parentElement.parentElement.attachedEntry.name, 'd');
-        adding.then(function() {
-          updateActiveTabsCounts();
-          fillSiteInfo();
-        }, logError);
+        await addWhitelistEntry(e.target.parentElement.parentElement.attachedEntry.domain, e.target.parentElement.parentElement.attachedEntry.name, 'd');
+        updateActiveTabsCounts();
+        fillSiteInfo();
       } else {
         await deleteWhitelistEntry(e.target.parentElement.parentElement.attachedEntry.domain, e.target.parentElement.parentElement.attachedEntry.name, 'd');
+        await deleteExistingUnwantedDomStorageEntries(activeTabId);
         updateActiveTabsCounts();
         fillSiteInfo();
       }
@@ -575,13 +578,8 @@ async function buildDomStorageTableBody() {
     whitelistedCheckBox.classList.add('tableCheckBox');
     whitelistedCheckBox.addEventListener('change', async function(e) {
       if (e.target.checked) {
-        var adding = addWhitelistEntry(trimSubdomains(activeTabUrl), e.target.parentElement.parentElement.attachedEntry.name, 'd');
-        adding.then(function() {
-          updateActiveTabsCounts();
-          fillSiteInfo();
-        }, logError);
-      } else {
-        await deleteWhitelistEntry(trimSubdomains(activeTabUrl), e.target.parentElement.parentElement.attachedEntry.name, 'd');
+        await addWhitelistEntry(e.target.parentElement.parentElement.attachedEntry.domain, e.target.parentElement.parentElement.attachedEntry.name, 'd');
+        await restoreUnwantedDomStorageEntry(activeTabId, e.target.parentElement.parentElement.attachedEntry);
         updateActiveTabsCounts();
         fillSiteInfo();
       }

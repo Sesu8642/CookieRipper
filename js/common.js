@@ -520,6 +520,29 @@ function deleteUnwantedDomStorageEntry(tabId, entry) {
   return result;
 }
 
+function restoreUnwantedDomStorageEntry(tabId, entry) {
+  // re-creates a dom storage entry from unwanted list in case the user whitelists it
+  var result = new Promise(function(resolve, reject) {
+    var sending = browser.tabs.sendMessage(tabId, {
+      type: 'restoreUnwantedEntry',
+      entry: entry
+    });
+    sending.then(resolve, logError);
+  });
+  return result;
+}
+
+function deleteExistingUnwantedDomStorageEntries(tabId) {
+  // deletes all existung but unwanted dom storage entries from a given tab
+  var result = new Promise(function(resolve, reject) {
+    var sending = browser.tabs.sendMessage(tabId, {
+      type: 'deleteExistingUnwantedEntries'
+    });
+    sending.then(resolve, logError);
+  });
+  return result;
+}
+
 function clearTabDomStorage(tabId) {
   // deletes all dom storage entries from a given tab
   var answer = new Promise(function(resolve, reject) {
