@@ -130,8 +130,18 @@ function deleteUnwantedStorage() {
       for (i = 0; i < response.length; i++) {
         if (!response[i]) {
           if (storageItems[i].storage == 'local') {
+            unwantedDomStorageEntries.push({
+              name: storageItems[i].name,
+              value: localStorage.getItem(storageItems[i].name),
+              permanence: 'permanent'
+            });
             localStorage.removeItem(storageItems[i].name);
           } else {
+            unwantedDomStorageEntries.push({
+              name: storageItems[i].name,
+              value: sessionStorage.getItem(storageItems[i].name),
+              permanence: 'temporary'
+            });
             sessionStorage.removeItem(storageItems[i].name);
           }
         }
