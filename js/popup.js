@@ -131,7 +131,7 @@ function fillCookieList() {
   }, logError);
 }
 async function fillUnwantedCookieList() {
-  // gets unwanted cookies and stores them in cookieList
+  // gets unwanted cookies and stores them in unwantedCookieList
   unwantedCookieList = [];
   var fullDomain = (new URL(activeTabUrl)).hostname;
   var hostname = trimSubdomains(activeTabUrl);
