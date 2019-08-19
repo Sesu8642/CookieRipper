@@ -152,7 +152,7 @@ function fillDomStorageList() {
   // get all the entries
   var getting = getTabDomStorage(activeTabId);
   getting.then(async function(response) {
-      var storageItems = new Array();
+      var storageItems = [];
       // create array of entry objects first
       for (var i in response.localStorage) {
         var entry = {};
