@@ -204,7 +204,6 @@ function injectScript() {
   // adds a script tag into the html document to notify when dom storage is written
   // using a string loads faster than the js from the website; using a separate js file does not
   var injectJS = `
-  console.log("script injected");
   var _setItem = Storage.prototype.setItem;
   Storage.prototype.setItem = function(key, value) {
     var storageType;
@@ -221,7 +220,6 @@ function injectScript() {
     }, window.location.href);
     _setItem.apply(this, arguments);
   }
-  console.log('injected script is done!');
   `
   var script = document.createElement('script');
   script.textContent = injectJS;
