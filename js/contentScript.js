@@ -143,7 +143,7 @@ function deleteUnwantedStorage() {
 }
 
 function injectScript() {
-  // adds a script tag into the html document to prevent the site from reading data it is not supposed to read
+  // adds a script tag into the html document to notify when dom storage is written
   // using a string loads faster than the js from the website; using a separate js file does not
   var injectJS = `
   console.log("script injected");
