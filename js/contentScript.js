@@ -158,7 +158,6 @@ function restoreUnwantedStorageEntry(request) {
 function deleteExistingUnwantedStorageEntries() {
   // deletes all existung but unwanted entries
   var answer = new Promise(function(resolve, reject) {
-    // deletes all unwanted storage entries from both local and session storage
     var domain = window.location.host;
     try {
       // create list of storage items and send them to the background page
