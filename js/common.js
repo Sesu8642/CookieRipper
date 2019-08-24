@@ -532,13 +532,53 @@ function restoreUnwantedDomStorageEntry(tabId, entry) {
   return result;
 }
 
+function restoreAllTabsUnwantedDomStorageEntries() {
+  // re-creates all tabs' wanted dom storage entries from unwanted list
+  var result = new Promise(function(resolve, reject) {
+    var querying = browser.tabs.query({});
+    querying.then(async function(tabs) {
+      var promises = tabs.map(async function(tab) {
+        if (tab.url.startsWith('http')) {
+          return browser.tabs.sendMessage(tab.id, {
+            type: 'restoreUnwantedEntries'
+          });
+        }
+      });
+      await Promise.all(promises);
+      resolve();
+    }, logError);
+  });
+  return result;
+}
+
 function deleteExistingUnwantedDomStorageEntries(tabId) {
   // deletes all existung but unwanted dom storage entries from a given tab
+  var result = new Promise(async function(resolve, reject) {
+    try {
+      await browser.tabs.sendMessage(tabId, {
+        type: 'deleteExistingUnwantedEntries'
+      });
+    } catch (error) {
+      console.error(error);
+    }
+    resolve();
+  });
+  return result;
+}
+
+function deleteAllTabsExistingUnwantedDomStorageEntries() {
+  // deletes all existung but unwanted dom storage entries from all open tabs
   var result = new Promise(function(resolve, reject) {
-    var sending = browser.tabs.sendMessage(tabId, {
-      type: 'deleteExistingUnwantedEntries'
-    });
-    sending.then(resolve, logError);
+    var querying = browser.tabs.query({});
+    querying.then(async function(tabs) {
+      var promises = tabs.map(async function(tab) {
+        if (tab.url.startsWith('http')) {
+          await deleteExistingUnwantedDomStorageEntries(tab.id);
+        }
+      });
+      await Promise.all(promises);
+      resolve();
+    }, logError);
   });
   return result;
 }
@@ -615,7 +655,7 @@ function addSiteException(url, rule, temporary, overwriteException = null) {
       saving.then(async function() {
         await deleteSiteException(`https://${hostname}`, true);
         await Promise.all([callRestoreAllHostnamesUnwantedCookies(),
-          deleteAllTabsExistingUnwantedCookies()
+          deleteAllTabsExistingUnwantedCookies(), restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()
         ]);
         resolve();
         updateAllTabsIcons();
@@ -691,7 +731,7 @@ function deleteSiteException(url, temporary) {
     } else {
       await deletePermSiteException(hostname);
       await Promise.all([callRestoreAllHostnamesUnwantedCookies(),
-        deleteAllTabsExistingUnwantedCookies()
+        deleteAllTabsExistingUnwantedCookies(), restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()
       ]);
       resolve();
       updateAllTabsIcons();

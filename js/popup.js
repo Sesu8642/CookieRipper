@@ -579,7 +579,16 @@ async function buildDomStorageTableBody() {
     whitelistedCheckBox.addEventListener('change', async function(e) {
       if (e.target.checked) {
         await addWhitelistEntry(e.target.parentElement.parentElement.attachedEntry.domain, e.target.parentElement.parentElement.attachedEntry.name, 'd');
-        await restoreUnwantedDomStorageEntry(activeTabId, e.target.parentElement.parentElement.attachedEntry);
+        // whitelist does not differentiate between local and session storage
+        var entryVariation1 = {
+          name: e.target.parentElement.parentElement.attachedEntry.name,
+          permanence: 'permanent'
+        };
+        var entryVariation2 = {
+          name: e.target.parentElement.parentElement.attachedEntry.name,
+          permanence: 'temporary'
+        };
+        await Promise.all([restoreUnwantedDomStorageEntry(activeTabId, entryVariation1), restoreUnwantedDomStorageEntry(activeTabId, entryVariation2)]);
         updateActiveTabsCounts();
         fillSiteInfo();
       }

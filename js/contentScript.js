@@ -50,6 +50,9 @@ function handleMessage(request) {
     case 'restoreUnwantedEntry':
       return restoreUnwantedStorageEntry(request);
       break;
+    case 'restoreUnwantedEntries':
+      return restoreUnwantedStorageEntries();
+      break;
     case 'deleteExistingUnwantedEntries':
       return deleteExistingUnwantedStorageEntries();
       break;
@@ -130,8 +133,7 @@ function restoreUnwantedStorageEntry(request) {
   // re-creates a single entry from unwanted list
   var answer = new Promise(async function(resolve, reject) {
     unwantedDomStorageEntries.forEach(function(entry) {
-      // permanence is not considered here because the whitelist doesn't either
-      if (entry.name === request.entry.name) {
+      if (entry.name === request.entry.name && entry.permanence === request.entry.permanence) {
         if (entry.permanence === 'permanent') {
           localStorage.setItem(entry.name, entry.value);
         } else {
@@ -139,17 +141,47 @@ function restoreUnwantedStorageEntry(request) {
         }
       }
     });
-    await Promise.all([deleteUnwantedStorageEntry({
+    await deleteUnwantedStorageEntry({
       entry: {
         name: request.entry.name,
-        permanence: 'permanent'
+        permanence: request.entry.permanence
       }
-    }), deleteUnwantedStorageEntry({
-      entry: {
-        name: request.entry.name,
-        permanence: 'temporary'
+    });
+    resolve();
+  });
+  return answer;
+}
+
+function restoreUnwantedStorageEntries() {
+  // re-creates all hostnames' wanted dom storage entries from unwanted list
+  var answer = new Promise(async function(resolve, reject) {
+    var domain = window.location.host;
+    var storageItems = [];
+    unwantedDomStorageEntries.forEach(function(entry) {
+      // create list of storage items and send them to the background page
+      storageItems.push({
+        name: entry.name,
+        storage: entry.permanence === 'permanent' ? 'local' : 'session'
+      });
+    });
+    var sending = browser.runtime.sendMessage({
+      type: 'getTabDomStorageItemsAllowedStates',
+      items: storageItems,
+      domain: domain
+    });
+    sending.then(async function(response) {
+      // restore the wanted items
+      for (var i = 0; i < response.length; i++) {
+        if (response[i]) {
+          restoreUnwantedStorageEntry({
+            entry: {
+              name: storageItems[i].name,
+              permanence: storageItems[i].storage === 'local' ? 'permanent' : 'temporary'
+            }
+          });
+        }
       }
-    })]);
+    }, logError);
     resolve();
   });
   return answer;

@@ -13,7 +13,7 @@ function loadSettings() {
     getting.then(async function(items) {
       defaultBehaviour = Number(items.defaultBehaviour);
       enableCookieCounter = items.enableCookieCounter;
-      await Promise.all([callRestoreAllHostnamesUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()]);
+      await Promise.all([callRestoreAllHostnamesUnwantedCookies(), deleteAllTabsExistingUnwantedCookies(), restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()]);
       resolve();
       updateAllTabsIcons();
       if (!enableCookieCounter) {
@@ -68,7 +68,7 @@ function addTempSiteException(request) {
   // adds a temporary exception
   var result = new Promise(async function(resolve, reject) {
     tempSiteExceptions[encodeURI(request.hostname)] = request.rule;
-    await Promise.all([callRestoreAllHostnamesUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()]);
+    await Promise.all([callRestoreAllHostnamesUnwantedCookies(), deleteAllTabsExistingUnwantedCookies(), restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()]);
     resolve();
     updateAllTabsIcons();
     updateActiveTabsCounts();
@@ -80,7 +80,7 @@ function deleteTempSiteException(request) {
   // deletes a temporary exception
   var result = new Promise(async function(resolve, reject) {
     delete tempSiteExceptions[encodeURI(request.hostname)];
-    await Promise.all([callRestoreAllHostnamesUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()]);
+    await Promise.all([callRestoreAllHostnamesUnwantedCookies(), deleteAllTabsExistingUnwantedCookies(), restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()]);
     resolve();
     updateAllTabsIcons();
     updateActiveTabsCounts();
@@ -92,7 +92,7 @@ function clearTempSiteExceptions(request) {
   // deletes all temporary exceptions
   var result = new Promise(async function(resolve, reject) {
     tempSiteExceptions = [];
-    await Promise.all([callRestoreAllHostnamesUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()]);
+    await Promise.all([callRestoreAllHostnamesUnwantedCookies(), deleteAllTabsExistingUnwantedCookies(), restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()]);
     resolve();
     updateAllTabsIcons();
     updateActiveTabsCounts();
