@@ -69,18 +69,17 @@ function handleMessage(request) {
 
 function sendStorage() {
   // sends both local and session storage
-  let answer = new Promise(function(resolve, reject) {
+  return new Promise(function(resolve, reject) {
     resolve({
       localStorage: JSON.stringify(localStorage),
       sessionStorage: JSON.stringify(sessionStorage)
     });
   });
-  return answer;
 }
 
 function deleteStorageEntry(request) {
   // deletes a given storage entry
-  let answer = new Promise(function(resolve, reject) {
+  return new Promise(function(resolve, reject) {
     if (request.entry.permanence === 'permanent') {
       localStorage.removeItem(request.entry.name);
     } else if (request.entry.permanence === 'temporary') {
@@ -88,23 +87,21 @@ function deleteStorageEntry(request) {
     }
     resolve();
   });
-  return answer;
 }
 
 function clearStorage() {
   // deletes all local and session storage entries
-  let answer = new Promise(function(resolve, reject) {
+  return new Promise(function(resolve, reject) {
     localStorage.clear();
     sessionStorage.clear();
     unwantedDomStorageEntries = [];
     resolve();
   });
-  return answer;
 }
 
 function addStorageEntry(request) {
   // adds the given entry to the given storage
-  let answer = new Promise(function(resolve, reject) {
+  return new Promise(function(resolve, reject) {
     if (request.storage === 'local') {
       localStorage.setItem(request.name, request.value);
     } else if (request.storage === 'session') {
@@ -112,12 +109,11 @@ function addStorageEntry(request) {
     }
     resolve();
   });
-  return answer;
 }
 
 function deleteUnwantedStorageEntry(request) {
   // deletes an entry from unwanted list
-  let answer = new Promise(function(resolve, reject) {
+  return new Promise(function(resolve, reject) {
     unwantedDomStorageEntries = unwantedDomStorageEntries.filter(function(entry) {
       if (entry.name === request.entry.name && entry.permanence === request.entry.permanence) {
         return false;
@@ -126,12 +122,11 @@ function deleteUnwantedStorageEntry(request) {
     });
     resolve();
   });
-  return answer;
 }
 
 function restoreUnwantedStorageEntry(request) {
   // re-creates a single entry from unwanted list
-  let answer = new Promise(async function(resolve, reject) {
+  return new Promise(async function(resolve, reject) {
     unwantedDomStorageEntries.forEach(function(entry) {
       if (entry.name === request.entry.name && entry.permanence === request.entry.permanence) {
         if (entry.permanence === 'permanent') {
@@ -149,12 +144,11 @@ function restoreUnwantedStorageEntry(request) {
     });
     resolve();
   });
-  return answer;
 }
 
 function restoreUnwantedStorageEntries() {
   // re-creates all hostnames' wanted dom storage entries from unwanted list
-  let answer = new Promise(async function(resolve, reject) {
+  return new Promise(async function(resolve, reject) {
     let domain = window.location.host;
     let storageItems = [];
     unwantedDomStorageEntries.forEach(function(entry) {
@@ -184,12 +178,11 @@ function restoreUnwantedStorageEntries() {
     }, logError);
     resolve();
   });
-  return answer;
 }
 
 function deleteExistingUnwantedStorageEntries() {
   // deletes all existung but unwanted entries
-  let answer = new Promise(function(resolve, reject) {
+  return new Promise(function(resolve, reject) {
     let domain = window.location.host;
     try {
       // create list of storage items and send them to the background page
@@ -239,7 +232,6 @@ function deleteExistingUnwantedStorageEntries() {
       reject();
     }
   });
-  return answer;
 }
 
 function injectScript() {

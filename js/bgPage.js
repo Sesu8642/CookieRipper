@@ -5,7 +5,7 @@ var defaultBehaviour, enableCookieCounter;
 
 function loadSettings(skipUpdatingScripts = false) {
   // loads settings from storage and applies them
-  let result = new Promise(function(resolve, reject) {
+  return new Promise(function(resolve, reject) {
     let getting = browser.storage.sync.get({
       defaultBehaviour: 2,
       enableCookieCounter: false
@@ -28,13 +28,12 @@ function loadSettings(skipUpdatingScripts = false) {
       }
     }, logError);
   });
-  return result;
 }
 
 function injectJsInAllTabs() {
   // injects js into all open tabs (http*); new tabs are handled by manifest entry
   // also sets the correct icon and count for the open tabs
-  let result = new Promise(async function(resolve, reject) {
+  return new Promise(async function(resolve, reject) {
     let querying = browser.tabs.query({});
     var promises = [];
     querying.then(async function(tabs) {
@@ -56,66 +55,60 @@ function injectJsInAllTabs() {
       resolve();
     }, logError);
   });
-  return result;
 }
 
 function getEnableCookieCounter(request) {
   // returns whether cookie counter in enabled
-  let result = new Promise(async function(resolve, reject) {
+  return new Promise(async function(resolve, reject) {
     resolve(enableCookieCounter);
   });
-  return result;
 }
 
 function getTempSiteException(request) {
   // returns the rule of a temporary exception
-  let result = new Promise(async function(resolve, reject) {
+  return new Promise(async function(resolve, reject) {
     let exception = tempSiteExceptions[encodeURI(request.hostname)];
     exception = typeof exception === "undefined" ? null : exception;
     resolve(exception);
   });
-  return result;
 }
 
 function addTempSiteException(request) {
   // adds a temporary exception
-  let result = new Promise(async function(resolve, reject) {
+  return new Promise(async function(resolve, reject) {
     tempSiteExceptions[encodeURI(request.hostname)] = request.rule;
     await Promise.all([callRestoreAllHostnamesUnwantedCookies(), deleteAllTabsExistingUnwantedCookies(), restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()]);
     resolve();
     updateAllTabsIcons();
     updateActiveTabsCounts();
   });
-  return result;
 }
 
 function deleteTempSiteException(request) {
   // deletes a temporary exception
-  let result = new Promise(async function(resolve, reject) {
+  return new Promise(async function(resolve, reject) {
     delete tempSiteExceptions[encodeURI(request.hostname)];
     await Promise.all([callRestoreAllHostnamesUnwantedCookies(), deleteAllTabsExistingUnwantedCookies(), restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()]);
     resolve();
     updateAllTabsIcons();
     updateActiveTabsCounts();
   });
-  return result;
 }
 
 function clearTempSiteExceptions(request) {
   // deletes all temporary exceptions
-  let result = new Promise(async function(resolve, reject) {
+  return new Promise(async function(resolve, reject) {
     tempSiteExceptions = [];
     await Promise.all([callRestoreAllHostnamesUnwantedCookies(), deleteAllTabsExistingUnwantedCookies(), restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()]);
     resolve();
     updateAllTabsIcons();
     updateActiveTabsCounts();
   });
-  return result;
 }
 
 function getUnwantedCookiesForHostname(request) {
   // returns a domain's cookies from unwanted list
-  let result = new Promise(function(resolve, reject) {
+  return new Promise(function(resolve, reject) {
     let cookies = [];
     if (typeof openHostnamesUnwantedCookies[request.hostname] === "undefined") {
       resolve([]);
@@ -126,12 +119,11 @@ function getUnwantedCookiesForHostname(request) {
     }
     resolve(cookies);
   });
-  return result;
 }
 
 function addUnwantedCookie(request) {
   // adds a single cookie to unwanted list
-  let result = new Promise(function(resolve, reject) {
+  return new Promise(function(resolve, reject) {
     let cookieHostname = trimSubdomains(`http://${request.cookie.domain}`);
     // if it is undefined, it is a third party cookie which does not need to be recorded
     if (openHostnamesUnwantedCookies[cookieHostname] != undefined) {
@@ -141,24 +133,22 @@ function addUnwantedCookie(request) {
     }
     resolve();
   });
-  return result;
 }
 
 function restoreUnwantedCookie(request) {
   // re-creates a single cookie from unwanted list
-  let result = new Promise(async function(resolve, reject) {
+  return new Promise(async function(resolve, reject) {
     let hostname = trimSubdomains(`http://${request.domain}`);
     let key = `${encodeURI(request.domain)}|${encodeURI(request.name)}`;
     await addCookieFromObject(JSON.parse(openHostnamesUnwantedCookies[hostname].unwantedCookies[key]), request.cookieStore);
     delete openHostnamesUnwantedCookies[hostname].unwantedCookies[key];
     resolve();
   });
-  return result;
 }
 
 function restoreAllHostnamesUnwantedCookies(request) {
   // re-creates all hostnames' wanted cookies from unwanted list
-  let result = new Promise(async function(resolve, reject) {
+  return new Promise(async function(resolve, reject) {
     let hostnamePromises = Object.keys(openHostnamesUnwantedCookies).map(function(hostname) {
       // get behaviour for hostname
       return getSiteBehaviour(hostname).then(async function(behaviour) {
@@ -183,27 +173,24 @@ function restoreAllHostnamesUnwantedCookies(request) {
     await Promise.all(hostnamePromises);
     resolve();
   });
-  return result;
 }
 
 function deleteUnwantedCookie(request) {
   // deletes a cookie from unwanted list
-  let result = new Promise(function(resolve, reject) {
+  return new Promise(function(resolve, reject) {
     let hostname = trimSubdomains(`https://${request.domain}`);
     let key = `${encodeURI(request.domain)}|${encodeURI(request.name)}`;
     delete openHostnamesUnwantedCookies[hostname].unwantedCookies[key];
     resolve();
   });
-  return result;
 }
 
 function clearUnwantedCookiesforHostname(request) {
   // deletes a hostname's cookies from unwanted list
-  let result = new Promise(function(resolve, reject) {
+  return new Promise(function(resolve, reject) {
     openHostnamesUnwantedCookies[request.hostname].unwantedCookies = {};
     resolve();
   });
-  return result;
 }
 
 function populateOpenHostnamesUnwantedCookies() {
@@ -240,7 +227,7 @@ function removeClosedHostnamesFromOpenHostnamesUnwantedCookies() {
 
 function getTabDomStorageItemsAllowedStates(request) {
   // returns an array of booleans meaning whether a dom storage entry is allowed or not
-  let result = new Promise(async function(resolve, reject) {
+  return new Promise(async function(resolve, reject) {
     let behaviour = await getSiteBehaviour(trimSubdomains('http://' + request.domain));
     // if behaviour is allow all --> return true for all items
     if (behaviour == 2) {
@@ -256,7 +243,6 @@ function getTabDomStorageItemsAllowedStates(request) {
     });
     resolve(Promise.all(promises));
   });
-  return result;
 }
 
 function handleMessage(request, sender) {
