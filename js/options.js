@@ -1,6 +1,6 @@
 'use strict';
 // ui elements
-var slider, enableCookieCounterCheckbox, successText, denyOption, sessionOption, allowOption, saveButton, infoIcons;
+let slider, enableCookieCounterCheckbox, successText, denyOption, sessionOption, allowOption, saveButton, infoIcons;
 document.addEventListener('DOMContentLoaded', function() {
   assignUiElements();
   addEventlisteners();
@@ -9,9 +9,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function saveOptions() {
   // saves the options from ui
-  var defaultBehaviour = slider.value;
-  var enableCookieCounter = enableCookieCounterCheckbox.checked;
-  var setting = browser.storage.sync.set({
+  let defaultBehaviour = slider.value;
+  let enableCookieCounter = enableCookieCounterCheckbox.checked;
+  let setting = browser.storage.sync.set({
     defaultBehaviour: defaultBehaviour,
     enableCookieCounter: enableCookieCounter
   });
@@ -26,7 +26,7 @@ function saveOptions() {
 
 function restoreOptions() {
   // loads the current options and puts them into the ui
-  var getting = browser.storage.sync.get({
+  let getting = browser.storage.sync.get({
     // defaults
     defaultBehaviour: 2,
     enableCookieCounter: false
@@ -95,8 +95,7 @@ function addEventlisteners() {
     highlightActiveOption(2);
   });
   // info icons
-  var i;
-  for (i = 0; i < infoIcons.length; i++) {
+  for (let i = 0; i < infoIcons.length; i++) {
     infoIcons[i].addEventListener('click', function(e) {
       e.stopPropagation();
       sendInfoMessage(e.target.title);

@@ -1,10 +1,10 @@
 'use strict';
 //selected exception for the exception editor
-var exceptionInEditor = null;
+let exceptionInEditor = null;
 // ui elements
-var filterDomain, filterRule, exceptionTable, selectAllCheckBox, selectCheckBoxes, domainTextBox, denyAllRule, allowSessionRule, allowAllRule, entryEditorError, infoIcons, filterTextBoxes, filterSelects, selectAllCheckBoxTd, deleteButton, saveButton, clearButton, pageSpinner;
+let filterDomain, filterRule, exceptionTable, selectAllCheckBox, selectCheckBoxes, domainTextBox, denyAllRule, allowSessionRule, allowAllRule, entryEditorError, infoIcons, filterTextBoxes, filterSelects, selectAllCheckBoxTd, deleteButton, saveButton, clearButton, pageSpinner;
 const maxRows = 25;
-var entryList = [];
+let entryList = [];
 document.addEventListener('DOMContentLoaded', function() {
   assignUiElements();
   addEventlisteners();
@@ -15,14 +15,14 @@ function fillExceptionList() {
   // filters exceptions and stores them in entryList
   entryList = [];
   // get all the entries
-  var getting = browser.storage.local.get();
+  let getting = browser.storage.local.get();
   getting.then(function(results) {
     // create array of all whitelist entries received from storage (the key contains all the information)
-    var entries = [];
-    for (var result in results) {
+    let entries = [];
+    for (let result in results) {
       if (result.startsWith('ex|')) {
-        var resultContent = result.split('|');
-        var resultObj = {};
+        let resultContent = result.split('|');
+        let resultObj = {};
         resultObj.domain = resultContent[1];
         resultObj.ruleId = results[result];
         switch (resultObj.ruleId) {
@@ -46,7 +46,7 @@ function fillExceptionList() {
       }
     }
     // filter the entries
-    for (var entry in entries) {
+    for (let entry in entries) {
       if ((filterDomain.value == '' || entries[entry].domain.toLowerCase().includes(filterDomain.value.toLowerCase())) && (filterRule.value == '' || entries[entry].ruleId == filterRule.value)) {
         entryList.push(entries[entry]);
       }
@@ -61,7 +61,7 @@ function fillExceptionList() {
 
 function buildTableBody(page) {
   // fills the table using the existing entryList and given page number
-  var newTableBody = document.createElement('tbody');
+  let newTableBody = document.createElement('tbody');
   newTableBody.id = 'exceptionTableBody';
   // sort entries by domain first
   entryList.sort(function(entry1, entry2) {
@@ -74,11 +74,11 @@ function buildTableBody(page) {
     }
   });
   // add entries to list
-  for (var i = maxRows * (page - 1); i < entryList.length && i < maxRows * page; i++) {
-    var entry = entryList[i];
-    var tr = document.createElement('TR');
-    var td;
-    var selectCheckBox;
+  for (let i = maxRows * (page - 1); i < entryList.length && i < maxRows * page; i++) {
+    let entry = entryList[i];
+    let tr = document.createElement('TR');
+    let td;
+    let selectCheckBox;
     tr.addEventListener('click', function(e) {
       fillRuleEditor(this.attachedEntry);
     });
@@ -108,7 +108,7 @@ function buildTableBody(page) {
         return;
       }
       this.children[0].checked = !this.children[0].checked;
-      var evt = document.createEvent('HTMLEvents');
+      let evt = document.createEvent('HTMLEvents');
       evt.initEvent('change', false, true);
       this.children[0].dispatchEvent(evt);
     });
@@ -134,7 +134,7 @@ async function deleteSelectedEntries() {
   if (selectAllCheckBox.checked) {
     // delete all entries matching the filters
     if (confirm(`Are you sure you want to delete ${entryList.length} entries?`)) {
-      var promises = entryList.map(function(entry) {
+      let promises = entryList.map(function(entry) {
         return deleteSiteException(`https://${entry.domain}`);
       });
       await Promise.all(promises);
@@ -142,9 +142,9 @@ async function deleteSelectedEntries() {
     }
   } else {
     // delete only the selected entries
-    promises = Array.prototype.map.call(selectCheckBoxes, function(selectCheckBox) {
+    let promises = Array.prototype.map.call(selectCheckBoxes, function(selectCheckBox) {
       if (selectCheckBox.checked) {
-        var entry = selectCheckBox.parentElement.parentElement.attachedEntry;
+        let entry = selectCheckBox.parentElement.parentElement.attachedEntry;
         return deleteSiteException(`https://${entry.domain}`);
       }
     });
@@ -155,8 +155,8 @@ async function deleteSelectedEntries() {
 
 function saveEntry() {
   // saves the data from the exception editor
-  var rule = null;
-  var domain = domainTextBox.value;
+  let rule = null;
+  let domain = domainTextBox.value;
   if (denyAllRule.checked) {
     rule = 0;
   } else if (allowSessionRule.checked) {
@@ -166,7 +166,7 @@ function saveEntry() {
   } else {
     logError(Error(`Invalid rule input: ${rule}`));
   }
-  var adding = addSiteException(domain, rule, false, exceptionInEditor);
+  let adding = addSiteException(domain, rule, false, exceptionInEditor);
   adding.then(function() {
     fillExceptionList();
     fillRuleEditor(null);
@@ -236,14 +236,13 @@ function assignUiElements() {
 function addEventlisteners() {
   // adds all the event listeners to ui elements
   // info icons
-  var i;
-  for (i = 0; i < infoIcons.length; i++) {
+  for (let i = 0; i < infoIcons.length; i++) {
     infoIcons[i].addEventListener('click', function(e) {
       sendInfoMessage(e.target.title);
     });
   }
   // filter text boxes
-  for (i = 0; i < filterTextBoxes.length; i++) {
+  for (let i = 0; i < filterTextBoxes.length; i++) {
     filterTextBoxes[i].addEventListener('click', function(e) {
       e.stopPropagation();
     });
@@ -252,7 +251,7 @@ function addEventlisteners() {
     });
   }
   // filter dropdowns
-  for (i = 0; i < filterSelects.length; i++) {
+  for (let i = 0; i < filterSelects.length; i++) {
     filterSelects[i].addEventListener('click', function(e) {
       e.stopPropagation();
     });
@@ -262,10 +261,10 @@ function addEventlisteners() {
   }
   // select all checkbox
   selectAllCheckBox.addEventListener('change', function(e) {
-    for (i = 0; i < selectCheckBoxes.length; i++) {
+    for (let i = 0; i < selectCheckBoxes.length; i++) {
       if (selectCheckBoxes[i].checked !== this.checked) {
         selectCheckBoxes[i].checked = this.checked;
-        var evt = document.createEvent('HTMLEvents');
+        let evt = document.createEvent('HTMLEvents');
         evt.initEvent('change', false, true);
         selectCheckBoxes[i].dispatchEvent(evt);
       }
@@ -277,7 +276,7 @@ function addEventlisteners() {
       return;
     }
     this.children[1].checked = !this.children[1].checked;
-    var evt = document.createEvent('HTMLEvents');
+    let evt = document.createEvent('HTMLEvents');
     evt.initEvent('change', false, true);
     this.children[1].dispatchEvent(evt);
   });

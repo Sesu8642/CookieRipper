@@ -1,18 +1,18 @@
 'use strict';
-var activeTabUrl, activeTabId, activeTabCookieStore;
+let activeTabUrl, activeTabId, activeTabCookieStore;
 //selected cookie for the cookie editor
-var cookieInEditor = null;
-var domStorageEntryInEditor = null;
-var cookieList = [];
-var unwantedCookieList = [];
-var domList = [];
-var unwantedDomList = [];
+let cookieInEditor = null;
+let domStorageEntryInEditor = null;
+let cookieList = [];
+let unwantedCookieList = [];
+let domList = [];
+let unwantedDomList = [];
 // ui elements
-var firstPartyDomainArea, denyOption, sessionOption, allowOption, slider, useSiteBehaviourLbl, useSiteBehaviourIcon, useTempBehaviourArea, useSiteBehaviourArea, useTempBehaviour, useSiteBehaviour, headline, cookieStore, nonHttpInfo, mainView, cookieTable, domStorageTable, cookieDomainTextBox, cookieHostOnly, cookieNameTextBox, cookieValueTextBox, cookieSessionCookie, cookiePersistent, cookieDate, cookieTime, cookiePathTextBox, cookieFirstPartyDomainTextBox, cookieSecure, cookieHttpOnly, cookieDeleteButton, domStorageDomainTextBox, domStorageNameTextBox, domStorageValueTextBox, domStorageTemporary, domStoragePermanent, domStorageDeleteButton, makeRulePerm, cookieEditor, domStorageEditor, advancedCookieProperties, cookieAdvancedToggle, cookieCancelButton, domStorageCancelButton, cookieSaveButton, cookieEditorError, domStorageEditorError, domStorageSaveButton, cookieAddIcon, domAddIcon, cookieDeleteAllIcon, domDeleteAllIcon, optionsDropdown, optionsImage, dropdownItemSettings, dropdownItemClearTemp;
+let firstPartyDomainArea, denyOption, sessionOption, allowOption, slider, useSiteBehaviourLbl, useSiteBehaviourIcon, useTempBehaviourArea, useSiteBehaviourArea, useTempBehaviour, useSiteBehaviour, headline, cookieStore, nonHttpInfo, mainView, cookieTable, domStorageTable, cookieDomainTextBox, cookieHostOnly, cookieNameTextBox, cookieValueTextBox, cookieSessionCookie, cookiePersistent, cookieDate, cookieTime, cookiePathTextBox, cookieFirstPartyDomainTextBox, cookieSecure, cookieHttpOnly, cookieDeleteButton, domStorageDomainTextBox, domStorageNameTextBox, domStorageValueTextBox, domStorageTemporary, domStoragePermanent, domStorageDeleteButton, makeRulePerm, cookieEditor, domStorageEditor, advancedCookieProperties, cookieAdvancedToggle, cookieCancelButton, domStorageCancelButton, cookieSaveButton, cookieEditorError, domStorageEditorError, domStorageSaveButton, cookieAddIcon, domAddIcon, cookieDeleteAllIcon, domDeleteAllIcon, optionsDropdown, optionsImage, dropdownItemSettings, dropdownItemClearTemp;
 document.addEventListener('DOMContentLoaded', async function() {
   assignUiElements();
   addEventlisteners();
-  var tab = await getActiveTab();
+  let tab = await getActiveTab();
   activeTabUrl = tab.url;
   activeTabId = tab.id;
   activeTabCookieStore = await getTabCookieStore(activeTabId);
@@ -50,17 +50,17 @@ function highlightActiveOption(option) {
 
 function enableSiteException(temp) {
   // adds a site exception
-  var option = Number(slider.value);
-  var adding = addSiteException(activeTabUrl, option, temp);
+  let option = Number(slider.value);
+  let adding = addSiteException(activeTabUrl, option, temp);
   adding.then(function() {
     fillSiteInfo();
   }, logError);
 }
 async function fillSiteInfo() {
   // puts site specific info in ui including cookies and dom storage
-  async function depictPermException() {
+  async function depictPermException(hostname) {
     // deal with permanent exception
-    var tempSiteException = await getSiteException(hostname, false)
+    let tempSiteException = await getSiteException(hostname, false)
     if (tempSiteException === null) {
       useSiteBehaviourLbl.textContent = `use site behaviour (default; ${getBehaviourString(await callGetDefaultBehaviour())})`;
       useSiteBehaviourIcon.classList.add('hidden');
@@ -68,11 +68,11 @@ async function fillSiteInfo() {
       useSiteBehaviourLbl.textContent = `use site behaviour (${getBehaviourString(tempSiteException)})`;
       useSiteBehaviourIcon.classList.remove('hidden');
     }
-    depictTempException(tempSiteException);
+    depictTempException(hostname, tempSiteException);
   }
-  async function depictTempException(permException) {
+  async function depictTempException(hostname, permException) {
     // deal with temporary exception
-    var tempSiteException = await getSiteException(hostname, true);
+    let tempSiteException = await getSiteException(hostname, true);
     if (tempSiteException !== null) {
       useTempBehaviourArea.classList.add('selectedBehaviourArea');
       useSiteBehaviourArea.classList.remove('selectedBehaviourArea');
@@ -101,10 +101,10 @@ async function fillSiteInfo() {
     fillDomStorageList();
     // get all the cookies
     fillCookieList();
-    var hostname = trimSubdomains(activeTabUrl);
+    let hostname = trimSubdomains(activeTabUrl);
     headline.textContent = `Settings For ${hostname}`;
     cookieStore.textContent = `Cookie Store ID: ${activeTabCookieStore}`;
-    depictPermException();
+    depictPermException(hostname);
   } else {
     nonHttpInfo.classList.remove('hidden');
     mainView.classList.add('hidden');
@@ -115,12 +115,12 @@ function fillCookieList() {
   // gets cookies and stores them in cookieList
   cookieList = [];
   // get all the cookies
-  var getting = getAllCookies({
+  let getting = getAllCookies({
     url: activeTabUrl,
     storeId: activeTabCookieStore
   });
   getting.then(async function(cookies) {
-    var promises = cookies.map(function(cookie) {
+    let promises = cookies.map(function(cookie) {
       return getObjectWhitelistedState(cookie.domain, cookie.name, 'c').then(async function(whitelisted) {
         cookie.whitelisted = whitelisted;
         // add cookie to list
@@ -134,12 +134,12 @@ function fillCookieList() {
 async function fillUnwantedCookieList() {
   // gets unwanted cookies and stores them in unwantedCookieList
   unwantedCookieList = [];
-  var fullDomain = (new URL(activeTabUrl)).hostname;
-  var hostname = trimSubdomains(activeTabUrl);
-  var unwantedCookies = await callGetUnwantedCookiesForHostname(hostname);
+  let fullDomain = (new URL(activeTabUrl)).hostname;
+  let hostname = trimSubdomains(activeTabUrl);
+  let unwantedCookies = await callGetUnwantedCookiesForHostname(hostname);
   unwantedCookies.forEach(function(cookie) {
     // remove leading . from cookie domain for comparison
-    var cookieDomain = (cookie.domain.startsWith('.') ? cookie.domain.substring(1) : cookie.domain);
+    let cookieDomain = (cookie.domain.startsWith('.') ? cookie.domain.substring(1) : cookie.domain);
     if (fullDomain === cookieDomain || (!cookie.hostOnly && fullDomain.endsWith(`${cookieDomain}`))) {
       unwantedCookieList.push(cookie);
     }
@@ -151,20 +151,20 @@ function fillDomStorageList() {
   // gets dom storage and stores it in domList
   domList = [];
   // get all the entries
-  var getting = getTabDomStorage(activeTabId);
+  let getting = getTabDomStorage(activeTabId);
   getting.then(async function(response) {
-      var storageItems = [];
+      let storageItems = [];
       // create array of entry objects first
-      for (var i in response.localStorage) {
-        var entry = {};
+      for (let i in response.localStorage) {
+        let entry = {};
         entry.name = i;
         entry.value = response.localStorage[i];
         entry.domain = (new URL(activeTabUrl)).hostname;
         entry.permanence = 'permanent';
         storageItems.push(entry);
       }
-      for (i in response.sessionStorage) {
-        entry = {};
+      for (let i in response.sessionStorage) {
+        let entry = {};
         entry.name = i;
         entry.value = response.sessionStorage[i];
         entry.domain = (new URL(activeTabUrl)).hostname;
@@ -175,7 +175,7 @@ function fillDomStorageList() {
         fillUnwantedDomStorageList();
       }
       // add whitelist info
-      var promises = storageItems.map(function(storageItem) {
+      let promises = storageItems.map(function(storageItem) {
         return getObjectWhitelistedState(storageItem.domain, storageItem.name, 'd').then(function(whitelisted) {
           storageItem.whitelisted = whitelisted
           // add item to list
@@ -194,7 +194,7 @@ function fillDomStorageList() {
 }
 async function fillUnwantedDomStorageList() {
   // gets unwanted dom storage entries and stores them in unwantedDomList
-  var response = await getUnwantedDomStoregeEntries(activeTabId);
+  let response = await getUnwantedDomStoregeEntries(activeTabId);
   unwantedDomList = response.map(function(entry) {
     entry.domain = (new URL(activeTabUrl)).hostname;
     return entry;
@@ -205,7 +205,7 @@ async function fillUnwantedDomStorageList() {
 
 function buildCookieTableBody() {
   // fills the table using the existing cookieList, unwantedCookieList
-  var newTableBody = document.createElement('tbody');
+  let newTableBody = document.createElement('tbody');
   newTableBody.id = 'cookieTableBody';
   // sort cookies by whitelisted and name
   cookieList.sort(function(cookie1, cookie2) {
@@ -235,9 +235,9 @@ function buildCookieTableBody() {
   });
   // add cookies to list
   cookieList.forEach(function(cookie) {
-    var tr = document.createElement('TR');
-    var td;
-    var editIcon, deleteIcon, whitelistedCheckBox;
+    let tr = document.createElement('TR');
+    let td;
+    let editIcon, deleteIcon, whitelistedCheckBox;
     Object.defineProperty(tr, 'attachedCookie', {
       value: cookie,
       writable: true,
@@ -292,7 +292,7 @@ function buildCookieTableBody() {
         return;
       }
       this.children[0].checked = !this.children[0].checked;
-      var evt = document.createEvent('HTMLEvents');
+      let evt = document.createEvent('HTMLEvents');
       evt.initEvent('change', false, true);
       this.children[0].dispatchEvent(evt);
     });
@@ -330,9 +330,9 @@ function buildCookieTableBody() {
   });
   // add unwanted cookies to list
   unwantedCookieList.forEach(function(cookie) {
-    var tr = document.createElement('TR');
-    var td = document.createElement('TD');
-    var editIcon, deleteIcon, whitelistedCheckBox;
+    let tr = document.createElement('TR');
+    let td = document.createElement('TD');
+    let editIcon, deleteIcon, whitelistedCheckBox;
     tr.classList.add('blocked');
     Object.defineProperty(tr, 'attachedCookie', {
       value: cookie,
@@ -375,7 +375,7 @@ function buildCookieTableBody() {
         return;
       }
       this.children[0].checked = !this.children[0].checked;
-      var evt = document.createEvent('HTMLEvents');
+      let evt = document.createEvent('HTMLEvents');
       evt.initEvent('change', false, true);
       this.children[0].dispatchEvent(evt);
     });
@@ -410,7 +410,7 @@ function buildCookieTableBody() {
 }
 async function buildDomStorageTableBody() {
   // fills the table using the existing domList, unwantedDomList
-  var newTableBody = document.createElement('tbody');
+  let newTableBody = document.createElement('tbody');
   newTableBody.id = 'domStorageTableBody';
   // sort entries by the following criteria: whitelisted, permanence, name
   domList.sort(function(entry1, entry2) {
@@ -456,9 +456,9 @@ async function buildDomStorageTableBody() {
   });
   // add entries to list
   domList.forEach(function(entry) {
-    var tr = document.createElement('TR');
-    var td;
-    var editIcon, deleteIcon, whitelistedCheckBox;
+    let tr = document.createElement('TR');
+    let td;
+    let editIcon, deleteIcon, whitelistedCheckBox;
     Object.defineProperty(tr, 'attachedEntry', {
       value: entry,
       writable: true,
@@ -508,7 +508,7 @@ async function buildDomStorageTableBody() {
         return;
       }
       this.children[0].checked = !this.children[0].checked;
-      var evt = document.createEvent('HTMLEvents');
+      let evt = document.createEvent('HTMLEvents');
       evt.initEvent('change', false, true);
       this.children[0].dispatchEvent(evt);
     });
@@ -545,9 +545,9 @@ async function buildDomStorageTableBody() {
   });
   // add unwanted entries to list
   unwantedDomList.forEach(function(entry) {
-    var tr = document.createElement('TR');
-    var td;
-    var editIcon, deleteIcon, whitelistedCheckBox;
+    let tr = document.createElement('TR');
+    let td;
+    let editIcon, deleteIcon, whitelistedCheckBox;
     tr.classList.add('blocked');
     Object.defineProperty(tr, 'attachedEntry', {
       value: entry,
@@ -580,11 +580,11 @@ async function buildDomStorageTableBody() {
       if (e.target.checked) {
         await addWhitelistEntry(e.target.parentElement.parentElement.attachedEntry.domain, e.target.parentElement.parentElement.attachedEntry.name, 'd');
         // whitelist does not differentiate between local and session storage
-        var entryVariation1 = {
+        let entryVariation1 = {
           name: e.target.parentElement.parentElement.attachedEntry.name,
           permanence: 'permanent'
         };
-        var entryVariation2 = {
+        let entryVariation2 = {
           name: e.target.parentElement.parentElement.attachedEntry.name,
           permanence: 'temporary'
         };
@@ -600,7 +600,7 @@ async function buildDomStorageTableBody() {
         return;
       }
       this.children[0].checked = !this.children[0].checked;
-      var evt = document.createEvent('HTMLEvents');
+      let evt = document.createEvent('HTMLEvents');
       evt.initEvent('change', false, true);
       this.children[0].dispatchEvent(evt);
     });
@@ -640,6 +640,7 @@ function fillCookieEditor(cookie, domain) {
   // fills the cookie editor ui elements with the given values
   // reset error text
   cookieEditorError.textContent = "";
+  let expDate, hour, minute;
   if (cookie !== null) {
     // existing cookie
     cookieInEditor = cookie;
@@ -650,14 +651,14 @@ function fillCookieEditor(cookie, domain) {
     cookieSessionCookie.checked = cookie.session;
     cookiePersistent.checked = !cookie.session;
     if (cookie.session) {
-      var expDate = new Date();
+      expDate = new Date();
       expDate.setDate(expDate.getDate() + 1);
     } else {
       expDate = new Date(cookie.expirationDate * 1000);
     }
     cookieDate.valueAsDate = expDate;
-    var hour = `${(expDate.getHours() < 10 ? '0' : '')}${expDate.getHours()}`;
-    var minute = `${(expDate.getMinutes() < 10 ? '0' : '')}${expDate.getMinutes()}`;
+    hour = `${(expDate.getHours() < 10 ? '0' : '')}${expDate.getHours()}`;
+    minute = `${(expDate.getMinutes() < 10 ? '0' : '')}${expDate.getMinutes()}`;
     cookieTime.value = `${hour}:${minute}`;
     cookiePathTextBox.value = cookie.path;
     cookieFirstPartyDomainTextBox.value = cookie.firstPartyDomain;
@@ -728,7 +729,7 @@ function showView(view) {
 
 function toggleAdvancedProperties() {
   // toggles the advanced property area visibility in cookie editor
-  var section = advancedCookieProperties;
+  let section = advancedCookieProperties;
   section.classList.toggle('hidden');
   if (window.getComputedStyle(section).getPropertyValue('display') === 'none') {
     cookieAdvancedToggle.innerText = '[show advanced]';
@@ -855,7 +856,7 @@ function addEventlisteners() {
     updateActiveTabsCounts();
   });
   cookieSaveButton.addEventListener('click', function() {
-    var adding = addCookie(cookieNameTextBox.value, cookieValueTextBox.value, cookieDomainTextBox.value, cookiePathTextBox.value, cookieSessionCookie.checked, cookieDate.valueAsDate, cookieTime.valueAsDate, cookieHostOnly.checked, cookieSecure.checked, cookieHttpOnly.checked, activeTabCookieStore, cookieFirstPartyDomainTextBox.value, cookieInEditor);
+    let adding = addCookie(cookieNameTextBox.value, cookieValueTextBox.value, cookieDomainTextBox.value, cookiePathTextBox.value, cookieSessionCookie.checked, cookieDate.valueAsDate, cookieTime.valueAsDate, cookieHostOnly.checked, cookieSecure.checked, cookieHttpOnly.checked, activeTabCookieStore, cookieFirstPartyDomainTextBox.value, cookieInEditor);
     adding.then(function() {
       // return to overview
       updateActiveTabsCounts();
@@ -866,7 +867,7 @@ function addEventlisteners() {
     });
   });
   domStorageSaveButton.addEventListener('click', function() {
-    var adding = addDomStorageEntry(activeTabId, domStoragePermanent.checked, domStorageNameTextBox.value, domStorageValueTextBox.value, domStorageEntryInEditor);
+    let adding = addDomStorageEntry(activeTabId, domStoragePermanent.checked, domStorageNameTextBox.value, domStorageValueTextBox.value, domStorageEntryInEditor);
     adding.then(function() {
       // return to overview
       updateActiveTabsCounts();
@@ -922,7 +923,7 @@ function addEventlisteners() {
     }
   });
   dropdownItemSettings.addEventListener('click', function() {
-    var creating = browser.tabs.create({
+    let creating = browser.tabs.create({
       url: '/options.html'
     });
     creating.then(function() {}, logError);
@@ -932,9 +933,8 @@ function addEventlisteners() {
     fillSiteInfo();
   });
   // info icons
-  var infoIcons = document.getElementsByClassName('infoIcon');
-  var i;
-  for (i = 0; i < infoIcons.length; i++) {
+  let infoIcons = document.getElementsByClassName('infoIcon');
+  for (let i = 0; i < infoIcons.length; i++) {
     infoIcons[i].addEventListener('click', function(e) {
       e.stopPropagation();
       sendInfoMessage(e.target.title);

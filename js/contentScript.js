@@ -11,11 +11,11 @@ if (window == window.top) {
 }
 window.addEventListener('message', function(event) {
   if (event.data.type && (event.data.type == 'cookieRipper_domStorageSet')) {
-    var storageItems = [{
+    let storageItems = [{
       name: event.data.key,
       storage: event.data.storageType
     }];
-    var sending = browser.runtime.sendMessage({
+    let sending = browser.runtime.sendMessage({
       type: 'getTabDomStorageItemsAllowedStates',
       items: storageItems,
       domain: window.location.host
@@ -69,7 +69,7 @@ function handleMessage(request) {
 
 function sendStorage() {
   // sends both local and session storage
-  var answer = new Promise(function(resolve, reject) {
+  let answer = new Promise(function(resolve, reject) {
     resolve({
       localStorage: JSON.stringify(localStorage),
       sessionStorage: JSON.stringify(sessionStorage)
@@ -80,7 +80,7 @@ function sendStorage() {
 
 function deleteStorageEntry(request) {
   // deletes a given storage entry
-  var answer = new Promise(function(resolve, reject) {
+  let answer = new Promise(function(resolve, reject) {
     if (request.entry.permanence === 'permanent') {
       localStorage.removeItem(request.entry.name);
     } else if (request.entry.permanence === 'temporary') {
@@ -93,7 +93,7 @@ function deleteStorageEntry(request) {
 
 function clearStorage() {
   // deletes all local and session storage entries
-  var answer = new Promise(function(resolve, reject) {
+  let answer = new Promise(function(resolve, reject) {
     localStorage.clear();
     sessionStorage.clear();
     unwantedDomStorageEntries = [];
@@ -104,7 +104,7 @@ function clearStorage() {
 
 function addStorageEntry(request) {
   // adds the given entry to the given storage
-  var answer = new Promise(function(resolve, reject) {
+  let answer = new Promise(function(resolve, reject) {
     if (request.storage === 'local') {
       localStorage.setItem(request.name, request.value);
     } else if (request.storage === 'session') {
@@ -117,7 +117,7 @@ function addStorageEntry(request) {
 
 function deleteUnwantedStorageEntry(request) {
   // deletes an entry from unwanted list
-  var answer = new Promise(function(resolve, reject) {
+  let answer = new Promise(function(resolve, reject) {
     unwantedDomStorageEntries = unwantedDomStorageEntries.filter(function(entry) {
       if (entry.name === request.entry.name && entry.permanence === request.entry.permanence) {
         return false;
@@ -131,7 +131,7 @@ function deleteUnwantedStorageEntry(request) {
 
 function restoreUnwantedStorageEntry(request) {
   // re-creates a single entry from unwanted list
-  var answer = new Promise(async function(resolve, reject) {
+  let answer = new Promise(async function(resolve, reject) {
     unwantedDomStorageEntries.forEach(function(entry) {
       if (entry.name === request.entry.name && entry.permanence === request.entry.permanence) {
         if (entry.permanence === 'permanent') {
@@ -154,9 +154,9 @@ function restoreUnwantedStorageEntry(request) {
 
 function restoreUnwantedStorageEntries() {
   // re-creates all hostnames' wanted dom storage entries from unwanted list
-  var answer = new Promise(async function(resolve, reject) {
-    var domain = window.location.host;
-    var storageItems = [];
+  let answer = new Promise(async function(resolve, reject) {
+    let domain = window.location.host;
+    let storageItems = [];
     unwantedDomStorageEntries.forEach(function(entry) {
       // create list of storage items and send them to the background page
       storageItems.push({
@@ -164,14 +164,14 @@ function restoreUnwantedStorageEntries() {
         storage: entry.permanence === 'permanent' ? 'local' : 'session'
       });
     });
-    var sending = browser.runtime.sendMessage({
+    let sending = browser.runtime.sendMessage({
       type: 'getTabDomStorageItemsAllowedStates',
       items: storageItems,
       domain: domain
     });
     sending.then(async function(response) {
       // restore the wanted items
-      for (var i = 0; i < response.length; i++) {
+      for (let i = 0; i < response.length; i++) {
         if (response[i]) {
           restoreUnwantedStorageEntry({
             entry: {
@@ -189,31 +189,31 @@ function restoreUnwantedStorageEntries() {
 
 function deleteExistingUnwantedStorageEntries() {
   // deletes all existung but unwanted entries
-  var answer = new Promise(function(resolve, reject) {
-    var domain = window.location.host;
+  let answer = new Promise(function(resolve, reject) {
+    let domain = window.location.host;
     try {
       // create list of storage items and send them to the background page
-      var storageItems = [];
-      for (var i = 0; i < localStorage.length; i++) {
+      let storageItems = [];
+      for (let i = 0; i < localStorage.length; i++) {
         storageItems.push({
           name: localStorage.key(i),
           storage: 'local'
         });
       }
-      for (i = 0; i < sessionStorage.length; i++) {
+      for (let i = 0; i < sessionStorage.length; i++) {
         storageItems.push({
           name: sessionStorage.key(i),
           storage: 'session'
         });
       }
-      var sending = browser.runtime.sendMessage({
+      let sending = browser.runtime.sendMessage({
         type: 'getTabDomStorageItemsAllowedStates',
         items: storageItems,
         domain: domain
       });
       sending.then(async function(response) {
         // delete the unwanted items
-        for (i = 0; i < response.length; i++) {
+        for (let i = 0; i < response.length; i++) {
           if (!response[i]) {
             if (storageItems[i].storage == 'local') {
               unwantedDomStorageEntries.push({
@@ -245,10 +245,10 @@ function deleteExistingUnwantedStorageEntries() {
 function injectScript() {
   // adds a script tag into the html document to notify when dom storage is written
   // using a string loads faster than the js from the website; using a separate js file does not
-  var injectJS = `
-  var _setItem = Storage.prototype.setItem;
+  let injectJS = `
+  let _setItem = Storage.prototype.setItem;
   Storage.prototype.setItem = function(key, value) {
-    var storageType;
+    let storageType;
     if (this === window.localStorage) {
       storageType = 'localStorage';
     } else if (this === window.sessionStorage) {
@@ -263,7 +263,7 @@ function injectScript() {
     _setItem.apply(this, arguments);
   }
   `
-  var script = document.createElement('script');
+  let script = document.createElement('script');
   script.textContent = injectJS;
   // Add the script tag to the DOM
   (document.head || document.documentElement).appendChild(script);

@@ -4,13 +4,13 @@
  *
  */
 /* for accessing variables from background page if not in private mode */
-var bgPage = browser.extension.getBackgroundPage();
+let bgPage = browser.extension.getBackgroundPage();
 /* whether firstPartyIsolation is supported */
-var firstPartyIsolationSupported = checkFirstPartyIsolationSupport();
+let firstPartyIsolationSupported = checkFirstPartyIsolationSupport();
 
 function checkFirstPartyIsolationSupport() {
   // checks whether the first party domain cookie property is supported
-  var getting = browser.cookies.get({
+  let getting = browser.cookies.get({
     name: '',
     url: '',
     firstPartyDomain: ''
@@ -29,12 +29,12 @@ function checkFirstPartyIsolationSupport() {
  */
 function callGetDefaultBehaviour() {
   // gets default behaviour from background page
-  var result = new Promise(async function(resolve, reject) {
+  let result = new Promise(async function(resolve, reject) {
     // use function directly or send message depending on the availability of bgPage
     if (bgPage !== null) {
       resolve(bgPage.defaultBehaviour);
     } else {
-      var getting = browser.runtime.sendMessage({
+      let getting = browser.runtime.sendMessage({
         type: 'getDefaultBehaviour'
       });
       getting.then(resolve, logError);
@@ -45,12 +45,12 @@ function callGetDefaultBehaviour() {
 
 function callGetEnableCookieCounter() {
   // gets default behaviour from background page
-  var result = new Promise(async function(resolve, reject) {
+  let result = new Promise(async function(resolve, reject) {
     // use function directly or send message depending on the availability of bgPage
     if (bgPage !== null) {
       resolve(bgPage.enableCookieCounter);
     } else {
-      var getting = browser.runtime.sendMessage({
+      let getting = browser.runtime.sendMessage({
         type: 'getEnableCookieCounter'
       });
       getting.then(resolve, logError);
@@ -61,12 +61,12 @@ function callGetEnableCookieCounter() {
 
 function callLoadSettings() {
   // reloads settings in background page
-  var result = new Promise(async function(resolve, reject) {
+  let result = new Promise(async function(resolve, reject) {
     // use function directly or send message depending on the availability of bgPage
     if (bgPage !== null) {
       bgPage.loadSettings();
     } else {
-      var getting = browser.runtime.sendMessage({
+      let getting = browser.runtime.sendMessage({
         type: 'loadSettings'
       });
       getting.then(resolve, logError);
@@ -87,15 +87,15 @@ function getAllCookies(parameters) {
 
 function addCookie(name, value, domain, path, session, date, time, hostOnly, secure, httpOnly, cookieStore, firstPartyDomain, overwriteCookie = null) {
   // creates a new cookie from the given data; also makes sure the provided overwrite-cookie gets actually overwritten or deleted
-  var result = new Promise(async function(resolve, reject) {
+  let result = new Promise(async function(resolve, reject) {
     // delete overwriteCookie
     if (overwriteCookie !== null) {
       await deleteCookie(overwriteCookie);
     }
     // create new cookie
-    var url = (domain.startsWith('.') ? `https://${domain.substr(1)}` : `https://${domain}`);
-    var expirationDate = (session ? null : ((date.getTime() + time.getTime() + new Date().getTimezoneOffset() * 60000) / 1000));
-    var parameters = {
+    let url = (domain.startsWith('.') ? `https://${domain.substr(1)}` : `https://${domain}`);
+    let expirationDate = (session ? null : ((date.getTime() + time.getTime() + new Date().getTimezoneOffset() * 60000) / 1000));
+    let parameters = {
       // url is mainly used for creating host only cookies (do this by specifying no domain) which are only accessible for the exact (sub-)domain
       url: url,
       // deal with host only --> do not supply domain if host only
@@ -112,16 +112,17 @@ function addCookie(name, value, domain, path, session, date, time, hostOnly, sec
     if (firstPartyIsolationSupported) {
       parameters.firstPartyDomain = firstPartyDomain;
     }
-    var setting = browser.cookies.set(parameters);
+    let setting = browser.cookies.set(parameters);
     setting.then(async function() {
       // make sure that if the cookie is unwanted, it is deleted before resolving to prevent the ui from refreshing too early with incorrect data
       // cookie.set returns a cookie object but seems to be unreliable in both chromium and ff so just use the input data instead
+      let newDomain;
       if (!domain.startsWith(".")) {
-        var newDomain = hostOnly ? domain : `.${domain}`;
+        newDomain = hostOnly ? domain : `.${domain}`;
       } else {
         newDomain = hostOnly ? domain.slice(1) : domain;
       }
-      var newCookie = {
+      let newCookie = {
         url: url,
         // deal with host only --> do not supply domain if host only
         domain: newDomain,
@@ -134,7 +135,7 @@ function addCookie(name, value, domain, path, session, date, time, hostOnly, sec
         expirationDate: expirationDate,
         storeId: cookieStore
       };
-      var allowed = await getCookieAllowedState(newCookie);
+      let allowed = await getCookieAllowedState(newCookie);
       if (allowed) {
         resolve();
       } else {
@@ -155,9 +156,9 @@ function addCookie(name, value, domain, path, session, date, time, hostOnly, sec
 
 function addCookieFromObject(cookie, cookieStore) {
   // creates a new cookie from the given cookie object
-  var result = new Promise(async function(resolve, reject) {
+  let result = new Promise(async function(resolve, reject) {
     // create new cookie
-    var parameters = {
+    let parameters = {
       // url is mainly used for creating host only cookies (do this by specifying no domain) which are only accessible for the exact (sub-)domain
       // create url from domain (remove leading . first)
       url: (cookie.domain.startsWith('.') ? `https://${cookie.domain.substr(1)}` : `https://${cookie.domain}`),
@@ -174,7 +175,7 @@ function addCookieFromObject(cookie, cookieStore) {
     if (firstPartyIsolationSupported) {
       parameters.firstPartyDomain = cookie.firstPartyDomain;
     }
-    var setting = browser.cookies.set(parameters);
+    let setting = browser.cookies.set(parameters);
     setting.then(resolve, logError);
   });
   return result;
@@ -182,8 +183,8 @@ function addCookieFromObject(cookie, cookieStore) {
 
 function deleteCookie(cookie) {
   // deletes the provided cookie
-  var result = new Promise(function(resolve, reject) {
-    var parameters = {
+  let result = new Promise(function(resolve, reject) {
+    let parameters = {
       url: `https://${cookie.domain}${cookie.path}`,
       name: cookie.name,
       storeId: cookie.storeId
@@ -191,7 +192,7 @@ function deleteCookie(cookie) {
     if (firstPartyIsolationSupported) {
       parameters.firstPartyDomain = cookie.firstPartyDomain;
     }
-    var removing = browser.cookies.remove(parameters);
+    let removing = browser.cookies.remove(parameters);
     removing.then(resolve, logError);
   });
   return result;
@@ -199,13 +200,13 @@ function deleteCookie(cookie) {
 
 function deleteAllCookies(url, cookieStore) {
   // deletes all cookies from the given url
-  var result = new Promise(function(resolve, reject) {
-    var getting = getAllCookies({
+  let result = new Promise(function(resolve, reject) {
+    let getting = getAllCookies({
       url: url,
       storeId: cookieStore
     });
     getting.then(async function(siteCookies) {
-      var promises = siteCookies.map(function(cookie) {
+      let promises = siteCookies.map(function(cookie) {
         return deleteCookie(cookie);
       });
       // also remove unwanted cookies from memory
@@ -219,15 +220,15 @@ function deleteAllCookies(url, cookieStore) {
 
 function deleteExistingUnwantedCookies(url, cookieStore) {
   // deletes all existung but unwanted cookies from a given url
-  var result = new Promise(async function(resolve, reject) {
-    var hostname = trimSubdomains(url);
-    var behaviour = await getSiteBehaviour(hostname);
-    var getting = getAllCookies({
+  let result = new Promise(async function(resolve, reject) {
+    let hostname = trimSubdomains(url);
+    let behaviour = await getSiteBehaviour(hostname);
+    let getting = getAllCookies({
       url: url,
       storeId: cookieStore
     });
     getting.then(async function(siteCookies) {
-      var promises = siteCookies.map(function(cookie) {
+      let promises = siteCookies.map(function(cookie) {
         if (behaviour == 0 || (behaviour == 1 && !cookie.session)) {
           return getObjectWhitelistedState(cookie.domain, cookie.name, 'c').then(async function(whitelisted) {
             if (!whitelisted) {
@@ -246,10 +247,10 @@ function deleteExistingUnwantedCookies(url, cookieStore) {
 
 function deleteAllTabsExistingUnwantedCookies() {
   // deletes all existung but unwanted cookies from all open tabs
-  var result = new Promise(function(resolve, reject) {
-    var querying = browser.tabs.query({});
+  let result = new Promise(function(resolve, reject) {
+    let querying = browser.tabs.query({});
     querying.then(async function(tabs) {
-      var promises = tabs.map(function(tab) {
+      let promises = tabs.map(function(tab) {
         if (tab.url.startsWith('http')) {
           return getTabCookieStore(tab.id).then(async function(cookieStore) {
             await deleteExistingUnwantedCookies(tab.url, cookieStore);
@@ -265,15 +266,15 @@ function deleteAllTabsExistingUnwantedCookies() {
 
 function getCookieAllowedState(cookie) {
   // returns if a given cookie is allowed (should be accepted) or not
-  var result = new Promise(async function(resolve, reject) {
-    var hostname = trimSubdomains(`http://${cookie.domain}`);
-    var caseBehaviour = await getSiteBehaviour(hostname);
+  let result = new Promise(async function(resolve, reject) {
+    let hostname = trimSubdomains(`http://${cookie.domain}`);
+    let caseBehaviour = await getSiteBehaviour(hostname);
     // allow if all cookies are allowed for that site
     if (caseBehaviour == 2) {
       return resolve(true);
     }
     // allow if the cookie is whitelisted
-    var whitelisted = await getObjectWhitelistedState(cookie.domain, cookie.name, 'c');
+    let whitelisted = await getObjectWhitelistedState(cookie.domain, cookie.name, 'c');
     if (whitelisted) {
       return resolve(true);
     }
@@ -309,7 +310,7 @@ async function handleCookieEvent(changeInfo) {
   if (changeInfo.removed) {
     return;
   }
-  var allowed = await getCookieAllowedState(changeInfo.cookie);
+  let allowed = await getCookieAllowedState(changeInfo.cookie);
   if (!allowed) {
     callAddUnwantedCookie(changeInfo.cookie);
     await deleteCookie(changeInfo.cookie);
@@ -322,10 +323,11 @@ async function handleCookieEvent(changeInfo) {
  */
 function callGetUnwantedCookiesForHostname(hostname) {
   // returns the object that stores the cookies for the given hostname in unwanted list
-  var result = new Promise(async function(resolve, reject) {
+  let result = new Promise(async function(resolve, reject) {
     // use function directly or send message depending on the availability of bgPage
+    let getting;
     if (bgPage !== null) {
-      var getting = bgPage.getUnwantedCookiesForHostname({
+      getting = bgPage.getUnwantedCookiesForHostname({
         hostname: hostname
       });
     } else {
@@ -341,12 +343,13 @@ function callGetUnwantedCookiesForHostname(hostname) {
 
 function callAddUnwantedCookie(cookie) {
   // adds a cookie to the list of unwanted cookies
-  var result = new Promise(function(resolve, reject) {
+  let result = new Promise(function(resolve, reject) {
     // only do it if the site is opened in a tab
     // stringify to prevent some weird ff dead object issue
     // use function directly or send message depending on the availability of bgPage
+    let adding;
     if (bgPage !== null) {
-      var adding = bgPage.addUnwantedCookie({
+      adding = bgPage.addUnwantedCookie({
         cookie: cookie
       });
     } else {
@@ -362,10 +365,11 @@ function callAddUnwantedCookie(cookie) {
 
 function callRestoreUnwantedCookie(domain, name, cookieStore) {
   // re-creates a cookie from unwanted list in case the user whitelists it
-  var result = new Promise(async function(resolve, reject) {
+  let result = new Promise(async function(resolve, reject) {
     // use function directly or send message depending on the availability of bgPage
+    let getting;
     if (bgPage !== null) {
-      var getting = bgPage.restoreUnwantedCookie({
+      getting = bgPage.restoreUnwantedCookie({
         domain: domain,
         name: name,
         cookieStore: cookieStore
@@ -385,10 +389,11 @@ function callRestoreUnwantedCookie(domain, name, cookieStore) {
 
 function callRestoreAllHostnamesUnwantedCookies() {
   // re-creates cookies from unwanted list in case the user changes the behaviour for a hostname
-  var result = new Promise(async function(resolve, reject) {
+  let result = new Promise(async function(resolve, reject) {
     // use function directly or send message depending on the availability of bgPage
+    let restoring;
     if (bgPage !== null) {
-      var restoring = bgPage.restoreAllHostnamesUnwantedCookies();
+      restoring = bgPage.restoreAllHostnamesUnwantedCookies();
     } else {
       restoring = browser.runtime.sendMessage({
         type: 'restoreAllHostnamesUnwantedCookies'
@@ -401,10 +406,11 @@ function callRestoreAllHostnamesUnwantedCookies() {
 
 function callDeleteUnwantedCookie(domain, name) {
   // deletes a cookie from the list of unwanted cookies
-  var result = new Promise(function(resolve, reject) {
+  let result = new Promise(function(resolve, reject) {
     // use function directly or send message depending on the availability of bgPage
+    let adding
     if (bgPage !== null) {
-      var adding = bgPage.deleteUnwantedCookie({
+      adding = bgPage.deleteUnwantedCookie({
         domain: domain,
         name: name
       });
@@ -422,11 +428,12 @@ function callDeleteUnwantedCookie(domain, name) {
 
 function callClearUnwantedCookiesforHostname(url) {
   // clears all unwanted cookies from the list of unwanted cookies for a hostname
-  var result = new Promise(function(resolve, reject) {
-    var hostname = trimSubdomains(url);
+  let result = new Promise(function(resolve, reject) {
+    let hostname = trimSubdomains(url);
     // use function directly or send message depending on the availability of bgPage
+    let deleting;
     if (bgPage !== null) {
-      var deleting = bgPage.clearUnwantedCookiesforHostname({
+      deleting = bgPage.clearUnwantedCookiesforHostname({
         hostname: hostname
       });
     } else {
@@ -445,8 +452,8 @@ function callClearUnwantedCookiesforHostname(url) {
  */
 function getTabDomStorage(tabId) {
   // returns both local and session storage from a given tab
-  var result = new Promise(function(resolve, reject) {
-    var sending = browser.tabs.sendMessage(tabId, {
+  let result = new Promise(function(resolve, reject) {
+    let sending = browser.tabs.sendMessage(tabId, {
       type: 'getStorage'
     });
     sending.then(function(result) {
@@ -460,8 +467,8 @@ function getTabDomStorage(tabId) {
 
 function getUnwantedDomStoregeEntries(tabId) {
   // the unwanted dom storage entries from a given tab
-  var result = new Promise(function(resolve, reject) {
-    var sending = browser.tabs.sendMessage(tabId, {
+  let result = new Promise(function(resolve, reject) {
+    let sending = browser.tabs.sendMessage(tabId, {
       type: 'getUnwantedStorage'
     });
     sending.then(function(result) {
@@ -473,13 +480,13 @@ function getUnwantedDomStoregeEntries(tabId) {
 
 function addDomStorageEntry(tabId, persistent, name, value, overwriteEntry = null) {
   // adds a new dom storage entry to a given tab
-  var result = new Promise(async function(resolve, reject) {
+  let result = new Promise(async function(resolve, reject) {
     // delete overwriteEntry
     if (overwriteEntry !== null) {
       await deleteDomStorageEntry(tabId, overwriteEntry);
     }
-    var storage = (persistent ? 'local' : 'session');
-    var sending = browser.tabs.sendMessage(tabId, {
+    let storage = (persistent ? 'local' : 'session');
+    let sending = browser.tabs.sendMessage(tabId, {
       type: 'addEntry',
       storage: storage,
       name: name,
@@ -498,8 +505,8 @@ function addDomStorageEntry(tabId, persistent, name, value, overwriteEntry = nul
 
 function deleteDomStorageEntry(tabId, entry) {
   // deletes a given dom storage entry from a given tab
-  var result = new Promise(function(resolve, reject) {
-    var sending = browser.tabs.sendMessage(tabId, {
+  let result = new Promise(function(resolve, reject) {
+    let sending = browser.tabs.sendMessage(tabId, {
       type: 'deleteEntry',
       entry: entry
     });
@@ -510,8 +517,8 @@ function deleteDomStorageEntry(tabId, entry) {
 
 function deleteUnwantedDomStorageEntry(tabId, entry) {
   // deletes a given dom storage entry from a given tab
-  var result = new Promise(function(resolve, reject) {
-    var sending = browser.tabs.sendMessage(tabId, {
+  let result = new Promise(function(resolve, reject) {
+    let sending = browser.tabs.sendMessage(tabId, {
       type: 'deleteUnwantedEntry',
       entry: entry
     });
@@ -522,8 +529,8 @@ function deleteUnwantedDomStorageEntry(tabId, entry) {
 
 function restoreUnwantedDomStorageEntry(tabId, entry) {
   // re-creates a dom storage entry from unwanted list in case the user whitelists it
-  var result = new Promise(function(resolve, reject) {
-    var sending = browser.tabs.sendMessage(tabId, {
+  let result = new Promise(function(resolve, reject) {
+    let sending = browser.tabs.sendMessage(tabId, {
       type: 'restoreUnwantedEntry',
       entry: entry
     });
@@ -534,10 +541,10 @@ function restoreUnwantedDomStorageEntry(tabId, entry) {
 
 function restoreAllTabsUnwantedDomStorageEntries() {
   // re-creates all tabs' wanted dom storage entries from unwanted list
-  var result = new Promise(function(resolve, reject) {
-    var querying = browser.tabs.query({});
+  let result = new Promise(function(resolve, reject) {
+    let querying = browser.tabs.query({});
     querying.then(async function(tabs) {
-      var promises = tabs.map(async function(tab) {
+      let promises = tabs.map(async function(tab) {
         if (tab.url.startsWith('http')) {
           return browser.tabs.sendMessage(tab.id, {
             type: 'restoreUnwantedEntries'
@@ -553,12 +560,13 @@ function restoreAllTabsUnwantedDomStorageEntries() {
 
 function deleteExistingUnwantedDomStorageEntries(tabId) {
   // deletes all existung but unwanted dom storage entries from a given tab
-  var result = new Promise(async function(resolve, reject) {
+  let result = new Promise(async function(resolve, reject) {
     try {
       await browser.tabs.sendMessage(tabId, {
         type: 'deleteExistingUnwantedEntries'
       });
     } catch (error) {
+      console.log((await browser.tabs.get(tabId)).url);
       console.error(error);
     }
     resolve();
@@ -568,10 +576,10 @@ function deleteExistingUnwantedDomStorageEntries(tabId) {
 
 function deleteAllTabsExistingUnwantedDomStorageEntries() {
   // deletes all existung but unwanted dom storage entries from all open tabs
-  var result = new Promise(function(resolve, reject) {
-    var querying = browser.tabs.query({});
+  let result = new Promise(function(resolve, reject) {
+    let querying = browser.tabs.query({});
     querying.then(async function(tabs) {
-      var promises = tabs.map(async function(tab) {
+      let promises = tabs.map(async function(tab) {
         if (tab.url.startsWith('http')) {
           await deleteExistingUnwantedDomStorageEntries(tab.id);
         }
@@ -585,8 +593,8 @@ function deleteAllTabsExistingUnwantedDomStorageEntries() {
 
 function clearTabDomStorage(tabId) {
   // deletes all dom storage entries from a given tab
-  var answer = new Promise(function(resolve, reject) {
-    var sending = browser.tabs.sendMessage(tabId, {
+  let answer = new Promise(function(resolve, reject) {
+    let sending = browser.tabs.sendMessage(tabId, {
       type: 'clearStorage'
     });
     sending.then(resolve, logError);
@@ -598,11 +606,12 @@ function clearTabDomStorage(tabId) {
  */
 function getSiteException(hostname, temporary) {
   // returns the exception for the given hostname; returns null if there is none
-  var result = new Promise(function(resolve, reject) {
+  let result = new Promise(function(resolve, reject) {
+    let getting;
     if (temporary) {
       // use function directly or send message depending on the availability of bgPage
       if (bgPage !== null) {
-        var getting = bgPage.getTempSiteException({
+        getting = bgPage.getTempSiteException({
           hostname: hostname
         });
       } else {
@@ -613,7 +622,7 @@ function getSiteException(hostname, temporary) {
       }
       getting.then(resolve, logError);
     } else {
-      var key = `ex|${hostname}`;
+      let key = `ex|${hostname}`;
       getting = browser.storage.local.get({
         [key]: null
       });
@@ -627,16 +636,17 @@ function getSiteException(hostname, temporary) {
 
 function addSiteException(url, rule, temporary, overwriteException = null) {
   // adds a new site exception for the given domain
-  var result = new Promise(async function(resolve, reject) {
+  let result = new Promise(async function(resolve, reject) {
     // delete overwriteException
     if (overwriteException !== null) {
       await deleteSiteException(`https://${overwriteException.domain}`, false);
     }
-    var hostname = trimSubdomains(url);
+    let hostname = trimSubdomains(url);
     if (temporary) {
       // use function directly or send message depending on the availability of bgPage
+      let adding;
       if (bgPage !== null) {
-        var adding = bgPage.addTempSiteException({
+        adding = bgPage.addTempSiteException({
           hostname: hostname,
           rule: rule
         });
@@ -651,7 +661,7 @@ function addSiteException(url, rule, temporary, overwriteException = null) {
         resolve();
       }, logError);
     } else {
-      var saving = savePermSiteException(hostname, rule);
+      let saving = savePermSiteException(hostname, rule);
       saving.then(async function() {
         await deleteSiteException(`https://${hostname}`, true);
         await Promise.all([callRestoreAllHostnamesUnwantedCookies(),
@@ -668,7 +678,8 @@ function addSiteException(url, rule, temporary, overwriteException = null) {
         reject(error);
       });
     }
-    return result;
+  });
+  return result;
 
   function savePermSiteException(hostname, rule) {
     // sets an exception for a given hostname
@@ -701,9 +712,9 @@ function addSiteException(url, rule, temporary, overwriteException = null) {
 
 function deletePermSiteException(hostname) {
   // deletes the permanent exception for the given hostname (if there is any)
-  var result = new Promise(function(resolve, reject) {
-    var key = `ex|${encodeURI(hostname)}`;
-    var removing = browser.storage.local.remove(key)
+  let result = new Promise(function(resolve, reject) {
+    let key = `ex|${encodeURI(hostname)}`;
+    let removing = browser.storage.local.remove(key)
     removing.then(resolve, logError);
   });
   return result;
@@ -711,12 +722,13 @@ function deletePermSiteException(hostname) {
 
 function deleteSiteException(url, temporary) {
   // deletes the permanent or temporary exception for the given hostname (if there is any)
-  var result = new Promise(async function(resolve, reject) {
-    var hostname = trimSubdomains(url);
+  let result = new Promise(async function(resolve, reject) {
+    let hostname = trimSubdomains(url);
     if (temporary) {
       // use function directly or send message depending on the availability of bgPage
+      let deleting;
       if (bgPage !== null) {
-        var deleting = bgPage.deleteTempSiteException({
+        deleting = bgPage.deleteTempSiteException({
           hostname: hostname
         });
       } else {
@@ -741,20 +753,22 @@ function deleteSiteException(url, temporary) {
 
 function clearTempSiteExceptions(url) {
   // deletes all temp site exceptions
-  var result = new Promise(async function(resolve, reject) {
-    var hostname = trimSubdomains(url);
+  let result = new Promise(async function(resolve, reject) {
+    let hostname = trimSubdomains(url);
     // use function directly or send message depending on the availability of bgPage
+    let deleting;
     if (bgPage !== null) {
-      var deleting = bgPage.deleteTempSiteException({
+      bgPage.deleteTempSiteException({
         hostname: hostname
       });
+      resolve();
     } else {
       deleting = browser.runtime.sendMessage({
         type: 'clearTempSiteExceptions',
         hostname: hostname
       });
+      deleting.then(resolve, logError);
     }
-    deleting.then(resolve, logError);
   });
   return result;
 }
@@ -762,14 +776,14 @@ function clearTempSiteExceptions(url) {
 function getSiteBehaviour(hostname) {
   // returns the behaviour for a given hostname
   // takes temporary and permanent exceptions as well as whitelist entries into account
-  var result = new Promise(async function(resolve, reject) {
+  let result = new Promise(async function(resolve, reject) {
     // first check if there is a temporary exception
-    var tempException = await getSiteException(hostname, true);
+    let tempException = await getSiteException(hostname, true);
     if (tempException !== null) {
       return resolve(tempException);
     } else {
       // if there is no temporary exception, check for a permanent one
-      var permSiteException = await getSiteException(hostname, false);
+      let permSiteException = await getSiteException(hostname, false);
       if (permSiteException !== null) {
         return resolve(permSiteException);
       } else {
@@ -785,14 +799,14 @@ function getSiteBehaviour(hostname) {
  */
 function getObjectWhitelistedState(domain, name, type) {
   // returns wether a whitelist entry exists
-  var result = new Promise(function(resolve, reject) {
+  let result = new Promise(function(resolve, reject) {
     domain = domain.startsWith('.') ? domain.substr(1) : domain;
-    var key = `wl|${encodeURI(domain)}|${encodeURI(name)}|${type}`;
-    var getting = browser.storage.local.get({
+    let key = `wl|${encodeURI(domain)}|${encodeURI(name)}|${type}`;
+    let getting = browser.storage.local.get({
       [key]: null
     });
     getting.then(function(items) {
-      var whitelistedEntry = items[key];
+      let whitelistedEntry = items[key];
       if (whitelistedEntry === null) {
         resolve(false);
       } else {
@@ -806,7 +820,7 @@ function getObjectWhitelistedState(domain, name, type) {
 function addWhitelistEntry(domain, name, type, overwriteEntry = null) {
   // adds a new whitelist with the given data
   domain = domain.startsWith('.') ? domain.substr(1) : domain;
-  var result = new Promise(async function(resolve, reject) {
+  let result = new Promise(async function(resolve, reject) {
     try {
       // make sure the domain is valid
       new URL(`http://${domain}`);
@@ -817,7 +831,7 @@ function addWhitelistEntry(domain, name, type, overwriteEntry = null) {
     if (overwriteEntry !== null) {
       await deleteWhitelistEntry(overwriteEntry.domain, overwriteEntry.name, overwriteEntry.type);
     }
-    var setting = browser.storage.local.set({
+    let setting = browser.storage.local.set({
       // use prefix 'wl' for whitelist entries and both domain and name as key
       // last letter is the type: d --> dom storage, c --> cookie
       //use '|' as separator and encode all the other stuff to prevent fuck ups
@@ -837,8 +851,8 @@ function addWhitelistEntry(domain, name, type, overwriteEntry = null) {
 function deleteWhitelistEntry(domain, name, type) {
   // removes a whitelist entry matching the given data
   domain = domain.startsWith('.') ? domain.substr(1) : domain;
-  var result = new Promise(function(resolve, reject) {
-    var key = `wl|${encodeURI(domain)}|${encodeURI(name)}|${type}`;
+  let result = new Promise(function(resolve, reject) {
+    let key = `wl|${encodeURI(domain)}|${encodeURI(name)}|${type}`;
     browser.storage.local.remove(key).then(resolve, logError);
   });
   return result;
@@ -846,8 +860,8 @@ function deleteWhitelistEntry(domain, name, type) {
 
 function getDomstorageEntryWhitelistedStateAsResponse(request) {
   // returns whether a dom storage entry from a request is whitelisted and also the name of the entry itself
-  var answer = new Promise(async function(resolve, reject) {
-    var whitelisted = await getObjectWhitelistedState(request.domain, request.name, 'd');
+  let answer = new Promise(async function(resolve, reject) {
+    let whitelisted = await getObjectWhitelistedState(request.domain, request.name, 'd');
     resolve({
       name: request.name,
       whitelisted: whitelisted
@@ -861,9 +875,9 @@ status icon functions
 function updateTabIcon(tabId) {
   // updates the icon for a specific tab (not overall) according to the tabs behaviour
   function setIcon(behaviour) {
-    var iconPath = null;
-    var badgeColor = null;
-    var title = null;
+    let iconPath = null;
+    let badgeColor = null;
+    let title = null;
     switch (behaviour) {
       case 0:
         // deny
@@ -922,12 +936,12 @@ function updateTabIcon(tabId) {
       tabId: tabId
     });
   }
-  var getting = browser.tabs.get(tabId);
+  let getting = browser.tabs.get(tabId);
   getting.then(function(tab) {
     if (tab.url.startsWith('http')) {
-      var url = tab.url;
-      var hostname = trimSubdomains(url);
-      var getting = getSiteBehaviour(hostname);
+      let url = tab.url;
+      let hostname = trimSubdomains(url);
+      let getting = getSiteBehaviour(hostname);
       getting.then(setIcon, logError);
     } else {
       setIcon(-1);
@@ -937,7 +951,7 @@ function updateTabIcon(tabId) {
 
 function updateAllTabsIcons() {
   // updates icon for all open tabs
-  var querying = browser.tabs.query({});
+  let querying = browser.tabs.query({});
   querying.then(function(tabs) {
     tabs.forEach(function(tab) {
       updateTabIcon(tab.id);
@@ -951,14 +965,14 @@ async function updateActiveTabsCounts() {
     return;
   }
   // get active tab in every window
-  var querying = browser.tabs.query({
+  let querying = browser.tabs.query({
     active: true
   });
   querying.then(async function(tabs) {
-    for (var tab of tabs) {
+    for (let tab of tabs) {
       if (typeof tab !== 'undefined') {
         if (tab.url.startsWith('http')) {
-          var cookieStore = await getTabCookieStore(tab.id);
+          let cookieStore = await getTabCookieStore(tab.id);
           // get cookies
           countCookies(await getAllCookies({
             url: tab.url,
@@ -973,9 +987,9 @@ async function updateActiveTabsCounts() {
 
   function countCookies(cookies, tab) {
     // count cookies
-    var count = cookies.length;
+    let count = cookies.length;
     // get dom storage
-    var getting = getTabDomStorage(tab.id);
+    let getting = getTabDomStorage(tab.id);
     getting.then(async function(response) {
         // count dom storage
         count = count + Object.keys(response.localStorage).length + Object.keys(response.sessionStorage).length;
@@ -996,7 +1010,7 @@ async function updateActiveTabsCounts() {
 
 function removeAllTabsCounts() {
   // removes the cookie count from all tabs
-  var querying = browser.tabs.query({});
+  let querying = browser.tabs.query({});
   querying.then(function(tabs) {
     tabs.forEach(function(tab) {
       browser.browserAction.setBadgeText({
@@ -1015,16 +1029,16 @@ function trimSubdomains(url) {
     // return if not a http site
     return url;
   }
-  var hostname = (new URL(url)).hostname;
-  var trimmedDomain = hostname.split('.');
+  let hostname = (new URL(url)).hostname;
+  let trimmedDomain = hostname.split('.');
   return `${trimmedDomain[trimmedDomain.length - 2]}.${trimmedDomain[trimmedDomain.length - 1]}`;
 }
 
 function formatDate(date) {
   // formats a date for displaying in tables
-  var month = `${(date.getMonth() + 1 < 10 ? '0' : '')}${date.getMonth() + 1}`;
-  var day = `${(date.getDate() < 10 ? '0' : '')}${date.getDate()}`;
-  var year = date.getFullYear();
+  let month = `${(date.getMonth() + 1 < 10 ? '0' : '')}${date.getMonth() + 1}`;
+  let day = `${(date.getDate() < 10 ? '0' : '')}${date.getDate()}`;
+  let year = date.getFullYear();
   return `${year}/${month}/${day}`;
 }
 
@@ -1036,8 +1050,8 @@ function logError(error) {
 
 function getActiveTab() {
   // returns the active Tab
-  var result = new Promise(function(resolve, reject) {
-    var querying = browser.tabs.query({
+  let result = new Promise(function(resolve, reject) {
+    let querying = browser.tabs.query({
       active: true,
       currentWindow: true
     });
@@ -1051,8 +1065,8 @@ function getActiveTab() {
 function getTabCookieStore(tabId) {
   // returns the id of the cookie store which the given tab uses
   // chromium does not supply tab.cookieStoreId :(
-  var result = new Promise(function(resolve, reject) {
-    var getting = browser.cookies.getAllCookieStores();
+  let result = new Promise(function(resolve, reject) {
+    let getting = browser.cookies.getAllCookieStores();
     getting.then(function(cookieStores) {
       for (let store of cookieStores) {
         if (store.tabIds.includes(tabId)) {

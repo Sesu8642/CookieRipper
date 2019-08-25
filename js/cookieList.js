@@ -1,10 +1,10 @@
 'use strict';
 // selected cookie for the cookie editor
-var cookieInEditor;
+let cookieInEditor;
 // ui elements
-var filterDomain, filterName, filterValue, filterDate, filterPath, filterHostOnly, filterSecure, filterHttpOnly, filterWhitelist, saveButton, firstPartyDomainArea, cookieTable, selectAllCheckBox, selectCheckBoxes, cookieEditorError, domainTextBox, cookieHostOnly, nameTextBox, valueTextBox, sessionCookie, persistentCookie, date, time, pathTextBox, cookieSecure, cookieHttpOnly, selectAll, selectAllCheckBoxTd, deleteButton, firstPartyDomainTextBox, clearButton, pageSpinner, cookieStoreSelect;
+let filterDomain, filterName, filterValue, filterDate, filterPath, filterHostOnly, filterSecure, filterHttpOnly, filterWhitelist, saveButton, firstPartyDomainArea, cookieTable, selectAllCheckBox, selectCheckBoxes, cookieEditorError, domainTextBox, cookieHostOnly, nameTextBox, valueTextBox, sessionCookie, persistentCookie, date, time, pathTextBox, cookieSecure, cookieHttpOnly, selectAll, selectAllCheckBoxTd, deleteButton, firstPartyDomainTextBox, clearButton, pageSpinner, cookieStoreSelect;
 const maxRows = 25;
-var entryList = [];
+let entryList = [];
 document.addEventListener('DOMContentLoaded', function() {
   assignUiElements();
   addEventlisteners();
@@ -18,10 +18,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function fillCookieStores() {
   // gets all the cookie stores and puts them in the select ui element
-  var getting = browser.cookies.getAllCookieStores();
+  let getting = browser.cookies.getAllCookieStores();
   getting.then(function(cookieStores) {
     for (let store of cookieStores) {
-      var option = document.createElement('option');
+      let option = document.createElement('option');
       option.text = store.id;
       cookieStoreSelect.add(option);
     }
@@ -32,12 +32,12 @@ function fillCookieList() {
   // filters cookies and stores them in entryList
   entryList = [];
   // get all the cookies
-  var getting = getAllCookies({
+  let getting = getAllCookies({
     storeId: cookieStoreSelect.value
   });
   getting.then(async function(cookies) {
     // filter the cookies
-    var promises = cookies.map(function(cookie) {
+    let promises = cookies.map(function(cookie) {
       if ((filterDomain.value == '' || cookie.domain.toLowerCase().includes(filterDomain.value.toLowerCase())) && (filterName.value == '' || cookie.name.toLowerCase().includes(filterName.value.toLowerCase())) && (filterValue.value == '' || cookie.value.toLowerCase().includes(filterValue.value.toLowerCase())) && (filterDate.value == '' || (`${new Date(cookie.expirationDate * 1000)}`).includes(filterDate.value)) && (filterPath.value == '' || cookie.path.toLowerCase().includes(filterPath.value.toLowerCase())) && (filterHostOnly.value == '' || `${cookie.hostOnly}` == filterHostOnly.value) && (filterSecure.value == '' || `${cookie.secure}` == filterSecure.value) && (filterHttpOnly.value == '' || `${cookie.httpOnly}` == filterHttpOnly.value)) {
         return getObjectWhitelistedState(cookie.domain, cookie.name, 'c').then(async function(whitelisted) {
           cookie.whitelisted = whitelisted;
@@ -59,7 +59,7 @@ function fillCookieList() {
 
 function buildTableBody(page) {
   // fills the table using the existing entryList and given page number
-  var newTableBody = document.createElement('tbody');
+  let newTableBody = document.createElement('tbody');
   newTableBody.id = 'cookieTableBody';
   // sort entries by name first
   entryList.sort(function(cookie1, cookie2) {
@@ -72,11 +72,11 @@ function buildTableBody(page) {
     }
   });
   // add cookies to list
-  for (var i = maxRows * (page - 1); i < entryList.length && i < maxRows * page; i++) {
-    var entry = entryList[i];
-    var tr = document.createElement('TR');
-    var td;
-    var selectCheckBox;
+  for (let i = maxRows * (page - 1); i < entryList.length && i < maxRows * page; i++) {
+    let entry = entryList[i];
+    let tr = document.createElement('TR');
+    let td;
+    let selectCheckBox;
     tr.addEventListener('click', function(e) {
       fillCookieEditor(this.attachedCookie);
     });
@@ -106,7 +106,7 @@ function buildTableBody(page) {
         return;
       }
       this.children[0].checked = !this.children[0].checked;
-      var evt = document.createEvent('HTMLEvents');
+      let evt = document.createEvent('HTMLEvents');
       evt.initEvent('change', false, true);
       this.children[0].dispatchEvent(evt);
     });
@@ -164,7 +164,7 @@ async function deleteSelectedCookies() {
   if (selectAllCheckBox.checked) {
     // delete all cookies matching the filters
     if (confirm(`Are you sure you want to delete ${entryList.length} cookies?`)) {
-      var promises = entryList.map(function(entry) {
+      let promises = entryList.map(function(entry) {
         return deleteCookie(entry);
       });
       await Promise.all(promises);
@@ -172,7 +172,7 @@ async function deleteSelectedCookies() {
     }
   } else {
     // delete only the selected cookies
-    promises = Array.prototype.map.call(selectCheckBoxes, function(selectCheckBox) {
+    let promises = Array.prototype.map.call(selectCheckBoxes, function(selectCheckBox) {
       if (selectCheckBox.checked) {
         return deleteCookie(selectCheckBox.parentElement.parentElement.attachedCookie);
       }
@@ -186,6 +186,7 @@ function fillCookieEditor(cookie) {
   // fills the cookie editor ui elements with the given values
   // reset error text
   cookieEditorError.innerText = '';
+  let expDate, hour, minute;
   if (cookie !== null) {
     // existing cookie
     saveButton.innerText = 'Save';
@@ -197,14 +198,14 @@ function fillCookieEditor(cookie) {
     sessionCookie.checked = cookie.session;
     persistentCookie.checked = !cookie.session;
     if (cookie.session) {
-      var expDate = new Date();
+      expDate = new Date();
       expDate.setDate(expDate.getDate() + 1);
     } else {
       expDate = new Date(cookie.expirationDate * 1000);
     }
     date.valueAsDate = expDate;
-    var hour = `${(expDate.getHours() < 10 ? '0' : '')}${expDate.getHours()}`;
-    var minute = `${(expDate.getMinutes() < 10 ? '0' : '')}${expDate.getMinutes()}`;
+    hour = `${(expDate.getHours() < 10 ? '0' : '')}${expDate.getHours()}`;
+    minute = `${(expDate.getMinutes() < 10 ? '0' : '')}${expDate.getMinutes()}`;
     time.value = `${hour}:${minute}`;
     pathTextBox.value = cookie.path;
     cookieSecure.checked = cookie.secure;
@@ -273,9 +274,8 @@ function assignUiElements() {
 function addEventlisteners() {
   // adds all the event listeners to ui elements
   // info icons
-  var infoIcons = document.getElementsByClassName('infoIcon');
-  var i;
-  for (i = 0; i < infoIcons.length; i++) {
+  let infoIcons = document.getElementsByClassName('infoIcon');
+  for (let i = 0; i < infoIcons.length; i++) {
     infoIcons[i].addEventListener('click', function(e) {
       sendInfoMessage(e.target.title);
     });
@@ -286,8 +286,8 @@ function addEventlisteners() {
     fillCookieEditor(null);
   });
   // filter text boxes
-  var filterTextBoxes = document.getElementsByClassName('filterTextBox');
-  for (i = 0; i < filterTextBoxes.length; i++) {
+  let filterTextBoxes = document.getElementsByClassName('filterTextBox');
+  for (let i = 0; i < filterTextBoxes.length; i++) {
     filterTextBoxes[i].addEventListener('click', function(e) {
       e.stopPropagation();
     });
@@ -296,8 +296,8 @@ function addEventlisteners() {
     });
   }
   // filter dropdowns
-  var filterSelects = document.getElementsByClassName('filterSelect');
-  for (i = 0; i < filterSelects.length; i++) {
+  let filterSelects = document.getElementsByClassName('filterSelect');
+  for (let i = 0; i < filterSelects.length; i++) {
     filterSelects[i].addEventListener('click', function(e) {
       e.stopPropagation();
     });
@@ -307,11 +307,11 @@ function addEventlisteners() {
   }
   // select all checkbox
   selectAll.addEventListener('change', function(e) {
-    var selectCheckBoxes = document.getElementsByClassName('selectCheckBox');
-    for (i = 0; i < selectCheckBoxes.length; i++) {
+    let selectCheckBoxes = document.getElementsByClassName('selectCheckBox');
+    for (let i = 0; i < selectCheckBoxes.length; i++) {
       if (selectCheckBoxes[i].checked !== this.checked) {
         selectCheckBoxes[i].checked = this.checked;
-        var evt = document.createEvent('HTMLEvents');
+        let evt = document.createEvent('HTMLEvents');
         evt.initEvent('change', false, true);
         selectCheckBoxes[i].dispatchEvent(evt);
       }
@@ -323,7 +323,7 @@ function addEventlisteners() {
       return;
     }
     this.children[1].checked = !this.children[1].checked;
-    var evt = document.createEvent('HTMLEvents');
+    let evt = document.createEvent('HTMLEvents');
     evt.initEvent('change', false, true);
     this.children[1].dispatchEvent(evt);
   });
@@ -333,7 +333,7 @@ function addEventlisteners() {
   });
   // save button
   saveButton.addEventListener('click', function() {
-    var adding = addCookie(nameTextBox.value, valueTextBox.value, domainTextBox.value, pathTextBox.value, sessionCookie.checked, date.valueAsDate, time.valueAsDate, cookieHostOnly.checked, cookieSecure.checked, cookieHttpOnly.checked, cookieStoreSelect.value, firstPartyDomainTextBox.value, cookieInEditor);
+    let adding = addCookie(nameTextBox.value, valueTextBox.value, domainTextBox.value, pathTextBox.value, sessionCookie.checked, date.valueAsDate, time.valueAsDate, cookieHostOnly.checked, cookieSecure.checked, cookieHttpOnly.checked, cookieStoreSelect.value, firstPartyDomainTextBox.value, cookieInEditor);
     adding.then(function() {
       fillCookieList();
       fillCookieEditor(null);
