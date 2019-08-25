@@ -13,7 +13,12 @@ function loadSettings() {
     getting.then(async function(items) {
       defaultBehaviour = Number(items.defaultBehaviour);
       enableCookieCounter = items.enableCookieCounter;
-      await Promise.all([callRestoreAllHostnamesUnwantedCookies(), deleteAllTabsExistingUnwantedCookies(), restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()]);
+      if (skipUpdatingScripts) {
+        // when installing, the content scripts are not injected yet
+        await Promise.all([callRestoreAllHostnamesUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()]);
+      } else {
+        await Promise.all([callRestoreAllHostnamesUnwantedCookies(), deleteAllTabsExistingUnwantedCookies(), restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()]);
+      }
       resolve();
       updateAllTabsIcons();
       if (!enableCookieCounter) {
@@ -316,7 +321,7 @@ browser.runtime.onInstalled.addListener(async function(details) {
       sendInfoMessage('Thank you for installing Cookie Ripper!\nMake sure cookies are enabled in your browser and the third party cookie setting is adjusted to your liking (I suggest not accepting those). After that, adjust the cookie ripper default behaviour and you are good to go!');
     }, logError);
   }
-  await loadSettings();
+  await loadSettings(true);
   injectJsInAllTabs();
 });
 browser.cookies.onChanged.addListener(handleCookieEvent);
