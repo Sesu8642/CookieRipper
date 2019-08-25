@@ -670,35 +670,33 @@ function addSiteException(url, rule, temporary, overwriteException = null) {
     }
     return result;
 
-    function savePermSiteException(hostname, rule) {
-      // sets an exception for a given hostname
-      var result = new Promise(function(resolve, reject) {
-        try {
-          // make sure the hostname is valid
-          var url = new URL(`http://${hostname}`);
-          // count . in hostname to reject subdomains
-          var domainCount = url.hostname.split('.').length - 1;
-          if (domainCount > 1) {
-            reject(Error('Subdomains are not supportet.'));
-            return;
-          } else if (domainCount < 1) {
-            reject(Error('Top-level domains only are not supported.'));
-            return;
-          }
-        } catch (e) {
-          reject(e);
+  function savePermSiteException(hostname, rule) {
+    // sets an exception for a given hostname
+    let result = new Promise(function(resolve, reject) {
+      try {
+        // make sure the hostname is valid
+        let url = new URL(`http://${hostname}`);
+        // count . in hostname to reject subdomains
+        let domainCount = url.hostname.split('.').length - 1;
+        if (domainCount > 1) {
+          reject(Error('Subdomains are not supportet.'));
+          return;
+        } else if (domainCount < 1) {
+          reject(Error('Top-level domains only are not supported.'));
           return;
         }
-        var setting = browser.storage.local.set({
-          // use prefix 'ex' for exceptions and hostname as key
-          [`ex|${hostname}`]: rule
-        });
-        setting.then(resolve, logError);
+      } catch (e) {
+        reject(e);
+        return;
+      }
+      let setting = browser.storage.local.set({
+        // use prefix 'ex' for exceptions and hostname as key
+        [`ex|${hostname}`]: rule
       });
-      return result;
-    }
-  });
-  return result;
+      setting.then(resolve, logError);
+    });
+    return result;
+  }
 }
 
 function deletePermSiteException(hostname) {
