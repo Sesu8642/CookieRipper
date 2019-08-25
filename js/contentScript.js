@@ -25,6 +25,19 @@ window.addEventListener('message', function(event) {
       if (!response[0]) {
         if (event.data.storageType == 'localStorage') {
           localStorage.removeItem(event.data.key);
+          // if the item is in the unwanted list already, remove it first
+          for (let i = 0; i < unwantedDomStorageEntries.length; i++) {
+            if (unwantedDomStorageEntries[i].name === event.data.key && ((unwantedDomStorageEntries[i].permanence === 'permanent' && event.data.storageType === 'localStorage') || (unwantedDomStorageEntries[i].permanence === 'temporary' && event.data.storageType === 'sessionStorage'))) {
+              unwantedDomStorageEntries.splice(i);
+            }
+          }
+          // add entry to unwanted list
+          unwantedDomStorageEntries.push({
+            name: event.data.key,
+            value: event.data.value,
+            permanence: event.data.storageType === 'localStorage' ? 'permanent' : 'temporary'
+          });
+          console.log(unwantedDomStorageEntries);
         } else {
           sessionStorage.removeItem(event.data.key);
         }
