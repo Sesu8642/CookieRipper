@@ -197,6 +197,7 @@ async function fillUnwantedDomStorageList() {
   let response = await getUnwantedDomStoregeEntries(activeTabId);
   unwantedDomList = response.map(function(entry) {
     entry.domain = (new URL(activeTabUrl)).hostname;
+    entry.permanence = entry.persistent ? 'permanent' : 'temporary';
     return entry;
   });
   // (re)build table

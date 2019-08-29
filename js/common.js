@@ -467,17 +467,16 @@ function addDomStorageEntry(tabId, persistent, name, value, overwriteEntry = nul
     if (overwriteEntry !== null) {
       await deleteDomStorageEntry(tabId, overwriteEntry);
     }
-    let storage = (persistent ? 'local' : 'session');
     let sending = browser.tabs.sendMessage(tabId, {
       type: 'addEntry',
-      storage: storage,
+      persistent: persistent,
       name: name,
       value: value
     });
     sending.then(resolve, async function(error) {
       // restore overwriteEntry if new entry could not be set
       if (overwriteEntry !== null) {
-        await addDomStorageEntry(tabId, overwriteEntry.permanence, overwriteEntry.name, overwriteEntry.value);
+        await addDomStorageEntry(tabId, overwriteEntry.persistent, overwriteEntry.name, overwriteEntry.value);
       }
       reject(error);
     });

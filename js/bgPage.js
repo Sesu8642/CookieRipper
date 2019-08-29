@@ -238,7 +238,7 @@ function getTabDomStorageItemsAllowedStates(request) {
     // if behaviour is not allow all --> check whitelisted state and storage type
     let promises = request.items.map(function(item) {
       return getObjectWhitelistedState(request.domain, item.name, 'd').then(function(whitelisted) {
-        return (whitelisted || (behaviour == 1 && item.storage == 'session'))
+        return (whitelisted || (behaviour == 1 && !item.persistent))
       });
     });
     resolve(Promise.all(promises));

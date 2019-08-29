@@ -12,8 +12,8 @@ if (window == window.top) {
 window.addEventListener('message', function(event) {
   if (event.data.type && (event.data.type == 'cookieRipper_domStorageSet')) {
     let storageItems = [{
-      name: event.data.key,
-      storage: event.data.storageType
+      name: event.data.name,
+      persistent: event.data.persistent
     }];
     let sending = browser.runtime.sendMessage({
       type: 'getTabDomStorageItemsAllowedStates',
@@ -23,24 +23,20 @@ window.addEventListener('message', function(event) {
     sending.then(async function(response) {
       // delete the item if unwanted
       if (!response[0]) {
-        if (event.data.storageType == 'localStorage') {
-          localStorage.removeItem(event.data.key);
-          // if the item is in the unwanted list already, remove it first
-          for (let i = 0; i < unwantedDomStorageEntries.length; i++) {
-            if (unwantedDomStorageEntries[i].name === event.data.key && ((unwantedDomStorageEntries[i].permanence === 'permanent' && event.data.storageType === 'localStorage') || (unwantedDomStorageEntries[i].permanence === 'temporary' && event.data.storageType === 'sessionStorage'))) {
-              unwantedDomStorageEntries.splice(i);
-            }
+        let storage = event.data.persistent ? localStorage : sessionStorage;
+        storage.removeItem(event.data.name);
+        // if the item is in the unwanted list already, remove it first
+        for (let i = 0; i < unwantedDomStorageEntries.length; i++) {
+          if (unwantedDomStorageEntries[i].name === event.data.name && unwantedDomStorageEntries[i].persistent === event.data.persistent) {
+            unwantedDomStorageEntries.splice(i);
           }
-          // add entry to unwanted list
-          unwantedDomStorageEntries.push({
-            name: event.data.key,
-            value: event.data.value,
-            permanence: event.data.storageType === 'localStorage' ? 'permanent' : 'temporary'
-          });
-          console.log(unwantedDomStorageEntries);
-        } else {
-          sessionStorage.removeItem(event.data.key);
         }
+        // add entry to unwanted list
+        unwantedDomStorageEntries.push({
+          name: event.data.name,
+          value: event.data.value,
+          persistent: event.data.persistent
+        });
       }
     }, logError);
   }
@@ -93,9 +89,9 @@ function sendStorage() {
 function deleteStorageEntry(request) {
   // deletes a given storage entry
   return new Promise(function(resolve, reject) {
-    if (request.entry.permanence === 'permanent') {
+    if (request.entry.persistent) {
       localStorage.removeItem(request.entry.name);
-    } else if (request.entry.permanence === 'temporary') {
+    } else {
       sessionStorage.removeItem(request.entry.name);
     }
     resolve();
@@ -115,11 +111,8 @@ function clearStorage() {
 function addStorageEntry(request) {
   // adds the given entry to the given storage
   return new Promise(function(resolve, reject) {
-    if (request.storage === 'local') {
-      localStorage.setItem(request.name, request.value);
-    } else if (request.storage === 'session') {
-      sessionStorage.setItem(request.name, request.value);
-    }
+    let storage = request.persistent ? localStorage : sessionStorage;
+    storage.setItem(request.name, request.value);
     resolve();
   });
 }
@@ -128,10 +121,7 @@ function deleteUnwantedStorageEntry(request) {
   // deletes an entry from unwanted list
   return new Promise(function(resolve, reject) {
     unwantedDomStorageEntries = unwantedDomStorageEntries.filter(function(entry) {
-      if (entry.name === request.entry.name && entry.permanence === request.entry.permanence) {
-        return false;
-      }
-      return true;
+      return (!(entry.name === request.entry.name && entry.persistent === request.entry.persistent))
     });
     resolve();
   });
@@ -141,20 +131,12 @@ function restoreUnwantedStorageEntry(request) {
   // re-creates a single entry from unwanted list
   return new Promise(async function(resolve, reject) {
     unwantedDomStorageEntries.forEach(function(entry) {
-      if (entry.name === request.entry.name && entry.permanence === request.entry.permanence) {
-        if (entry.permanence === 'permanent') {
-          localStorage.setItem(entry.name, entry.value);
-        } else {
-          sessionStorage.setItem(entry.name, entry.value);
-        }
+      if (entry.name === request.entry.name && entry.persistent === request.entry.persistent) {
+        let storage = entry.persistent ? localStorage : sessionStorage;
+        storage.setItem(entry.name, entry.value);
       }
     });
-    await deleteUnwantedStorageEntry({
-      entry: {
-        name: request.entry.name,
-        permanence: request.entry.permanence
-      }
-    });
+    await deleteUnwantedStorageEntry(request);
     resolve();
   });
 }
@@ -168,7 +150,7 @@ function restoreUnwantedStorageEntries() {
       // create list of storage items and send them to the background page
       storageItems.push({
         name: entry.name,
-        storage: entry.permanence === 'permanent' ? 'local' : 'session'
+        persistent: entry.persistent
       });
     });
     let sending = browser.runtime.sendMessage({
@@ -183,7 +165,7 @@ function restoreUnwantedStorageEntries() {
           restoreUnwantedStorageEntry({
             entry: {
               name: storageItems[i].name,
-              permanence: storageItems[i].storage === 'local' ? 'permanent' : 'temporary'
+              persistent: storageItems[i].persistent
             }
           });
         }
@@ -203,13 +185,13 @@ function deleteExistingUnwantedStorageEntries() {
       for (let i = 0; i < localStorage.length; i++) {
         storageItems.push({
           name: localStorage.key(i),
-          storage: 'local'
+          persistent: true
         });
       }
       for (let i = 0; i < sessionStorage.length; i++) {
         storageItems.push({
           name: sessionStorage.key(i),
-          storage: 'session'
+          persistent: false
         });
       }
       let sending = browser.runtime.sendMessage({
@@ -221,21 +203,13 @@ function deleteExistingUnwantedStorageEntries() {
         // delete the unwanted items
         for (let i = 0; i < response.length; i++) {
           if (!response[i]) {
-            if (storageItems[i].storage == 'local') {
-              unwantedDomStorageEntries.push({
-                name: storageItems[i].name,
-                value: localStorage.getItem(storageItems[i].name),
-                permanence: 'permanent'
-              });
-              localStorage.removeItem(storageItems[i].name);
-            } else {
-              unwantedDomStorageEntries.push({
-                name: storageItems[i].name,
-                value: sessionStorage.getItem(storageItems[i].name),
-                permanence: 'temporary'
-              });
-              sessionStorage.removeItem(storageItems[i].name);
-            }
+            let storage = storageItems[i].persistent ? localStorage : sessionStorage;
+            unwantedDomStorageEntries.push({
+              name: storageItems[i].name,
+              value: storage.getItem(storageItems[i].name),
+              persistent: storageItems[i].persistent
+            });
+            storage.removeItem(storageItems[i].name);
           }
         }
         resolve();
@@ -252,17 +226,11 @@ function injectScript() {
   // using a string loads faster than the js from the website; using a separate js file does not
   let injectJS = `
   let _setItem = Storage.prototype.setItem;
-  Storage.prototype.setItem = function(key, value) {
-    let storageType;
-    if (this === window.localStorage) {
-      storageType = 'localStorage';
-    } else if (this === window.sessionStorage) {
-      storageType = 'sessionStorage';
-    }
+  Storage.prototype.setItem = function(name, value) {
     window.postMessage({
       type: 'cookieRipper_domStorageSet',
-      storageType: storageType,
-      key: key,
+      persistent: this === window.localStorage,
+      name: name,
       value: value
     }, window.location.href);
     _setItem.apply(this, arguments);
