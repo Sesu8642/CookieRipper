@@ -22,32 +22,6 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 });
 
-function highlightActiveOption(option) {
-  // highlights the active option in ui
-  switch (option) {
-    case 0:
-      // deny
-      denyOption.classList.add('selectedBehaviour');
-      sessionOption.classList.remove('selectedBehaviour');
-      allowOption.classList.remove('selectedBehaviour');
-      break;
-    case 1:
-      // allow session
-      denyOption.classList.remove('selectedBehaviour');
-      sessionOption.classList.add('selectedBehaviour');
-      allowOption.classList.remove('selectedBehaviour');
-      break;
-    case 2:
-      // allow all
-      denyOption.classList.remove('selectedBehaviour');
-      sessionOption.classList.remove('selectedBehaviour');
-      allowOption.classList.add('selectedBehaviour');
-      break;
-    default:
-      // invalid
-  }
-}
-
 function enableSiteException(temp) {
   // adds a site exception
   let option = Number(slider.value);
@@ -58,163 +32,217 @@ function enableSiteException(temp) {
 }
 async function fillSiteInfo() {
   // puts site specific info in ui including cookies and dom storage
-  async function depictPermException(hostname) {
+  return new Promise(async function(resolve, reject) {
+    if (activeTabUrl.startsWith('http')) {
+      // get all the dom storage and cookies
+      await Promise.all([fillDomStorageList(), fillUnwantedDomStorageList(), fillCookieList(), fillUnwantedCookieList()]);
+      await Promise.all([buildCookieTableBody(), buildDomStorageTableBody()]);
+      let hostname = trimSubdomains(activeTabUrl);
+      headline.textContent = `Settings For ${hostname}`;
+      cookieStore.textContent = `Cookie Store ID: ${activeTabCookieStore}`;
+      let permSiteException, tempSiteException;
+      [permSiteException, tempSiteException] = await Promise.all([getSiteException(hostname, false), getSiteException(hostname, true)]);
+      await Promise.all([depictPermException(permSiteException), depictTempException(permSiteException, tempSiteException)]);
+    } else {
+      nonHttpInfo.classList.remove('hidden');
+      mainView.classList.add('hidden');
+    }
+    resolve();
+  });
+  async function depictPermException(permSiteException) {
     // deal with permanent exception
-    let tempSiteException = await getSiteException(hostname, false)
-    if (tempSiteException === null) {
-      useSiteBehaviourLbl.textContent = `use site behaviour (default; ${getBehaviourString(await callGetDefaultBehaviour())})`;
-      useSiteBehaviourIcon.classList.add('hidden');
-    } else {
-      useSiteBehaviourLbl.textContent = `use site behaviour (${getBehaviourString(tempSiteException)})`;
-      useSiteBehaviourIcon.classList.remove('hidden');
-    }
-    depictTempException(hostname, tempSiteException);
+    return new Promise(async function(resolve, reject) {
+      if (permSiteException === null) {
+        useSiteBehaviourLbl.textContent = `use site behaviour (default; ${getBehaviourString(await callGetDefaultBehaviour())})`;
+        useSiteBehaviourIcon.classList.add('hidden');
+      } else {
+        useSiteBehaviourLbl.textContent = `use site behaviour (${getBehaviourString(permSiteException)})`;
+        useSiteBehaviourIcon.classList.remove('hidden');
+      }
+      resolve();
+    });
   }
-  async function depictTempException(hostname, permException) {
+  async function depictTempException(permSiteException, tempSiteException) {
     // deal with temporary exception
-    let tempSiteException = await getSiteException(hostname, true);
-    if (tempSiteException !== null) {
-      useTempBehaviourArea.classList.add('selectedBehaviourArea');
-      useSiteBehaviourArea.classList.remove('selectedBehaviourArea');
-      slider.value = tempSiteException;
-      highlightActiveOption(tempSiteException);
-      useTempBehaviour.checked = true;
-      useSiteBehaviour.checked = false;
-    } else if (permException !== null) {
-      useTempBehaviourArea.classList.remove('selectedBehaviourArea');
-      useSiteBehaviourArea.classList.add('selectedBehaviourArea');
-      slider.value = permException;
-      useTempBehaviour.checked = false;
-      useSiteBehaviour.checked = true;
-      highlightActiveOption(permException);
-    } else {
-      useTempBehaviourArea.classList.remove('selectedBehaviourArea');
-      useSiteBehaviourArea.classList.add('selectedBehaviourArea');
-      slider.value = await callGetDefaultBehaviour();
-      useTempBehaviour.checked = false;
-      useSiteBehaviour.checked = true;
-      highlightActiveOption(await callGetDefaultBehaviour());
-    }
+    return new Promise(async function(resolve, reject) {
+      if (tempSiteException !== null) {
+        useTempBehaviourArea.classList.add('selectedBehaviourArea');
+        useSiteBehaviourArea.classList.remove('selectedBehaviourArea');
+        slider.value = tempSiteException;
+        highlightActiveOption(tempSiteException);
+        useTempBehaviour.checked = true;
+        useSiteBehaviour.checked = false;
+      } else if (permSiteException !== null) {
+        useTempBehaviourArea.classList.remove('selectedBehaviourArea');
+        useSiteBehaviourArea.classList.add('selectedBehaviourArea');
+        slider.value = permSiteException;
+        useTempBehaviour.checked = false;
+        useSiteBehaviour.checked = true;
+        highlightActiveOption(permSiteException);
+      } else {
+        useTempBehaviourArea.classList.remove('selectedBehaviourArea');
+        useSiteBehaviourArea.classList.add('selectedBehaviourArea');
+        slider.value = await callGetDefaultBehaviour();
+        useTempBehaviour.checked = false;
+        useSiteBehaviour.checked = true;
+        highlightActiveOption(await callGetDefaultBehaviour());
+      }
+      resolve();
+    });
   }
-  if (activeTabUrl.startsWith('http')) {
-    // get all the dom storage
-    fillDomStorageList();
-    // get all the cookies
-    fillCookieList();
-    let hostname = trimSubdomains(activeTabUrl);
-    headline.textContent = `Settings For ${hostname}`;
-    cookieStore.textContent = `Cookie Store ID: ${activeTabCookieStore}`;
-    depictPermException(hostname);
-  } else {
-    nonHttpInfo.classList.remove('hidden');
-    mainView.classList.add('hidden');
+  async function highlightActiveOption(option) {
+    // highlights the active option in ui
+    return new Promise(function(resolve, reject) {
+      switch (option) {
+        case 0:
+          // deny
+          denyOption.classList.add('selectedBehaviour');
+          sessionOption.classList.remove('selectedBehaviour');
+          allowOption.classList.remove('selectedBehaviour');
+          break;
+        case 1:
+          // allow session
+          denyOption.classList.remove('selectedBehaviour');
+          sessionOption.classList.add('selectedBehaviour');
+          allowOption.classList.remove('selectedBehaviour');
+          break;
+        case 2:
+          // allow all
+          denyOption.classList.remove('selectedBehaviour');
+          sessionOption.classList.remove('selectedBehaviour');
+          allowOption.classList.add('selectedBehaviour');
+          break;
+        default:
+          reject(`Invalid behaviour: ${option}`);
+      }
+      resolve();
+    });
   }
 }
 
 function fillCookieList() {
   // gets cookies and stores them in cookieList
-  cookieList = [];
-  // get all the cookies
-  let getting = getAllCookies({
-    url: activeTabUrl,
-    storeId: activeTabCookieStore
-  });
-  getting.then(async function(cookies) {
-    let promises = cookies.map(function(cookie) {
-      return getObjectWhitelistedState(cookie.domain, cookie.name, 'c').then(async function(whitelisted) {
-        cookie.whitelisted = whitelisted;
-        // add cookie to list
-        cookieList.push(cookie);
-      });
+  return new Promise(function(resolve, reject) {
+    cookieList = [];
+    // get all the cookies
+    let getting = getAllCookies({
+      url: activeTabUrl,
+      storeId: activeTabCookieStore
     });
-    await Promise.all(promises);
-    fillUnwantedCookieList();
-  }, logError);
+    getting.then(async function(cookies) {
+      let promises = cookies.map(function(cookie) {
+        return getObjectWhitelistedState(cookie.domain, cookie.name, 'c').then(async function(whitelisted) {
+          cookie.whitelisted = whitelisted;
+          // add cookie to list
+          cookieList.push(cookie);
+        });
+      });
+      await Promise.all(promises);
+      resolve();
+    }, logError);
+  });
 }
 async function fillUnwantedCookieList() {
   // gets unwanted cookies and stores them in unwantedCookieList
-  unwantedCookieList = [];
-  let fullDomain = (new URL(activeTabUrl)).hostname;
-  let hostname = trimSubdomains(activeTabUrl);
-  let unwantedCookies = await callGetUnwantedCookiesForHostname(hostname);
-  unwantedCookies.forEach(function(cookie) {
-    // remove leading . from cookie domain for comparison
-    let cookieDomain = (cookie.domain.startsWith('.') ? cookie.domain.substring(1) : cookie.domain);
-    if (fullDomain === cookieDomain || (!cookie.hostOnly && fullDomain.endsWith(`${cookieDomain}`))) {
-      unwantedCookieList.push(cookie);
-    }
+  return new Promise(async function(resolve, reject) {
+    unwantedCookieList = [];
+    let fullDomain = (new URL(activeTabUrl)).hostname;
+    let hostname = trimSubdomains(activeTabUrl);
+    let unwantedCookies = await callGetUnwantedCookiesForHostname(hostname);
+    unwantedCookies.forEach(function(cookie) {
+      // remove leading . from cookie domain for comparison
+      let cookieDomain = (cookie.domain.startsWith('.') ? cookie.domain.substring(1) : cookie.domain);
+      if (fullDomain === cookieDomain || (!cookie.hostOnly && fullDomain.endsWith(`${cookieDomain}`))) {
+        unwantedCookieList.push(cookie);
+      }
+    });
+    resolve();
   });
-  buildCookieTableBody();
 }
 
 function fillDomStorageList() {
   // gets dom storage and stores it in domList
-  domList = [];
-  // get all the entries
-  let getting = getTabDomStorage(activeTabId);
-  getting.then(async function(response) {
-      let storageItems = [];
-      // create array of entry objects first
-      for (let i in response.localStorage) {
-        let entry = {};
-        entry.name = i;
-        entry.value = response.localStorage[i];
-        entry.domain = (new URL(activeTabUrl)).hostname;
-        entry.permanence = 'permanent';
-        storageItems.push(entry);
-      }
-      for (let i in response.sessionStorage) {
-        let entry = {};
-        entry.name = i;
-        entry.value = response.sessionStorage[i];
-        entry.domain = (new URL(activeTabUrl)).hostname;
-        entry.permanence = 'temporary';
-        storageItems.push(entry);
-      }
-      if (storageItems.length === 0) {
-        fillUnwantedDomStorageList();
-      }
-      // add whitelist info
-      let promises = storageItems.map(function(storageItem) {
-        return getObjectWhitelistedState(storageItem.domain, storageItem.name, 'd').then(function(whitelisted) {
-          storageItem.whitelisted = whitelisted
-          // add item to list
-          domList.push(storageItem);
+  return new Promise(function(resolve, reject) {
+    domList = [];
+    // get all the entries
+    let getting = getTabDomStorage(activeTabId);
+    getting.then(async function(response) {
+        let storageItems = [];
+        // create array of entry objects first
+        for (let i in response.localStorage) {
+          let entry = {};
+          entry.name = i;
+          entry.value = response.localStorage[i];
+          entry.domain = (new URL(activeTabUrl)).hostname;
+          entry.permanence = 'permanent';
+          storageItems.push(entry);
+        }
+        for (let i in response.sessionStorage) {
+          let entry = {};
+          entry.name = i;
+          entry.value = response.sessionStorage[i];
+          entry.domain = (new URL(activeTabUrl)).hostname;
+          entry.permanence = 'temporary';
+          storageItems.push(entry);
+        }
+        if (storageItems.length === 0) {
+          fillUnwantedDomStorageList();
+        }
+        // add whitelist info
+        let promises = storageItems.map(function(storageItem) {
+          return getObjectWhitelistedState(storageItem.domain, storageItem.name, 'd').then(function(whitelisted) {
+            storageItem.whitelisted = whitelisted
+            // add item to list
+            domList.push(storageItem);
+          });
         });
+        await Promise.all(promises);
+        resolve();
+      },
+      function() {
+        // [UGLY] when injected script is not ready wait 50ms and try again
+        setTimeout(function() {
+          return fillDomStorageList();
+        }, 50);
       });
-      await Promise.all(promises);
-      fillUnwantedDomStorageList();
-    },
-    function() {
-      // [UGLY] when injected script is not ready wait 50ms and try again
-      setTimeout(function() {
-        fillDomStorageList();
-      }, 50);
-    });
+  });
 }
 async function fillUnwantedDomStorageList() {
   // gets unwanted dom storage entries and stores them in unwantedDomList
-  let response = await getUnwantedDomStoregeEntries(activeTabId);
-  unwantedDomList = response.map(function(entry) {
-    entry.domain = (new URL(activeTabUrl)).hostname;
-    entry.permanence = entry.persistent ? 'permanent' : 'temporary';
-    return entry;
+  return new Promise(async function(resolve, reject) {
+    let response = await getUnwantedDomStoregeEntries(activeTabId);
+    unwantedDomList = response.map(function(entry) {
+      entry.domain = (new URL(activeTabUrl)).hostname;
+      entry.permanence = entry.persistent ? 'permanent' : 'temporary';
+      return entry;
+    });
+    resolve();
   });
-  // (re)build table
-  buildDomStorageTableBody();
 }
 
 function buildCookieTableBody() {
   // fills the table using the existing cookieList, unwantedCookieList
-  let newTableBody = document.createElement('tbody');
-  newTableBody.id = 'cookieTableBody';
-  // sort cookies by whitelisted and name
-  cookieList.sort(function(cookie1, cookie2) {
-    if (cookie1.whitelisted < cookie2.whitelisted) {
-      return 1;
-    } else if (cookie1.whitelisted > cookie2.whitelisted) {
-      return -1;
-    } else {
+  return new Promise(function(resolve, reject) {
+    let newTableBody = document.createElement('tbody');
+    newTableBody.id = 'cookieTableBody';
+    // sort cookies by whitelisted and name
+    cookieList.sort(function(cookie1, cookie2) {
+      if (cookie1.whitelisted < cookie2.whitelisted) {
+        return 1;
+      } else if (cookie1.whitelisted > cookie2.whitelisted) {
+        return -1;
+      } else {
+        if (cookie1.name.toUpperCase() > cookie2.name.toUpperCase()) {
+          return 1;
+        } else if (cookie1.name.toUpperCase() < cookie2.name.toUpperCase()) {
+          return -1;
+        } else {
+          return 0;
+        }
+      }
+    });
+    // sort unwanted cookies by name (cant be whitelisted)
+    unwantedCookieList.sort(function(cookie1, cookie2) {
       if (cookie1.name.toUpperCase() > cookie2.name.toUpperCase()) {
         return 1;
       } else if (cookie1.name.toUpperCase() < cookie2.name.toUpperCase()) {
@@ -222,419 +250,413 @@ function buildCookieTableBody() {
       } else {
         return 0;
       }
-    }
-  });
-  // sort unwanted cookies by name (cant be whitelisted)
-  unwantedCookieList.sort(function(cookie1, cookie2) {
-    if (cookie1.name.toUpperCase() > cookie2.name.toUpperCase()) {
-      return 1;
-    } else if (cookie1.name.toUpperCase() < cookie2.name.toUpperCase()) {
-      return -1;
-    } else {
-      return 0;
-    }
-  });
-  // add cookies to list
-  cookieList.forEach(function(cookie) {
-    let tr = document.createElement('TR');
-    let td;
-    let editIcon, deleteIcon, whitelistedCheckBox;
-    Object.defineProperty(tr, 'attachedCookie', {
-      value: cookie,
-      writable: true,
-      enumerable: true,
-      configurable: true
     });
-    // name and value can cause lag when too long (especially in chromium based browsers) and therefore get cut
-    // name
-    td = document.createElement('TD');
-    td.appendChild(document.createTextNode(cookie.name.substr(0, 50)));
-    td.title = cookie.name;
-    tr.appendChild(td);
-    // keep until
-    td = document.createElement('TD');
-    if (typeof(cookie.expirationDate) != 'undefined') {
-      td.appendChild(document.createTextNode(formatDate(new Date(cookie.expirationDate * 1000))));
-      td.title = new Date(cookie.expirationDate * 1000);
-    } else {
-      td.appendChild(document.createTextNode('session ends'));
-    }
-    tr.appendChild(td);
-    // value
-    td = document.createElement('TD');
-    td.appendChild(document.createTextNode(cookie.value.substr(0, 50)));
-    td.title = cookie.value;
-    tr.appendChild(td);
-    // whitelisted checkbox
-    whitelistedCheckBox = document.createElement('INPUT');
-    whitelistedCheckBox.type = 'checkbox';
-    whitelistedCheckBox.title = 'whitelist';
-    if (cookie.whitelisted) {
-      whitelistedCheckBox.checked = true;
-    }
-    whitelistedCheckBox.classList.add('tableCheckBox');
-    whitelistedCheckBox.addEventListener('change', async function(e) {
-      if (e.target.checked) {
-        await addWhitelistEntry(e.target.parentElement.parentElement.attachedCookie.domain, e.target.parentElement.parentElement.attachedCookie.name, 'c');
-        updateActiveTabsCounts();
-        fillSiteInfo();
+    // add cookies to list
+    cookieList.forEach(function(cookie) {
+      let tr = document.createElement('TR');
+      let td;
+      let editIcon, deleteIcon, whitelistedCheckBox;
+      Object.defineProperty(tr, 'attachedCookie', {
+        value: cookie,
+        writable: true,
+        enumerable: true,
+        configurable: true
+      });
+      // name and value can cause lag when too long (especially in chromium based browsers) and therefore get cut
+      // name
+      td = document.createElement('TD');
+      td.appendChild(document.createTextNode(cookie.name.substr(0, 50)));
+      td.title = cookie.name;
+      tr.appendChild(td);
+      // keep until
+      td = document.createElement('TD');
+      if (typeof(cookie.expirationDate) != 'undefined') {
+        td.appendChild(document.createTextNode(formatDate(new Date(cookie.expirationDate * 1000))));
+        td.title = new Date(cookie.expirationDate * 1000);
       } else {
-        await deleteWhitelistEntry(e.target.parentElement.parentElement.attachedCookie.domain, e.target.parentElement.parentElement.attachedCookie.name, 'c', null);
-        // could be optimized with function that only checks that one cookie
-        await deleteExistingUnwantedCookies(activeTabUrl, activeTabCookieStore);
-        updateActiveTabsCounts();
+        td.appendChild(document.createTextNode('session ends'));
+      }
+      tr.appendChild(td);
+      // value
+      td = document.createElement('TD');
+      td.appendChild(document.createTextNode(cookie.value.substr(0, 50)));
+      td.title = cookie.value;
+      tr.appendChild(td);
+      // whitelisted checkbox
+      whitelistedCheckBox = document.createElement('INPUT');
+      whitelistedCheckBox.type = 'checkbox';
+      whitelistedCheckBox.title = 'whitelist';
+      if (cookie.whitelisted) {
+        whitelistedCheckBox.checked = true;
+      }
+      whitelistedCheckBox.classList.add('tableCheckBox');
+      whitelistedCheckBox.addEventListener('change', async function(e) {
+        if (e.target.checked) {
+          await addWhitelistEntry(e.target.parentElement.parentElement.attachedCookie.domain, e.target.parentElement.parentElement.attachedCookie.name, 'c');
+          updateActiveTabsCounts();
+          fillSiteInfo();
+        } else {
+          await deleteWhitelistEntry(e.target.parentElement.parentElement.attachedCookie.domain, e.target.parentElement.parentElement.attachedCookie.name, 'c', null);
+          // could be optimized with function that only checks that one cookie
+          await deleteExistingUnwantedCookies(activeTabUrl, activeTabCookieStore);
+          updateActiveTabsCounts();
+          fillSiteInfo();
+        }
+      });
+      td = document.createElement('TD');
+      td.appendChild(whitelistedCheckBox);
+      td.addEventListener('click', function(e) {
+        if (e.target !== this) {
+          return;
+        }
+        this.children[0].checked = !this.children[0].checked;
+        let evt = document.createEvent('HTMLEvents');
+        evt.initEvent('change', false, true);
+        this.children[0].dispatchEvent(evt);
+      });
+      td.classList.add('checkbox-td');
+      tr.appendChild(td);
+      // edit icon
+      editIcon = document.createElement('IMG');
+      editIcon.src = '/icons/edit.svg';
+      editIcon.alt = 'edit';
+      editIcon.title = 'edit';
+      editIcon.classList.add('tableIcon');
+      editIcon.addEventListener('click', function(e) {
+        showView(cookieEditor);
+        fillCookieEditor(e.target.parentElement.parentElement.attachedCookie, null);
+      });
+      td = document.createElement('TD');
+      td.appendChild(editIcon);
+      tr.appendChild(td);
+      // delete icon
+      deleteIcon = document.createElement('IMG');
+      deleteIcon.src = '/icons/trash-alt.svg';
+      deleteIcon.alt = 'delete';
+      deleteIcon.title = 'delete';
+      deleteIcon.classList.add('tableIcon');
+      deleteIcon.addEventListener('click', async function(e) {
+        await deleteCookie(e.target.parentElement.parentElement.attachedCookie);
         fillSiteInfo();
-      }
-    });
-    td = document.createElement('TD');
-    td.appendChild(whitelistedCheckBox);
-    td.addEventListener('click', function(e) {
-      if (e.target !== this) {
-        return;
-      }
-      this.children[0].checked = !this.children[0].checked;
-      let evt = document.createEvent('HTMLEvents');
-      evt.initEvent('change', false, true);
-      this.children[0].dispatchEvent(evt);
-    });
-    td.classList.add('checkbox-td');
-    tr.appendChild(td);
-    // edit icon
-    editIcon = document.createElement('IMG');
-    editIcon.src = '/icons/edit.svg';
-    editIcon.alt = 'edit';
-    editIcon.title = 'edit';
-    editIcon.classList.add('tableIcon');
-    editIcon.addEventListener('click', function(e) {
-      showView(cookieEditor);
-      fillCookieEditor(e.target.parentElement.parentElement.attachedCookie, null);
-    });
-    td = document.createElement('TD');
-    td.appendChild(editIcon);
-    tr.appendChild(td);
-    // delete icon
-    deleteIcon = document.createElement('IMG');
-    deleteIcon.src = '/icons/trash-alt.svg';
-    deleteIcon.alt = 'delete';
-    deleteIcon.title = 'delete';
-    deleteIcon.classList.add('tableIcon');
-    deleteIcon.addEventListener('click', async function(e) {
-      await deleteCookie(e.target.parentElement.parentElement.attachedCookie);
-      fillSiteInfo();
-      updateActiveTabsCounts();
-    });
-    td = document.createElement('TD');
-    td.appendChild(deleteIcon);
-    tr.appendChild(td);
-    // add row to table body
-    newTableBody.appendChild(tr);
-  });
-  // add unwanted cookies to list
-  unwantedCookieList.forEach(function(cookie) {
-    let tr = document.createElement('TR');
-    let td = document.createElement('TD');
-    let editIcon, deleteIcon, whitelistedCheckBox;
-    tr.classList.add('blocked');
-    Object.defineProperty(tr, 'attachedCookie', {
-      value: cookie,
-      writable: true,
-      enumerable: true,
-      configurable: true
-    });
-    // name and value can cause lag when too long (especially in chromium based browsers) and therefore get cut
-    // name
-    td.appendChild(document.createTextNode(cookie.name.substr(0, 50)));
-    tr.appendChild(td);
-    // keep until
-    td = document.createElement('TD');
-    if (typeof(cookie.expirationDate) != 'undefined') {
-      td.appendChild(document.createTextNode(formatDate(new Date(cookie.expirationDate * 1000))));
-    } else {
-      td.appendChild(document.createTextNode('session ends'));
-    }
-    tr.appendChild(td);
-    // value
-    td = document.createElement('TD');
-    td.appendChild(document.createTextNode(cookie.value.substr(0, 50)));
-    tr.appendChild(td);
-    // whitelisted checkbox
-    whitelistedCheckBox = document.createElement('INPUT');
-    whitelistedCheckBox.type = 'checkbox';
-    whitelistedCheckBox.classList.add('tableCheckBox');
-    whitelistedCheckBox.addEventListener('change', async function(e) {
-      if (e.target.checked) {
-        await addWhitelistEntry(e.target.parentElement.parentElement.attachedCookie.domain, e.target.parentElement.parentElement.attachedCookie.name, 'c');
-        await callRestoreUnwantedCookie(e.target.parentElement.parentElement.attachedCookie.domain, e.target.parentElement.parentElement.attachedCookie.name, activeTabCookieStore);
         updateActiveTabsCounts();
+      });
+      td = document.createElement('TD');
+      td.appendChild(deleteIcon);
+      tr.appendChild(td);
+      // add row to table body
+      newTableBody.appendChild(tr);
+    });
+    // add unwanted cookies to list
+    unwantedCookieList.forEach(function(cookie) {
+      let tr = document.createElement('TR');
+      let td = document.createElement('TD');
+      let editIcon, deleteIcon, whitelistedCheckBox;
+      tr.classList.add('blocked');
+      Object.defineProperty(tr, 'attachedCookie', {
+        value: cookie,
+        writable: true,
+        enumerable: true,
+        configurable: true
+      });
+      // name and value can cause lag when too long (especially in chromium based browsers) and therefore get cut
+      // name
+      td.appendChild(document.createTextNode(cookie.name.substr(0, 50)));
+      tr.appendChild(td);
+      // keep until
+      td = document.createElement('TD');
+      if (typeof(cookie.expirationDate) != 'undefined') {
+        td.appendChild(document.createTextNode(formatDate(new Date(cookie.expirationDate * 1000))));
+      } else {
+        td.appendChild(document.createTextNode('session ends'));
+      }
+      tr.appendChild(td);
+      // value
+      td = document.createElement('TD');
+      td.appendChild(document.createTextNode(cookie.value.substr(0, 50)));
+      tr.appendChild(td);
+      // whitelisted checkbox
+      whitelistedCheckBox = document.createElement('INPUT');
+      whitelistedCheckBox.type = 'checkbox';
+      whitelistedCheckBox.classList.add('tableCheckBox');
+      whitelistedCheckBox.addEventListener('change', async function(e) {
+        if (e.target.checked) {
+          await addWhitelistEntry(e.target.parentElement.parentElement.attachedCookie.domain, e.target.parentElement.parentElement.attachedCookie.name, 'c');
+          await callRestoreUnwantedCookie(e.target.parentElement.parentElement.attachedCookie.domain, e.target.parentElement.parentElement.attachedCookie.name, activeTabCookieStore);
+          updateActiveTabsCounts();
+          fillSiteInfo();
+        }
+      });
+      td = document.createElement('TD');
+      td.appendChild(whitelistedCheckBox);
+      td.addEventListener('click', function(e) {
+        if (e.target !== this) {
+          return;
+        }
+        this.children[0].checked = !this.children[0].checked;
+        let evt = document.createEvent('HTMLEvents');
+        evt.initEvent('change', false, true);
+        this.children[0].dispatchEvent(evt);
+      });
+      tr.appendChild(td);
+      // edit icon
+      editIcon = document.createElement('IMG');
+      editIcon.src = '/icons/edit.svg';
+      editIcon.alt = 'edit';
+      editIcon.title = 'edit';
+      editIcon.classList.add('tableIconDisabled');
+      td = document.createElement('TD');
+      td.appendChild(editIcon);
+      tr.appendChild(td);
+      // delete icon
+      deleteIcon = document.createElement('IMG');
+      deleteIcon.src = '/icons/trash-alt.svg';
+      deleteIcon.alt = 'delete';
+      deleteIcon.title = 'delete';
+      deleteIcon.classList.add('tableIcon');
+      deleteIcon.addEventListener('click', async function(e) {
+        await callDeleteUnwantedCookie(e.target.parentElement.parentElement.attachedCookie.domain, e.target.parentElement.parentElement.attachedCookie.name);
         fillSiteInfo();
-      }
+      });
+      td = document.createElement('TD');
+      td.appendChild(deleteIcon);
+      tr.appendChild(td);
+      // add row to table body
+      newTableBody.appendChild(tr);
     });
-    td = document.createElement('TD');
-    td.appendChild(whitelistedCheckBox);
-    td.addEventListener('click', function(e) {
-      if (e.target !== this) {
-        return;
-      }
-      this.children[0].checked = !this.children[0].checked;
-      let evt = document.createEvent('HTMLEvents');
-      evt.initEvent('change', false, true);
-      this.children[0].dispatchEvent(evt);
-    });
-    tr.appendChild(td);
-    // edit icon
-    editIcon = document.createElement('IMG');
-    editIcon.src = '/icons/edit.svg';
-    editIcon.alt = 'edit';
-    editIcon.title = 'edit';
-    editIcon.classList.add('tableIconDisabled');
-    td = document.createElement('TD');
-    td.appendChild(editIcon);
-    tr.appendChild(td);
-    // delete icon
-    deleteIcon = document.createElement('IMG');
-    deleteIcon.src = '/icons/trash-alt.svg';
-    deleteIcon.alt = 'delete';
-    deleteIcon.title = 'delete';
-    deleteIcon.classList.add('tableIcon');
-    deleteIcon.addEventListener('click', async function(e) {
-      await callDeleteUnwantedCookie(e.target.parentElement.parentElement.attachedCookie.domain, e.target.parentElement.parentElement.attachedCookie.name);
-      fillSiteInfo();
-    });
-    td = document.createElement('TD');
-    td.appendChild(deleteIcon);
-    tr.appendChild(td);
-    // add row to table body
-    newTableBody.appendChild(tr);
+    // replace old table body with new one
+    cookieTable.replaceChild(newTableBody, cookieTable.childNodes[0]);
+    resolve();
   });
-  // replace old table body with new one
-  cookieTable.replaceChild(newTableBody, cookieTable.childNodes[0]);
 }
 async function buildDomStorageTableBody() {
   // fills the table using the existing domList, unwantedDomList
-  let newTableBody = document.createElement('tbody');
-  newTableBody.id = 'domStorageTableBody';
-  // sort entries by the following criteria: whitelisted, permanence, name
-  domList.sort(function(entry1, entry2) {
-    if (entry1.whitelisted < entry2.whitelisted) {
-      return 1;
-    } else if (entry1.whitelisted > entry2.whitelisted) {
-      return -1;
-    } else {
-      if (entry1.permanence == 'permanent' && entry2.permanence == 'temporary') {
+  return new Promise(function(resolve, reject) {
+    let newTableBody = document.createElement('tbody');
+    newTableBody.id = 'domStorageTableBody';
+    // sort entries by the following criteria: whitelisted, permanence, name
+    domList.sort(function(entry1, entry2) {
+      if (entry1.whitelisted < entry2.whitelisted) {
         return 1;
-      } else if (entry1.permanence == 'temporary' && entry2.permanence == 'permanent') {
+      } else if (entry1.whitelisted > entry2.whitelisted) {
         return -1;
       } else {
-        if (entry1.name.toUpperCase() > entry2.name.toUpperCase()) {
+        if (entry1.permanence == 'permanent' && entry2.permanence == 'temporary') {
           return 1;
-        } else if (entry1.name.toUpperCase() < entry2.name.toUpperCase()) {
+        } else if (entry1.permanence == 'temporary' && entry2.permanence == 'permanent') {
           return -1;
         } else {
-          return 0;
+          if (entry1.name.toUpperCase() > entry2.name.toUpperCase()) {
+            return 1;
+          } else if (entry1.name.toUpperCase() < entry2.name.toUpperCase()) {
+            return -1;
+          } else {
+            return 0;
+          }
         }
       }
-    }
-  });
-  // sort unwanted entries by the following criteria: permanence, name
-  unwantedDomList.sort(function(entry1, entry2) {
-    if (entry1.whitelisted > entry2.whitelisted) {
-      return -1;
-    } else {
-      if (entry1.permanence == 'permanent' && entry2.permanence == 'temporary') {
-        return 1;
-      } else if (entry1.permanence == 'temporary' && entry2.permanence == 'permanent') {
+    });
+    // sort unwanted entries by the following criteria: permanence, name
+    unwantedDomList.sort(function(entry1, entry2) {
+      if (entry1.whitelisted > entry2.whitelisted) {
         return -1;
       } else {
-        if (entry1.name.toUpperCase() > entry2.name.toUpperCase()) {
+        if (entry1.permanence == 'permanent' && entry2.permanence == 'temporary') {
           return 1;
-        } else if (entry1.name.toUpperCase() < entry2.name.toUpperCase()) {
+        } else if (entry1.permanence == 'temporary' && entry2.permanence == 'permanent') {
           return -1;
         } else {
-          return 0;
+          if (entry1.name.toUpperCase() > entry2.name.toUpperCase()) {
+            return 1;
+          } else if (entry1.name.toUpperCase() < entry2.name.toUpperCase()) {
+            return -1;
+          } else {
+            return 0;
+          }
         }
       }
-    }
-  });
-  // add entries to list
-  domList.forEach(function(entry) {
-    let tr = document.createElement('TR');
-    let td;
-    let editIcon, deleteIcon, whitelistedCheckBox;
-    Object.defineProperty(tr, 'attachedEntry', {
-      value: entry,
-      writable: true,
-      enumerable: true,
-      configurable: true
     });
-    // name and value can cause lag when too long (especially in chromium based browsers) and therefore get cut
-    // name
-    td = document.createElement('TD');
-    td.appendChild(document.createTextNode(entry.name.substr(0, 50)));
-    td.title = entry.name;
-    tr.appendChild(td);
-    // keep until
-    td = document.createElement('TD');
-    td.appendChild(document.createTextNode(entry.permanence));
-    td.title = entry.permanence;
-    tr.appendChild(td);
-    // value
-    td = document.createElement('TD');
-    td.appendChild(document.createTextNode(entry.value.substr(0, 50)));
-    td.title = entry.value;
-    tr.appendChild(td);
-    // whitelisted checkbox
-    whitelistedCheckBox = document.createElement('INPUT');
-    whitelistedCheckBox.type = 'checkbox';
-    whitelistedCheckBox.title = 'whitelist';
-    if (entry.whitelisted) {
-      whitelistedCheckBox.checked = true;
-    }
-    whitelistedCheckBox.classList.add('tableCheckBox');
-    whitelistedCheckBox.addEventListener('change', async function(e) {
-      if (e.target.checked) {
-        await addWhitelistEntry(e.target.parentElement.parentElement.attachedEntry.domain, e.target.parentElement.parentElement.attachedEntry.name, 'd');
-        updateActiveTabsCounts();
+    // add entries to list
+    domList.forEach(function(entry) {
+      let tr = document.createElement('TR');
+      let td;
+      let editIcon, deleteIcon, whitelistedCheckBox;
+      Object.defineProperty(tr, 'attachedEntry', {
+        value: entry,
+        writable: true,
+        enumerable: true,
+        configurable: true
+      });
+      // name and value can cause lag when too long (especially in chromium based browsers) and therefore get cut
+      // name
+      td = document.createElement('TD');
+      td.appendChild(document.createTextNode(entry.name.substr(0, 50)));
+      td.title = entry.name;
+      tr.appendChild(td);
+      // keep until
+      td = document.createElement('TD');
+      td.appendChild(document.createTextNode(entry.permanence));
+      td.title = entry.permanence;
+      tr.appendChild(td);
+      // value
+      td = document.createElement('TD');
+      td.appendChild(document.createTextNode(entry.value.substr(0, 50)));
+      td.title = entry.value;
+      tr.appendChild(td);
+      // whitelisted checkbox
+      whitelistedCheckBox = document.createElement('INPUT');
+      whitelistedCheckBox.type = 'checkbox';
+      whitelistedCheckBox.title = 'whitelist';
+      if (entry.whitelisted) {
+        whitelistedCheckBox.checked = true;
+      }
+      whitelistedCheckBox.classList.add('tableCheckBox');
+      whitelistedCheckBox.addEventListener('change', async function(e) {
+        if (e.target.checked) {
+          await addWhitelistEntry(e.target.parentElement.parentElement.attachedEntry.domain, e.target.parentElement.parentElement.attachedEntry.name, 'd');
+          updateActiveTabsCounts();
+          fillSiteInfo();
+        } else {
+          await deleteWhitelistEntry(e.target.parentElement.parentElement.attachedEntry.domain, e.target.parentElement.parentElement.attachedEntry.name, 'd');
+          await deleteExistingUnwantedDomStorageEntries(activeTabId);
+          updateActiveTabsCounts();
+          fillSiteInfo();
+        }
+      });
+      td = document.createElement('TD');
+      td.appendChild(whitelistedCheckBox);
+      td.addEventListener('click', function(e) {
+        if (e.target !== this) {
+          return;
+        }
+        this.children[0].checked = !this.children[0].checked;
+        let evt = document.createEvent('HTMLEvents');
+        evt.initEvent('change', false, true);
+        this.children[0].dispatchEvent(evt);
+      });
+      tr.appendChild(td);
+      // edit icon
+      editIcon = document.createElement('IMG');
+      editIcon.src = '/icons/edit.svg';
+      editIcon.alt = 'edit';
+      editIcon.title = 'edit';
+      editIcon.classList.add('tableIcon');
+      editIcon.addEventListener('click', function(e) {
+        showView(domStorageEditor);
+        fillDomStorageEditor(e.target.parentElement.parentElement.attachedEntry, null);
+      });
+      td = document.createElement('TD');
+      td.appendChild(editIcon);
+      tr.appendChild(td);
+      // delete icon
+      deleteIcon = document.createElement('IMG');
+      deleteIcon.src = '/icons/trash-alt.svg';
+      deleteIcon.alt = 'delete';
+      deleteIcon.title = 'delete';
+      deleteIcon.classList.add('tableIcon');
+      deleteIcon.addEventListener('click', async function(e) {
+        await deleteDomStorageEntry(activeTabId, e.target.parentElement.parentElement.attachedEntry);
         fillSiteInfo();
-      } else {
-        await deleteWhitelistEntry(e.target.parentElement.parentElement.attachedEntry.domain, e.target.parentElement.parentElement.attachedEntry.name, 'd');
-        await deleteExistingUnwantedDomStorageEntries(activeTabId);
         updateActiveTabsCounts();
+      });
+      td = document.createElement('TD');
+      td.appendChild(deleteIcon);
+      tr.appendChild(td);
+      // add row to table body
+      newTableBody.appendChild(tr);
+    });
+    // add unwanted entries to list
+    unwantedDomList.forEach(function(entry) {
+      let tr = document.createElement('TR');
+      let td;
+      let editIcon, deleteIcon, whitelistedCheckBox;
+      tr.classList.add('blocked');
+      Object.defineProperty(tr, 'attachedEntry', {
+        value: entry,
+        writable: true,
+        enumerable: true,
+        configurable: true
+      });
+      // name and value can cause lag when too long (especially in chromium based browsers) and therefore get cut
+      // name
+      td = document.createElement('TD');
+      td.appendChild(document.createTextNode(entry.name.substr(0, 50)));
+      td.title = entry.name;
+      tr.appendChild(td);
+      // keep until
+      td = document.createElement('TD');
+      td.appendChild(document.createTextNode(entry.permanence));
+      td.title = entry.permanence;
+      tr.appendChild(td);
+      // value
+      td = document.createElement('TD');
+      td.appendChild(document.createTextNode(entry.value.substr(0, 50)));
+      td.title = entry.value;
+      tr.appendChild(td);
+      // whitelisted checkbox
+      whitelistedCheckBox = document.createElement('INPUT');
+      whitelistedCheckBox.type = 'checkbox';
+      whitelistedCheckBox.title = 'whitelist';
+      whitelistedCheckBox.classList.add('tableCheckBox');
+      whitelistedCheckBox.addEventListener('change', async function(e) {
+        if (e.target.checked) {
+          await addWhitelistEntry(e.target.parentElement.parentElement.attachedEntry.domain, e.target.parentElement.parentElement.attachedEntry.name, 'd');
+          // whitelist does not differentiate between local and session storage
+          let entryVariation1 = {
+            name: e.target.parentElement.parentElement.attachedEntry.name,
+            permanence: 'permanent'
+          };
+          let entryVariation2 = {
+            name: e.target.parentElement.parentElement.attachedEntry.name,
+            permanence: 'temporary'
+          };
+          await Promise.all([restoreUnwantedDomStorageEntry(activeTabId, entryVariation1), restoreUnwantedDomStorageEntry(activeTabId, entryVariation2)]);
+          updateActiveTabsCounts();
+          fillSiteInfo();
+        }
+      });
+      td = document.createElement('TD');
+      td.appendChild(whitelistedCheckBox);
+      td.addEventListener('click', function(e) {
+        if (e.target !== this) {
+          return;
+        }
+        this.children[0].checked = !this.children[0].checked;
+        let evt = document.createEvent('HTMLEvents');
+        evt.initEvent('change', false, true);
+        this.children[0].dispatchEvent(evt);
+      });
+      tr.appendChild(td);
+      // edit icon
+      editIcon = document.createElement('IMG');
+      editIcon.src = '/icons/edit.svg';
+      editIcon.alt = 'edit';
+      editIcon.title = 'edit';
+      editIcon.classList.add('tableIcon');
+      editIcon.classList.add('tableIconDisabled');
+      td = document.createElement('TD');
+      td.appendChild(editIcon);
+      tr.appendChild(td);
+      // delete icon
+      deleteIcon = document.createElement('IMG');
+      deleteIcon.src = '/icons/trash-alt.svg';
+      deleteIcon.alt = 'delete';
+      deleteIcon.title = 'delete';
+      deleteIcon.classList.add('tableIcon');
+      deleteIcon.addEventListener('click', async function(e) {
+        await deleteUnwantedDomStorageEntry(activeTabId, e.target.parentElement.parentElement.attachedEntry);
         fillSiteInfo();
-      }
-    });
-    td = document.createElement('TD');
-    td.appendChild(whitelistedCheckBox);
-    td.addEventListener('click', function(e) {
-      if (e.target !== this) {
-        return;
-      }
-      this.children[0].checked = !this.children[0].checked;
-      let evt = document.createEvent('HTMLEvents');
-      evt.initEvent('change', false, true);
-      this.children[0].dispatchEvent(evt);
-    });
-    tr.appendChild(td);
-    // edit icon
-    editIcon = document.createElement('IMG');
-    editIcon.src = '/icons/edit.svg';
-    editIcon.alt = 'edit';
-    editIcon.title = 'edit';
-    editIcon.classList.add('tableIcon');
-    editIcon.addEventListener('click', function(e) {
-      showView(domStorageEditor);
-      fillDomStorageEditor(e.target.parentElement.parentElement.attachedEntry, null);
-    });
-    td = document.createElement('TD');
-    td.appendChild(editIcon);
-    tr.appendChild(td);
-    // delete icon
-    deleteIcon = document.createElement('IMG');
-    deleteIcon.src = '/icons/trash-alt.svg';
-    deleteIcon.alt = 'delete';
-    deleteIcon.title = 'delete';
-    deleteIcon.classList.add('tableIcon');
-    deleteIcon.addEventListener('click', async function(e) {
-      await deleteDomStorageEntry(activeTabId, e.target.parentElement.parentElement.attachedEntry);
-      fillSiteInfo();
-      updateActiveTabsCounts();
-    });
-    td = document.createElement('TD');
-    td.appendChild(deleteIcon);
-    tr.appendChild(td);
-    // add row to table body
-    newTableBody.appendChild(tr);
-  });
-  // add unwanted entries to list
-  unwantedDomList.forEach(function(entry) {
-    let tr = document.createElement('TR');
-    let td;
-    let editIcon, deleteIcon, whitelistedCheckBox;
-    tr.classList.add('blocked');
-    Object.defineProperty(tr, 'attachedEntry', {
-      value: entry,
-      writable: true,
-      enumerable: true,
-      configurable: true
-    });
-    // name and value can cause lag when too long (especially in chromium based browsers) and therefore get cut
-    // name
-    td = document.createElement('TD');
-    td.appendChild(document.createTextNode(entry.name.substr(0, 50)));
-    td.title = entry.name;
-    tr.appendChild(td);
-    // keep until
-    td = document.createElement('TD');
-    td.appendChild(document.createTextNode(entry.permanence));
-    td.title = entry.permanence;
-    tr.appendChild(td);
-    // value
-    td = document.createElement('TD');
-    td.appendChild(document.createTextNode(entry.value.substr(0, 50)));
-    td.title = entry.value;
-    tr.appendChild(td);
-    // whitelisted checkbox
-    whitelistedCheckBox = document.createElement('INPUT');
-    whitelistedCheckBox.type = 'checkbox';
-    whitelistedCheckBox.title = 'whitelist';
-    whitelistedCheckBox.classList.add('tableCheckBox');
-    whitelistedCheckBox.addEventListener('change', async function(e) {
-      if (e.target.checked) {
-        await addWhitelistEntry(e.target.parentElement.parentElement.attachedEntry.domain, e.target.parentElement.parentElement.attachedEntry.name, 'd');
-        // whitelist does not differentiate between local and session storage
-        let entryVariation1 = {
-          name: e.target.parentElement.parentElement.attachedEntry.name,
-          permanence: 'permanent'
-        };
-        let entryVariation2 = {
-          name: e.target.parentElement.parentElement.attachedEntry.name,
-          permanence: 'temporary'
-        };
-        await Promise.all([restoreUnwantedDomStorageEntry(activeTabId, entryVariation1), restoreUnwantedDomStorageEntry(activeTabId, entryVariation2)]);
         updateActiveTabsCounts();
-        fillSiteInfo();
-      }
+      });
+      td = document.createElement('TD');
+      td.appendChild(deleteIcon);
+      tr.appendChild(td);
+      // add row to table body
+      newTableBody.appendChild(tr);
     });
-    td = document.createElement('TD');
-    td.appendChild(whitelistedCheckBox);
-    td.addEventListener('click', function(e) {
-      if (e.target !== this) {
-        return;
-      }
-      this.children[0].checked = !this.children[0].checked;
-      let evt = document.createEvent('HTMLEvents');
-      evt.initEvent('change', false, true);
-      this.children[0].dispatchEvent(evt);
-    });
-    tr.appendChild(td);
-    // edit icon
-    editIcon = document.createElement('IMG');
-    editIcon.src = '/icons/edit.svg';
-    editIcon.alt = 'edit';
-    editIcon.title = 'edit';
-    editIcon.classList.add('tableIcon');
-    editIcon.classList.add('tableIconDisabled');
-    td = document.createElement('TD');
-    td.appendChild(editIcon);
-    tr.appendChild(td);
-    // delete icon
-    deleteIcon = document.createElement('IMG');
-    deleteIcon.src = '/icons/trash-alt.svg';
-    deleteIcon.alt = 'delete';
-    deleteIcon.title = 'delete';
-    deleteIcon.classList.add('tableIcon');
-    deleteIcon.addEventListener('click', async function(e) {
-      await deleteUnwantedDomStorageEntry(activeTabId, e.target.parentElement.parentElement.attachedEntry);
-      fillSiteInfo();
-      updateActiveTabsCounts();
-    });
-    td = document.createElement('TD');
-    td.appendChild(deleteIcon);
-    tr.appendChild(td);
-    // add row to table body
-    newTableBody.appendChild(tr);
+    // replace old table body with new one
+    domStorageTable.replaceChild(newTableBody, domStorageTable.childNodes[5]);
+    resolve();
   });
-  // replace old table body with new one
-  domStorageTable.replaceChild(newTableBody, domStorageTable.childNodes[5]);
 }
 
 function fillCookieEditor(cookie, domain) {
