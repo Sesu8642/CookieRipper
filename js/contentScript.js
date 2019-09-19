@@ -240,20 +240,8 @@ async function injectScript() {
   // using a string loads faster than the js from the website; using a separate js file does not
   return new Promise(function(resolve, reject) {
     try {
-      let injectJS = `
-  let _setItem = Storage.prototype.setItem;
-  Storage.prototype.setItem = function(name, value) {
-    window.postMessage({
-      type: 'cookieRipper_domStorageSet',
-      persistent: this === window.localStorage,
-      name: name,
-      value: value
-    }, window.location.href);
-    _setItem.apply(this, arguments);
-  }
-  `
       let script = document.createElement('script');
-      script.textContent = injectJS;
+      script.src = browser.runtime.getURL('js/inject.js');
       // Add the script tag to the DOM
       (document.head || document.documentElement).appendChild(script);
       script.remove();
