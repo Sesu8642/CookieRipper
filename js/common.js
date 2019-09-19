@@ -780,20 +780,16 @@ async function deleteSiteException(url, temporary) {
     }
   });
 }
-async function clearTempSiteExceptions(url) {
+async function clearTempSiteExceptions() {
   // deletes all temp site exceptions
   return new Promise(async function(resolve, reject) {
     try {
-      let hostname = trimSubdomains(url);
       // use function directly or send message depending on the availability of bgPage
       if (bgPage !== null) {
-        await bgPage.deleteTempSiteException({
-          hostname: hostname
-        });
+        await bgPage.clearTempSiteExceptions();
       } else {
         await browser.runtime.sendMessage({
-          type: 'clearTempSiteExceptions',
-          hostname: hostname
+          type: 'clearTempSiteExceptions'
         });
       }
       resolve();
