@@ -216,6 +216,7 @@ async function fillDomStorageList() {
         entry.value = response.localStorage[i];
         entry.domain = (new URL(activeTabUrl)).hostname;
         entry.permanence = 'permanent';
+        entry.persistent = true;
         storageItems.push(entry);
       }
       for (let i in response.sessionStorage) {
@@ -224,6 +225,7 @@ async function fillDomStorageList() {
         entry.value = response.sessionStorage[i];
         entry.domain = (new URL(activeTabUrl)).hostname;
         entry.permanence = 'temporary';
+        entry.persistent = false;
         storageItems.push(entry);
       }
       // add whitelist info
