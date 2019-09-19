@@ -3,24 +3,33 @@
  * this script is injected into websites because dom storage is only accessible from there (i think)
  */
 var unwantedDomStorageEntries = [];
-deleteExistingUnwantedStorageEntries();
-injectScript();
+init();
+async function init() {
+  return new Promise(async function(resolve, reject) {
+    try {
+      await Promise.all([injectScript(), deleteExistingUnwantedStorageEntries()]);
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
 // only answer messages from content script if in the top frame
 if (window == window.top) {
   browser.runtime.onMessage.addListener(handleMessage);
 }
-window.addEventListener('message', function(event) {
-  if (event.data.type && (event.data.type == 'cookieRipper_domStorageSet')) {
-    let storageItems = [{
-      name: event.data.name,
-      persistent: event.data.persistent
-    }];
-    let sending = browser.runtime.sendMessage({
-      type: 'getTabDomStorageItemsAllowedStates',
-      items: storageItems,
-      domain: window.location.host
-    });
-    sending.then(async function(response) {
+window.addEventListener('message', async function(event) {
+  try {
+    if (event.data.type && (event.data.type == 'cookieRipper_domStorageSet')) {
+      let storageItems = [{
+        name: event.data.name,
+        persistent: event.data.persistent
+      }];
+      let response = await browser.runtime.sendMessage({
+        type: 'getTabDomStorageItemsAllowedStates',
+        items: storageItems,
+        domain: window.location.host
+      });
       // delete the item if unwanted
       if (!response[0]) {
         let storage = event.data.persistent ? localStorage : sessionStorage;
@@ -38,7 +47,9 @@ window.addEventListener('message', function(event) {
           persistent: event.data.persistent
         });
       }
-    }, logError);
+    }
+  } catch (e) {
+    console.error(e);
   }
 });
 
@@ -72,7 +83,7 @@ function handleMessage(request) {
       return clearStorage();
       break;
     default:
-      logError(Error(`Unknown request type: ${request.type}`))
+      console.error(Error(`Unknown request type: ${request.type}`))
   }
 }
 
@@ -116,53 +127,58 @@ function addStorageEntry(request) {
     resolve();
   });
 }
-
-function deleteUnwantedStorageEntry(request) {
+async function deleteUnwantedStorageEntry(request) {
   // deletes an entry from unwanted list
   return new Promise(function(resolve, reject) {
-    unwantedDomStorageEntries = unwantedDomStorageEntries.filter(function(entry) {
-      return (!(entry.name === request.entry.name && entry.persistent === request.entry.persistent))
-    });
-    resolve();
+    try {
+      unwantedDomStorageEntries = unwantedDomStorageEntries.filter(function(entry) {
+        return (!(entry.name === request.entry.name && entry.persistent === request.entry.persistent))
+      });
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
   });
 }
-
-function restoreUnwantedStorageEntry(request) {
+async function restoreUnwantedStorageEntry(request) {
   // re-creates a single entry from unwanted list
   return new Promise(async function(resolve, reject) {
-    unwantedDomStorageEntries.forEach(function(entry) {
-      if (entry.name === request.entry.name && entry.persistent === request.entry.persistent) {
-        let storage = entry.persistent ? localStorage : sessionStorage;
-        storage.setItem(entry.name, entry.value);
-      }
-    });
-    await deleteUnwantedStorageEntry(request);
-    resolve();
+    try {
+      unwantedDomStorageEntries.forEach(function(entry) {
+        if (entry.name === request.entry.name && entry.persistent === request.entry.persistent) {
+          let storage = entry.persistent ? localStorage : sessionStorage;
+          storage.setItem(entry.name, entry.value);
+        }
+      });
+      await deleteUnwantedStorageEntry(request);
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
   });
 }
-
-function restoreUnwantedStorageEntries() {
+async function restoreUnwantedStorageEntries() {
   // re-creates all hostnames' wanted dom storage entries from unwanted list
   return new Promise(async function(resolve, reject) {
-    let domain = window.location.host;
-    let storageItems = [];
-    unwantedDomStorageEntries.forEach(function(entry) {
-      // create list of storage items and send them to the background page
-      storageItems.push({
-        name: entry.name,
-        persistent: entry.persistent
+    try {
+      let domain = window.location.host;
+      let storageItems = [];
+      unwantedDomStorageEntries.forEach(function(entry) {
+        // create list of storage items and send them to the background page
+        storageItems.push({
+          name: entry.name,
+          persistent: entry.persistent
+        });
       });
-    });
-    let sending = browser.runtime.sendMessage({
-      type: 'getTabDomStorageItemsAllowedStates',
-      items: storageItems,
-      domain: domain
-    });
-    sending.then(async function(response) {
+      let response = await browser.runtime.sendMessage({
+        type: 'getTabDomStorageItemsAllowedStates',
+        items: storageItems,
+        domain: domain
+      });
       // restore the wanted items
       for (let i = 0; i < response.length; i++) {
         if (response[i]) {
-          restoreUnwantedStorageEntry({
+          await restoreUnwantedStorageEntry({
             entry: {
               name: storageItems[i].name,
               persistent: storageItems[i].persistent
@@ -170,16 +186,17 @@ function restoreUnwantedStorageEntries() {
           });
         }
       }
-    }, logError);
-    resolve();
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
   });
 }
-
-function deleteExistingUnwantedStorageEntries() {
+async function deleteExistingUnwantedStorageEntries() {
   // deletes all existung but unwanted entries
-  return new Promise(function(resolve, reject) {
-    let domain = window.location.host;
+  return new Promise(async function(resolve, reject) {
     try {
+      let domain = window.location.host;
       // create list of storage items and send them to the background page
       let storageItems = [];
       for (let i = 0; i < localStorage.length; i++) {
@@ -194,37 +211,36 @@ function deleteExistingUnwantedStorageEntries() {
           persistent: false
         });
       }
-      let sending = browser.runtime.sendMessage({
+      let response = await browser.runtime.sendMessage({
         type: 'getTabDomStorageItemsAllowedStates',
         items: storageItems,
         domain: domain
       });
-      sending.then(async function(response) {
-        // delete the unwanted items
-        for (let i = 0; i < response.length; i++) {
-          if (!response[i]) {
-            let storage = storageItems[i].persistent ? localStorage : sessionStorage;
-            unwantedDomStorageEntries.push({
-              name: storageItems[i].name,
-              value: storage.getItem(storageItems[i].name),
-              persistent: storageItems[i].persistent
-            });
-            storage.removeItem(storageItems[i].name);
-          }
+      // delete the unwanted items
+      for (let i = 0; i < response.length; i++) {
+        if (!response[i]) {
+          let storage = storageItems[i].persistent ? localStorage : sessionStorage;
+          unwantedDomStorageEntries.push({
+            name: storageItems[i].name,
+            value: storage.getItem(storageItems[i].name),
+            persistent: storageItems[i].persistent
+          });
+          storage.removeItem(storageItems[i].name);
         }
-        resolve();
-      }, logError);
+      }
+      resolve();
     } catch (e) {
       // if storage is not accessible, there is nothing to do
       reject();
     }
   });
 }
-
-function injectScript() {
+async function injectScript() {
   // adds a script tag into the html document to notify when dom storage is written
   // using a string loads faster than the js from the website; using a separate js file does not
-  let injectJS = `
+  return new Promise(function(resolve, reject) {
+    try {
+      let injectJS = `
   let _setItem = Storage.prototype.setItem;
   Storage.prototype.setItem = function(name, value) {
     window.postMessage({
@@ -236,15 +252,15 @@ function injectScript() {
     _setItem.apply(this, arguments);
   }
   `
-  let script = document.createElement('script');
-  script.textContent = injectJS;
-  // Add the script tag to the DOM
-  (document.head || document.documentElement).appendChild(script);
-  script.remove();
-}
-
-function logError(error) {
-  // logs an error to the console
-  console.log(`Cookie Ripper ${error}`);
-  console.error(error);
+      let script = document.createElement('script');
+      script.textContent = injectJS;
+      // Add the script tag to the DOM
+      (document.head || document.documentElement).appendChild(script);
+      script.remove();
+      resolve();
+    } catch (e) {
+      // if storage is not accessible, there is nothing to do
+      reject(e);
+    }
+  });
 }

@@ -1,3 +1,4 @@
+'use strict';
 /*
  *
  * This file contains functions that may be used by all the other js files.
@@ -6,19 +7,31 @@
 /* for accessing variables from background page if not in private mode */
 let bgPage = browser.extension.getBackgroundPage();
 /* whether firstPartyIsolation is supported */
-let firstPartyIsolationSupported = checkFirstPartyIsolationSupport();
+let firstPartyIsolationSupported;
+initFirstPartyIsolationSupported();
+async function initFirstPartyIsolationSupported() {
+  // inits firstPartyIsolationSupported
+  try {
+    firstPartyIsolationSupported = await checkFirstPartyIsolationSupport();
+  } catch (e) {
+    console.error(e);
+  }
+}
 
 function checkFirstPartyIsolationSupport() {
   // checks whether the first party domain cookie property is supported
-  let getting = browser.cookies.get({
-    name: '',
-    url: '',
-    firstPartyDomain: ''
-  });
-  getting.then(function() {
-    return true
-  }, function() {
-    return false
+  return new Promise(async function(resolve, reject) {
+    try {
+      await browser.cookies.get({
+        name: '',
+        url: '',
+        firstPartyDomain: ''
+      });
+      resolve(true);
+    } catch (e) {
+      console.log('Browser does not support first party domain cookie property.');
+      resolve(false);
+    }
   });
 }
 /*
@@ -27,17 +40,20 @@ function checkFirstPartyIsolationSupport() {
  * it is also less limited and probably faster than reading from the disk even when using the messaging api
  * the functions either call a funtion in the background page directly or send a message to do their job
  */
-function callGetDefaultBehaviour() {
+async function callGetDefaultBehaviour() {
   // gets default behaviour from background page
   return new Promise(async function(resolve, reject) {
-    // use function directly or send message depending on the availability of bgPage
-    if (bgPage !== null) {
-      resolve(bgPage.defaultBehaviour);
-    } else {
-      let getting = browser.runtime.sendMessage({
-        type: 'getDefaultBehaviour'
-      });
-      getting.then(resolve, logError);
+    try {
+      // use function directly or send message depending on the availability of bgPage
+      if (bgPage !== null) {
+        resolve(bgPage.defaultBehaviour);
+      } else {
+        resolve(browser.runtime.sendMessage({
+          type: 'getDefaultBehaviour'
+        }));
+      }
+    } catch (e) {
+      reject(e);
     }
   });
 }
@@ -45,29 +61,35 @@ function callGetDefaultBehaviour() {
 function callGetEnableCookieCounter() {
   // gets default behaviour from background page
   return new Promise(async function(resolve, reject) {
-    // use function directly or send message depending on the availability of bgPage
-    if (bgPage !== null) {
-      resolve(bgPage.enableCookieCounter);
-    } else {
-      let getting = browser.runtime.sendMessage({
-        type: 'getEnableCookieCounter'
-      });
-      getting.then(resolve, logError);
+    try {
+      // use function directly or send message depending on the availability of bgPage
+      if (bgPage !== null) {
+        resolve(bgPage.enableCookieCounter);
+      } else {
+        resolve(browser.runtime.sendMessage({
+          type: 'getEnableCookieCounter'
+        }));
+      }
+    } catch (e) {
+      reject(e);
     }
   });
 }
-
-function callLoadSettings() {
+async function callLoadSettings() {
   // reloads settings in background page
   return new Promise(async function(resolve, reject) {
-    // use function directly or send message depending on the availability of bgPage
-    if (bgPage !== null) {
-      bgPage.loadSettings();
-    } else {
-      let getting = browser.runtime.sendMessage({
-        type: 'loadSettings'
-      });
-      getting.then(resolve, logError);
+    try {
+      // use function directly or send message depending on the availability of bgPage
+      if (bgPage !== null) {
+        await bgPage.loadSettings();
+      } else {
+        await browser.runtime.sendMessage({
+          type: 'loadSettings'
+        });
+      }
+      resolve();
+    } catch (e) {
+      reject(e);
     }
   });
 }
@@ -81,36 +103,43 @@ function getAllCookies(parameters) {
   }
   return browser.cookies.getAll(parameters);
 }
-
-function addCookie(name, value, domain, path, session, date, time, hostOnly, secure, httpOnly, cookieStore, firstPartyDomain, overwriteCookie = null) {
+async function addCookie(name, value, domain, path, session, date, time, hostOnly, secure, httpOnly, cookieStore, firstPartyDomain, overwriteCookie = null) {
   // creates a new cookie from the given data; also makes sure the provided overwrite-cookie gets actually overwritten or deleted
   return new Promise(async function(resolve, reject) {
-    // delete overwriteCookie
-    if (overwriteCookie !== null) {
-      await deleteCookie(overwriteCookie);
-    }
-    // create new cookie
-    let url = (domain.startsWith('.') ? `https://${domain.substr(1)}` : `https://${domain}`);
-    let expirationDate = (session ? null : ((date.getTime() + time.getTime() + new Date().getTimezoneOffset() * 60000) / 1000));
-    let parameters = {
-      // url is mainly used for creating host only cookies (do this by specifying no domain) which are only accessible for the exact (sub-)domain
-      url: url,
-      // deal with host only --> do not supply domain if host only
-      domain: (hostOnly ? null : domain),
-      path: path,
-      name: name,
-      value: value,
-      secure: secure,
-      httpOnly: httpOnly,
-      // if not a session cookie convert date to seconds since 1980
-      expirationDate: expirationDate,
-      storeId: cookieStore
-    };
-    if (firstPartyIsolationSupported) {
-      parameters.firstPartyDomain = firstPartyDomain;
-    }
-    let setting = browser.cookies.set(parameters);
-    setting.then(async function() {
+    try {
+      // delete overwriteCookie
+      if (overwriteCookie !== null) {
+        await deleteCookie(overwriteCookie);
+      }
+      // create new cookie
+      let url = (domain.startsWith('.') ? `https://${domain.substr(1)}` : `https://${domain}`);
+      let expirationDate = (session ? null : ((date.getTime() + time.getTime() + new Date().getTimezoneOffset() * 60000) / 1000));
+      let parameters = {
+        // url is mainly used for creating host only cookies (do this by specifying no domain) which are only accessible for the exact (sub-)domain
+        url: url,
+        // deal with host only --> do not supply domain if host only
+        domain: (hostOnly ? null : domain),
+        path: path,
+        name: name,
+        value: value,
+        secure: secure,
+        httpOnly: httpOnly,
+        // if not a session cookie convert date to seconds since 1980
+        expirationDate: expirationDate,
+        storeId: cookieStore
+      };
+      if (firstPartyIsolationSupported) {
+        parameters.firstPartyDomain = firstPartyDomain;
+      }
+      try {
+        await browser.cookies.set(parameters);
+      } catch (e) {
+        // restore overwriteCookie if new cookie could not be set
+        if (overwriteCookie !== null) {
+          await addCookieFromObject(overwriteCookie);
+        }
+        return reject(e);
+      }
       // make sure that if the cookie is unwanted, it is deleted before resolving to prevent the ui from refreshing too early with incorrect data
       // cookie.set returns a cookie object but seems to be unreliable in both chromium and ff so just use the input data instead
       let newDomain;
@@ -133,73 +162,72 @@ function addCookie(name, value, domain, path, session, date, time, hostOnly, sec
         storeId: cookieStore
       };
       let allowed = await getCookieAllowedState(newCookie);
-      if (allowed) {
-        resolve();
-      } else {
+      if (!allowed) {
         await callAddUnwantedCookie(newCookie);
         await deleteCookie(newCookie);
-        resolve();
       }
-    }, async function(error) {
-      // restore overwriteCookie if new cookie could not be set
-      if (overwriteCookie !== null) {
-        await addCookieFromObject(overwriteCookie);
-      }
-      reject(error);
-    });
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
   });
 }
-
-function addCookieFromObject(cookie, cookieStore) {
+async function addCookieFromObject(cookie, cookieStore) {
   // creates a new cookie from the given cookie object
   return new Promise(async function(resolve, reject) {
-    // create new cookie
-    let parameters = {
-      // url is mainly used for creating host only cookies (do this by specifying no domain) which are only accessible for the exact (sub-)domain
-      // create url from domain (remove leading . first)
-      url: (cookie.domain.startsWith('.') ? `https://${cookie.domain.substr(1)}` : `https://${cookie.domain}`),
-      // deal with host only --> do not supply domain if host only
-      domain: (cookie.hostOnly ? null : cookie.domain),
-      path: cookie.path,
-      name: cookie.name,
-      value: cookie.value,
-      secure: cookie.secure,
-      httpOnly: cookie.httpOnly,
-      expirationDate: cookie.expirationDate,
-      storeId: cookieStore
-    };
-    if (firstPartyIsolationSupported) {
-      parameters.firstPartyDomain = cookie.firstPartyDomain;
+    try {
+      // create new cookie
+      let parameters = {
+        // url is mainly used for creating host only cookies (do this by specifying no domain) which are only accessible for the exact (sub-)domain
+        // create url from domain (remove leading . first)
+        url: (cookie.domain.startsWith('.') ? `https://${cookie.domain.substr(1)}` : `https://${cookie.domain}`),
+        // deal with host only --> do not supply domain if host only
+        domain: (cookie.hostOnly ? null : cookie.domain),
+        path: cookie.path,
+        name: cookie.name,
+        value: cookie.value,
+        secure: cookie.secure,
+        httpOnly: cookie.httpOnly,
+        expirationDate: cookie.expirationDate,
+        storeId: cookieStore
+      };
+      if (firstPartyIsolationSupported) {
+        parameters.firstPartyDomain = cookie.firstPartyDomain;
+      }
+      await browser.cookies.set(parameters);
+      resolve();
+    } catch (e) {
+      reject(e);
     }
-    let setting = browser.cookies.set(parameters);
-    setting.then(resolve, logError);
   });
 }
-
-function deleteCookie(cookie) {
+async function deleteCookie(cookie) {
   // deletes the provided cookie
-  return new Promise(function(resolve, reject) {
-    let parameters = {
-      url: `https://${cookie.domain}${cookie.path}`,
-      name: cookie.name,
-      storeId: cookie.storeId
-    };
-    if (firstPartyIsolationSupported) {
-      parameters.firstPartyDomain = cookie.firstPartyDomain;
+  return new Promise(async function(resolve, reject) {
+    try {
+      let parameters = {
+        url: `https://${cookie.domain}${cookie.path}`,
+        name: cookie.name,
+        storeId: cookie.storeId
+      };
+      if (firstPartyIsolationSupported) {
+        parameters.firstPartyDomain = cookie.firstPartyDomain;
+      }
+      await browser.cookies.remove(parameters);
+      resolve();
+    } catch (e) {
+      reject(e);
     }
-    let removing = browser.cookies.remove(parameters);
-    removing.then(resolve, logError);
   });
 }
-
-function deleteAllCookies(url, cookieStore) {
+async function deleteAllCookies(url, cookieStore) {
   // deletes all cookies from the given url
-  return new Promise(function(resolve, reject) {
-    let getting = getAllCookies({
-      url: url,
-      storeId: cookieStore
-    });
-    getting.then(async function(siteCookies) {
+  return new Promise(async function(resolve, reject) {
+    try {
+      let siteCookies = await getAllCookies({
+        url: url,
+        storeId: cookieStore
+      });
       let promises = siteCookies.map(function(cookie) {
         return deleteCookie(cookie);
       });
@@ -207,88 +235,90 @@ function deleteAllCookies(url, cookieStore) {
       promises.push(callClearUnwantedCookiesforHostname(url));
       await Promise.all(promises);
       resolve();
-    }, logError);
+    } catch (e) {
+      reject(e);
+    }
   });
 }
-
-function deleteExistingUnwantedCookies(url, cookieStore) {
+async function deleteExistingUnwantedCookies(url, cookieStore) {
   // deletes all existung but unwanted cookies from a given url
   return new Promise(async function(resolve, reject) {
-    let hostname = trimSubdomains(url);
-    let behaviour = await getSiteBehaviour(hostname);
-    let getting = getAllCookies({
-      url: url,
-      storeId: cookieStore
-    });
-    getting.then(async function(siteCookies) {
-      let promises = siteCookies.map(function(cookie) {
+    try {
+      let hostname = trimSubdomains(url);
+      let behaviour = await getSiteBehaviour(hostname);
+      let siteCookies = await getAllCookies({
+        url: url,
+        storeId: cookieStore
+      });
+      let promises = siteCookies.flatMap(async function(cookie) {
         if (behaviour == 0 || (behaviour == 1 && !cookie.session)) {
-          return getObjectWhitelistedState(cookie.domain, cookie.name, 'c').then(async function(whitelisted) {
-            if (!whitelisted) {
-              await deleteCookie(cookie);
-              await callAddUnwantedCookie(cookie);
-            }
-          });
+          let whitelisted = await getObjectWhitelistedState(cookie.domain, cookie.name, 'c');
+          if (!whitelisted) {
+            return [deleteCookie(cookie), callAddUnwantedCookie(cookie)];
+          }
         }
       });
       await Promise.all(promises);
       resolve();
-    }, logError);
+    } catch (e) {
+      reject(e);
+    }
   });
 }
-
-function deleteAllTabsExistingUnwantedCookies() {
+async function deleteAllTabsExistingUnwantedCookies() {
   // deletes all existung but unwanted cookies from all open tabs
-  return new Promise(function(resolve, reject) {
-    let querying = browser.tabs.query({});
-    querying.then(async function(tabs) {
-      let promises = tabs.map(function(tab) {
+  return new Promise(async function(resolve, reject) {
+    try {
+      let tabs = await browser.tabs.query({});
+      let promises = tabs.map(async function(tab) {
         if (tab.url.startsWith('http')) {
-          return getTabCookieStore(tab.id).then(async function(cookieStore) {
-            await deleteExistingUnwantedCookies(tab.url, cookieStore);
-          });
+          let cookieStore = await getTabCookieStore(tab.id);
+          return deleteExistingUnwantedCookies(tab.url, cookieStore);
         }
       });
       await Promise.all(promises);
       resolve();
-    }, logError);
+    } catch (e) {
+      reject(e);
+    }
   });
 }
-
-function getCookieAllowedState(cookie) {
+async function getCookieAllowedState(cookie) {
   // returns if a given cookie is allowed (should be accepted) or not
   return new Promise(async function(resolve, reject) {
-    let hostname = trimSubdomains(`http://${cookie.domain}`);
-    let caseBehaviour = await getSiteBehaviour(hostname);
-    // allow if all cookies are allowed for that site
-    if (caseBehaviour == 2) {
-      return resolve(true);
-    }
-    // allow if the cookie is whitelisted
-    let whitelisted = await getObjectWhitelistedState(cookie.domain, cookie.name, 'c');
-    if (whitelisted) {
-      return resolve(true);
-    }
-    switch (caseBehaviour) {
-      case 0:
-        // dont allow if cookies are not allowed for the site
-        resolve(false);
-        break;
-      case 1:
-        // allow session
-        if (cookie.session) {
-          // allow if session cookies are allowed and its a session cookie
-          resolve(true);
-        } else {
-          // deny if session cookies are allowed and its not a session cookie
+    try {
+      let hostname = trimSubdomains(`http://${cookie.domain}`);
+      let caseBehaviour = await getSiteBehaviour(hostname);
+      // allow if all cookies are allowed for that site
+      if (caseBehaviour == 2) {
+        return resolve(true);
+      }
+      // allow if the cookie is whitelisted
+      let whitelisted = await getObjectWhitelistedState(cookie.domain, cookie.name, 'c');
+      if (whitelisted) {
+        return resolve(true);
+      }
+      switch (caseBehaviour) {
+        case 0:
+          // dont allow if cookies are not allowed for the site
           resolve(false);
-        }
-        break;
-      default:
-        // invalid
-        logError({
-          message: `Error: invalid Behaviour: ${caseBehaviour}`
-        });
+          break;
+        case 1:
+          // allow session
+          if (cookie.session) {
+            // allow if session cookies are allowed and its a session cookie
+            resolve(true);
+          } else {
+            // deny if session cookies are allowed and its not a session cookie
+            resolve(false);
+          }
+          break;
+        default:
+          // invalid
+          return reject(Error(`Error: invalid Behaviour: ${caseBehaviour}`));
+      }
+    } catch (e) {
+      reject(e);
     }
   });
 }
@@ -304,223 +334,251 @@ async function handleCookieEvent(changeInfo) {
   if (!allowed) {
     callAddUnwantedCookie(changeInfo.cookie);
     await deleteCookie(changeInfo.cookie);
-    updateActiveTabsCounts();
+    await updateActiveTabsCounts();
   }
 }
 /*
  * unwanted cookie functions
  * the functions either call a funtion in the background page directly or send a message to do their job
  */
-function callGetUnwantedCookiesForHostname(hostname) {
+async function callGetUnwantedCookiesForHostname(hostname) {
   // returns the object that stores the cookies for the given hostname in unwanted list
   return new Promise(async function(resolve, reject) {
-    // use function directly or send message depending on the availability of bgPage
-    let getting;
-    if (bgPage !== null) {
-      getting = bgPage.getUnwantedCookiesForHostname({
-        hostname: hostname
-      });
-    } else {
-      getting = browser.runtime.sendMessage({
-        type: 'getUnwantedCookiesForHostname',
-        hostname: hostname
-      });
+    try {
+      // use function directly or send message depending on the availability of bgPage
+      let cookies;
+      if (bgPage !== null) {
+        cookies = await bgPage.getUnwantedCookiesForHostname({
+          hostname: hostname
+        });
+      } else {
+        cookies = await browser.runtime.sendMessage({
+          type: 'getUnwantedCookiesForHostname',
+          hostname: hostname
+        });
+      }
+      resolve(cookies);
+    } catch (e) {
+      reject(e);
     }
-    getting.then(resolve, logError);
   });
 }
-
-function callAddUnwantedCookie(cookie) {
+async function callAddUnwantedCookie(cookie) {
   // adds a cookie to the list of unwanted cookies
-  return new Promise(function(resolve, reject) {
-    // only do it if the site is opened in a tab
-    // stringify to prevent some weird ff dead object issue
-    // use function directly or send message depending on the availability of bgPage
-    let adding;
-    if (bgPage !== null) {
-      adding = bgPage.addUnwantedCookie({
-        cookie: cookie
-      });
-    } else {
-      adding = browser.runtime.sendMessage({
-        type: 'addUnwantedCookie',
-        cookie: cookie
-      });
+  return new Promise(async function(resolve, reject) {
+    try {
+      // only do it if the site is opened in a tab
+      // stringify to prevent some weird ff dead object issue
+      // use function directly or send message depending on the availability of bgPage
+      if (bgPage !== null) {
+        await bgPage.addUnwantedCookie({
+          cookie: cookie
+        });
+      } else {
+        await browser.runtime.sendMessage({
+          type: 'addUnwantedCookie',
+          cookie: cookie
+        });
+      }
+      resolve();
+    } catch (e) {
+      reject(e);
     }
-    adding.then(resolve, logError);
   });
 }
-
-function callRestoreUnwantedCookie(domain, name, cookieStore) {
+async function callRestoreUnwantedCookie(domain, name, cookieStore) {
   // re-creates a cookie from unwanted list in case the user whitelists it
   return new Promise(async function(resolve, reject) {
-    // use function directly or send message depending on the availability of bgPage
-    let getting;
-    if (bgPage !== null) {
-      getting = bgPage.restoreUnwantedCookie({
-        domain: domain,
-        name: name,
-        cookieStore: cookieStore
-      });
-    } else {
-      getting = browser.runtime.sendMessage({
-        type: 'restoreUnwantedCookie',
-        domain: domain,
-        name: name,
-        cookieStore: cookieStore
-      });
+    try {
+      // use function directly or send message depending on the availability of bgPage
+      if (bgPage !== null) {
+        await bgPage.restoreUnwantedCookie({
+          domain: domain,
+          name: name,
+          cookieStore: cookieStore
+        });
+      } else {
+        await browser.runtime.sendMessage({
+          type: 'restoreUnwantedCookie',
+          domain: domain,
+          name: name,
+          cookieStore: cookieStore
+        });
+      }
+      resolve();
+    } catch (e) {
+      reject(e);
     }
-    getting.then(resolve, logError);
   });
 }
-
-function callRestoreAllHostnamesUnwantedCookies() {
+async function callRestoreAllHostnamesUnwantedCookies() {
   // re-creates cookies from unwanted list in case the user changes the behaviour for a hostname
   return new Promise(async function(resolve, reject) {
-    // use function directly or send message depending on the availability of bgPage
-    let restoring;
-    if (bgPage !== null) {
-      restoring = bgPage.restoreAllHostnamesUnwantedCookies();
-    } else {
-      restoring = browser.runtime.sendMessage({
-        type: 'restoreAllHostnamesUnwantedCookies'
-      });
+    try {
+      // use function directly or send message depending on the availability of bgPage
+      if (bgPage !== null) {
+        resolve(await bgPage.restoreAllHostnamesUnwantedCookies());
+      } else {
+        resolve(await browser.runtime.sendMessage({
+          type: 'restoreAllHostnamesUnwantedCookies'
+        }));
+      }
+    } catch (e) {
+      reject(e);
     }
-    restoring.then(resolve, logError);
   });
 }
-
-function callDeleteUnwantedCookie(domain, name) {
+async function callDeleteUnwantedCookie(domain, name) {
   // deletes a cookie from the list of unwanted cookies
-  return new Promise(function(resolve, reject) {
-    // use function directly or send message depending on the availability of bgPage
-    let adding
-    if (bgPage !== null) {
-      adding = bgPage.deleteUnwantedCookie({
-        domain: domain,
-        name: name
-      });
-    } else {
-      adding = browser.runtime.sendMessage({
-        type: 'deleteUnwantedCookie',
-        domain: domain,
-        name: name
-      });
+  return new Promise(async function(resolve, reject) {
+    try {
+      // use function directly or send message depending on the availability of bgPage
+      if (bgPage !== null) {
+        await bgPage.deleteUnwantedCookie({
+          domain: domain,
+          name: name
+        });
+      } else {
+        await browser.runtime.sendMessage({
+          type: 'deleteUnwantedCookie',
+          domain: domain,
+          name: name
+        });
+      }
+      resolve();
+    } catch (e) {
+      reject(e);
     }
-    adding.then(resolve, logError);
   });
 }
-
-function callClearUnwantedCookiesforHostname(url) {
+async function callClearUnwantedCookiesforHostname(url) {
   // clears all unwanted cookies from the list of unwanted cookies for a hostname
-  return new Promise(function(resolve, reject) {
-    let hostname = trimSubdomains(url);
-    // use function directly or send message depending on the availability of bgPage
-    let deleting;
-    if (bgPage !== null) {
-      deleting = bgPage.clearUnwantedCookiesforHostname({
-        hostname: hostname
-      });
-    } else {
-      deleting = browser.runtime.sendMessage({
-        type: 'clearUnwantedCookiesforHostname',
-        hostname: hostname
-      });
+  return new Promise(async function(resolve, reject) {
+    try {
+      let hostname = trimSubdomains(url);
+      // use function directly or send message depending on the availability of bgPage
+      if (bgPage !== null) {
+        await bgPage.clearUnwantedCookiesforHostname({
+          hostname: hostname
+        });
+      } else {
+        await browser.runtime.sendMessage({
+          type: 'clearUnwantedCookiesforHostname',
+          hostname: hostname
+        });
+      }
+      resolve();
+    } catch (e) {
+      reject(e);
     }
-    deleting.then(resolve, logError);
   });
 }
 /*
  * dom storage functions
  * the functions communicate with injected js in the tab in order to do their job
  */
-function getTabDomStorage(tabId) {
+async function getTabDomStorage(tabId) {
   // returns both local and session storage from a given tab
-  return new Promise(function(resolve, reject) {
-    let sending = browser.tabs.sendMessage(tabId, {
-      type: 'getStorage'
-    });
-    sending.then(function(result) {
+  return new Promise(async function(resolve, reject) {
+    try {
+      let result = await browser.tabs.sendMessage(tabId, {
+        type: 'getStorage'
+      });
       result.localStorage = JSON.parse(result.localStorage);
       result.sessionStorage = JSON.parse(result.sessionStorage);
       resolve(result);
-    }, reject);
+    } catch (e) {
+      reject(e);
+    }
   });
 }
-
-function getUnwantedDomStoregeEntries(tabId) {
+async function getUnwantedDomStoregeEntries(tabId) {
   // the unwanted dom storage entries from a given tab
-  return new Promise(function(resolve, reject) {
-    let sending = browser.tabs.sendMessage(tabId, {
-      type: 'getUnwantedStorage'
-    });
-    sending.then(function(result) {
-      resolve(result);
-    }, reject);
+  return new Promise(async function(resolve, reject) {
+    try {
+      resolve(await browser.tabs.sendMessage(tabId, {
+        type: 'getUnwantedStorage'
+      }));
+    } catch (e) {
+      reject(e);
+    }
   });
 }
-
-function addDomStorageEntry(tabId, persistent, name, value, overwriteEntry = null) {
+async function addDomStorageEntry(tabId, persistent, name, value, overwriteEntry = null) {
   // adds a new dom storage entry to a given tab
   return new Promise(async function(resolve, reject) {
-    // delete overwriteEntry
-    if (overwriteEntry !== null) {
-      await deleteDomStorageEntry(tabId, overwriteEntry);
-    }
-    let sending = browser.tabs.sendMessage(tabId, {
-      type: 'addEntry',
-      persistent: persistent,
-      name: name,
-      value: value
-    });
-    sending.then(resolve, async function(error) {
-      // restore overwriteEntry if new entry could not be set
+    try {
+      // delete overwriteEntry
       if (overwriteEntry !== null) {
-        await addDomStorageEntry(tabId, overwriteEntry.persistent, overwriteEntry.name, overwriteEntry.value);
+        await deleteDomStorageEntry(tabId, overwriteEntry);
       }
-      reject(error);
-    });
+      try {
+        await browser.tabs.sendMessage(tabId, {
+          type: 'addEntry',
+          persistent: persistent,
+          name: name,
+          value: value
+        });
+      } catch (e) {
+        // restore overwriteEntry if new entry could not be set
+        if (overwriteEntry !== null) {
+          await addDomStorageEntry(tabId, overwriteEntry.persistent, overwriteEntry.name, overwriteEntry.value);
+        }
+        reject(e);
+      }
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
   });
 }
-
-function deleteDomStorageEntry(tabId, entry) {
+async function deleteDomStorageEntry(tabId, entry) {
   // deletes a given dom storage entry from a given tab
-  return new Promise(function(resolve, reject) {
-    let sending = browser.tabs.sendMessage(tabId, {
-      type: 'deleteEntry',
-      entry: entry
-    });
-    sending.then(resolve, logError);
+  return new Promise(async function(resolve, reject) {
+    try {
+      await browser.tabs.sendMessage(tabId, {
+        type: 'deleteEntry',
+        entry: entry
+      });
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
   });
 }
-
-function deleteUnwantedDomStorageEntry(tabId, entry) {
+async function deleteUnwantedDomStorageEntry(tabId, entry) {
   // deletes a given dom storage entry from a given tab
-  return new Promise(function(resolve, reject) {
-    let sending = browser.tabs.sendMessage(tabId, {
-      type: 'deleteUnwantedEntry',
-      entry: entry
-    });
-    sending.then(resolve, logError);
+  return new Promise(async function(resolve, reject) {
+    try {
+      await browser.tabs.sendMessage(tabId, {
+        type: 'deleteUnwantedEntry',
+        entry: entry
+      });
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
   });
 }
-
-function restoreUnwantedDomStorageEntry(tabId, entry) {
+async function restoreUnwantedDomStorageEntry(tabId, entry) {
   // re-creates a dom storage entry from unwanted list in case the user whitelists it
-  return new Promise(function(resolve, reject) {
-    let sending = browser.tabs.sendMessage(tabId, {
-      type: 'restoreUnwantedEntry',
-      entry: entry
-    });
-    sending.then(resolve, logError);
+  return new Promise(async function(resolve, reject) {
+    try {
+      await browser.tabs.sendMessage(tabId, {
+        type: 'restoreUnwantedEntry',
+        entry: entry
+      });
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
   });
 }
-
-function restoreAllTabsUnwantedDomStorageEntries() {
+async function restoreAllTabsUnwantedDomStorageEntries() {
   // re-creates all tabs' wanted dom storage entries from unwanted list
-  return new Promise(function(resolve, reject) {
-    let querying = browser.tabs.query({});
-    querying.then(async function(tabs) {
+  return new Promise(async function(resolve, reject) {
+    try {
+      let tabs = await browser.tabs.query({});
       let promises = tabs.map(async function(tab) {
         if (tab.url.startsWith('http')) {
           return browser.tabs.sendMessage(tab.id, {
@@ -530,30 +588,29 @@ function restoreAllTabsUnwantedDomStorageEntries() {
       });
       await Promise.all(promises);
       resolve();
-    }, logError);
+    } catch (e) {
+      reject(e);
+    }
   });
 }
-
-function deleteExistingUnwantedDomStorageEntries(tabId) {
+async function deleteExistingUnwantedDomStorageEntries(tabId) {
   // deletes all existung but unwanted dom storage entries from a given tab
   return new Promise(async function(resolve, reject) {
     try {
-      await browser.tabs.sendMessage(tabId, {
+      resolve(await browser.tabs.sendMessage(tabId, {
         type: 'deleteExistingUnwantedEntries'
-      });
-    } catch (error) {
-      console.log((await browser.tabs.get(tabId)).url);
-      console.error(error);
+      }));
+    } catch (e) {
+      reject(e);
     }
     resolve();
   });
 }
-
-function deleteAllTabsExistingUnwantedDomStorageEntries() {
+async function deleteAllTabsExistingUnwantedDomStorageEntries() {
   // deletes all existung but unwanted dom storage entries from all open tabs
-  return new Promise(function(resolve, reject) {
-    let querying = browser.tabs.query({});
-    querying.then(async function(tabs) {
+  return new Promise(async function(resolve, reject) {
+    try {
+      let tabs = await browser.tabs.query({});
       let promises = tabs.map(async function(tab) {
         if (tab.url.startsWith('http')) {
           await deleteExistingUnwantedDomStorageEntries(tab.id);
@@ -561,202 +618,211 @@ function deleteAllTabsExistingUnwantedDomStorageEntries() {
       });
       await Promise.all(promises);
       resolve();
-    }, logError);
+    } catch (e) {
+      reject(e);
+    }
   });
 }
-
-function clearTabDomStorage(tabId) {
+async function clearTabDomStorage(tabId) {
   // deletes all dom storage entries from a given tab
-  return new Promise(function(resolve, reject) {
-    let sending = browser.tabs.sendMessage(tabId, {
-      type: 'clearStorage'
-    });
-    sending.then(resolve, logError);
+  return new Promise(async function(resolve, reject) {
+    try {
+      await browser.tabs.sendMessage(tabId, {
+        type: 'clearStorage'
+      });
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
   });
 }
 /*
  * site exception functions
  */
-function getSiteException(hostname, temporary) {
+async function getSiteException(hostname, temporary) {
   // returns the exception for the given hostname; returns null if there is none
-  return new Promise(function(resolve, reject) {
-    let getting;
-    if (temporary) {
-      // use function directly or send message depending on the availability of bgPage
-      if (bgPage !== null) {
-        getting = bgPage.getTempSiteException({
-          hostname: hostname
-        });
+  return new Promise(async function(resolve, reject) {
+    try {
+      let getting;
+      if (temporary) {
+        // use function directly or send message depending on the availability of bgPage
+        let exception;
+        if (bgPage !== null) {
+          exception = await bgPage.getTempSiteException({
+            hostname: hostname
+          });
+        } else {
+          exception = await browser.runtime.sendMessage({
+            type: 'getTempSiteException',
+            hostname: hostname
+          });
+        }
+        return resolve(exception);
       } else {
-        getting = browser.runtime.sendMessage({
-          type: 'getTempSiteException',
-          hostname: hostname
+        let key = `ex|${hostname}`;
+        let items = await browser.storage.local.get({
+          [key]: null
         });
-      }
-      getting.then(resolve, logError);
-    } else {
-      let key = `ex|${hostname}`;
-      getting = browser.storage.local.get({
-        [key]: null
-      });
-      getting.then(function(items) {
         resolve(items[key]);
-      }, logError);
+      }
+    } catch (e) {
+      reject(e);
     }
   });
 }
-
-function addSiteException(url, rule, temporary, overwriteException = null) {
+async function addSiteException(url, rule, temporary, overwriteException = null) {
   // adds a new site exception for the given domain
   return new Promise(async function(resolve, reject) {
-    // delete overwriteException
-    if (overwriteException !== null) {
-      await deleteSiteException(`https://${overwriteException.domain}`, false);
-    }
-    let hostname = trimSubdomains(url);
-    if (temporary) {
-      // use function directly or send message depending on the availability of bgPage
-      let adding;
-      if (bgPage !== null) {
-        adding = bgPage.addTempSiteException({
-          hostname: hostname,
-          rule: rule
-        });
-      } else {
-        adding = browser.runtime.sendMessage({
-          type: 'addTempSiteException',
-          hostname: hostname,
-          rule: rule
-        });
+    try {
+      // delete overwriteException
+      if (overwriteException !== null) {
+        await deleteSiteException(`https://${overwriteException.domain}`, false);
       }
-      adding.then(function() {
-        resolve();
-      }, logError);
-    } else {
-      let saving = savePermSiteException(hostname, rule);
-      saving.then(async function() {
+      let hostname = trimSubdomains(url);
+      if (temporary) {
+        // use function directly or send message depending on the availability of bgPage
+        if (bgPage !== null) {
+          await bgPage.addTempSiteException({
+            hostname: hostname,
+            rule: rule
+          });
+        } else {
+          await browser.runtime.sendMessage({
+            type: 'addTempSiteException',
+            hostname: hostname,
+            rule: rule
+          });
+        }
+      } else {
+        try {
+          await savePermSiteException(hostname, rule);
+        } catch (e) {
+          // restore overwriteException if new exception could not be set
+          if (overwriteException !== null) {
+            await addSiteException(`https://${overwriteException.domain}`, overwriteException.ruleId, false);
+          }
+          reject(e);
+        }
         await deleteSiteException(`https://${hostname}`, true);
         await Promise.all([callRestoreAllHostnamesUnwantedCookies(),
           deleteAllTabsExistingUnwantedCookies(), restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()
         ]);
-        resolve();
-        updateAllTabsIcons();
-        updateActiveTabsCounts();
-      }, async function(error) {
-        // restore overwriteException if new exception could not be set
-        if (overwriteException !== null) {
-          await addSiteException(`https://${overwriteException.domain}`, overwriteException.ruleId, false);
-        }
-        reject(error);
-      });
+        await Promise.all([updateAllTabsIcons(), updateActiveTabsCounts()]);
+      }
+      resolve();
+    } catch (e) {
+      reject(e);
     }
   });
-
-  function savePermSiteException(hostname, rule) {
+  async function savePermSiteException(hostname, rule) {
     // sets an exception for a given hostname
-    return new Promise(function(resolve, reject) {
+    return new Promise(async function(resolve, reject) {
       try {
         // make sure the hostname is valid
         let url = new URL(`http://${hostname}`);
         // count . in hostname to reject subdomains
         let domainCount = url.hostname.split('.').length - 1;
         if (domainCount > 1) {
-          reject(Error('Subdomains are not supportet.'));
-          return;
+          return reject(Error('Subdomains are not supportet.'));
         } else if (domainCount < 1) {
-          reject(Error('Top-level domains only are not supported.'));
-          return;
+          return reject(Error('Top-level domains only are not supported.'));
         }
+        await browser.storage.local.set({
+          // use prefix 'ex' for exceptions and hostname as key
+          [`ex|${hostname}`]: rule
+        });
+        resolve();
       } catch (e) {
         reject(e);
-        return;
       }
-      let setting = browser.storage.local.set({
-        // use prefix 'ex' for exceptions and hostname as key
-        [`ex|${hostname}`]: rule
-      });
-      setting.then(resolve, logError);
     });
   }
 }
-
-function deletePermSiteException(hostname) {
+async function deletePermSiteException(hostname) {
   // deletes the permanent exception for the given hostname (if there is any)
-  return new Promise(function(resolve, reject) {
-    let key = `ex|${encodeURI(hostname)}`;
-    let removing = browser.storage.local.remove(key)
-    removing.then(resolve, logError);
+  return new Promise(async function(resolve, reject) {
+    try {
+      let key = `ex|${encodeURI(hostname)}`;
+      await browser.storage.local.remove(key)
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
   });
 }
-
-function deleteSiteException(url, temporary) {
+async function deleteSiteException(url, temporary) {
   // deletes the permanent or temporary exception for the given hostname (if there is any)
   return new Promise(async function(resolve, reject) {
-    let hostname = trimSubdomains(url);
-    if (temporary) {
+    try {
+      let hostname = trimSubdomains(url);
+      if (temporary) {
+        // use function directly or send message depending on the availability of bgPage
+        if (bgPage !== null) {
+          await bgPage.deleteTempSiteException({
+            hostname: hostname
+          });
+        } else {
+          await browser.runtime.sendMessage({
+            type: 'deleteTempSiteException',
+            hostname: hostname
+          });
+        }
+      } else {
+        await deletePermSiteException(hostname);
+        await Promise.all([callRestoreAllHostnamesUnwantedCookies(),
+          deleteAllTabsExistingUnwantedCookies(), restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()
+        ]);
+        await Promise.all([updateAllTabsIcons(), updateActiveTabsCounts()]);
+      }
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+async function clearTempSiteExceptions(url) {
+  // deletes all temp site exceptions
+  return new Promise(async function(resolve, reject) {
+    try {
+      let hostname = trimSubdomains(url);
       // use function directly or send message depending on the availability of bgPage
-      let deleting;
       if (bgPage !== null) {
-        deleting = bgPage.deleteTempSiteException({
+        await bgPage.deleteTempSiteException({
           hostname: hostname
         });
       } else {
-        deleting = browser.runtime.sendMessage({
-          type: 'deleteTempSiteException',
+        await browser.runtime.sendMessage({
+          type: 'clearTempSiteExceptions',
           hostname: hostname
         });
       }
-      deleting.then(resolve, logError);
-    } else {
-      await deletePermSiteException(hostname);
-      await Promise.all([callRestoreAllHostnamesUnwantedCookies(),
-        deleteAllTabsExistingUnwantedCookies(), restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()
-      ]);
       resolve();
-      updateAllTabsIcons();
-      updateActiveTabsCounts();
+    } catch (e) {
+      reject(e);
     }
   });
 }
-
-function clearTempSiteExceptions(url) {
-  // deletes all temp site exceptions
-  return new Promise(async function(resolve, reject) {
-    let hostname = trimSubdomains(url);
-    // use function directly or send message depending on the availability of bgPage
-    let deleting;
-    if (bgPage !== null) {
-      bgPage.deleteTempSiteException({
-        hostname: hostname
-      });
-      resolve();
-    } else {
-      deleting = browser.runtime.sendMessage({
-        type: 'clearTempSiteExceptions',
-        hostname: hostname
-      });
-      deleting.then(resolve, logError);
-    }
-  });
-}
-
-function getSiteBehaviour(hostname) {
+async function getSiteBehaviour(hostname) {
   // returns the behaviour for a given hostname
   // takes temporary and permanent exceptions as well as whitelist entries into account
   return new Promise(async function(resolve, reject) {
-    // first check if there is a temporary exception
-    let tempException = await getSiteException(hostname, true);
-    if (tempException !== null) {
-      return resolve(tempException);
-    } else {
-      // if there is no temporary exception, check for a permanent one
-      let permSiteException = await getSiteException(hostname, false);
-      if (permSiteException !== null) {
-        return resolve(permSiteException);
+    try {
+      // first check if there is a temporary exception
+      let tempException = await getSiteException(hostname, true);
+      if (tempException !== null) {
+        return resolve(tempException);
       } else {
-        // if there is no permanent exception either, use default behaviour
-        return resolve(await callGetDefaultBehaviour());
+        // if there is no temporary exception, check for a permanent one
+        let permSiteException = await getSiteException(hostname, false);
+        if (permSiteException !== null) {
+          return resolve(permSiteException);
+        } else {
+          // if there is no permanent exception either, use default behaviour
+          return resolve(await callGetDefaultBehaviour());
+        }
       }
+    } catch (e) {
+      reject(e);
     }
   });
 }
@@ -765,77 +831,104 @@ function getSiteBehaviour(hostname) {
  */
 function getObjectWhitelistedState(domain, name, type) {
   // returns wether a whitelist entry exists
-  return new Promise(function(resolve, reject) {
-    domain = domain.startsWith('.') ? domain.substr(1) : domain;
-    let key = `wl|${encodeURI(domain)}|${encodeURI(name)}|${type}`;
-    let getting = browser.storage.local.get({
-      [key]: null
-    });
-    getting.then(function(items) {
+  return new Promise(async function(resolve, reject) {
+    try {
+      domain = domain.startsWith('.') ? domain.substr(1) : domain;
+      let key = `wl|${encodeURI(domain)}|${encodeURI(name)}|${type}`;
+      let items = await browser.storage.local.get({
+        [key]: null
+      });
       let whitelistedEntry = items[key];
-      if (whitelistedEntry === null) {
-        resolve(false);
-      } else {
-        resolve(true);
-      }
-    }, logError);
+      resolve(!(whitelistedEntry === null));
+    } catch (e) {
+      reject(e);
+    }
   });
 }
-
-function addWhitelistEntry(domain, name, type, overwriteEntry = null) {
+async function addWhitelistEntry(domain, name, type, overwriteEntry = null) {
   // adds a new whitelist with the given data
   domain = domain.startsWith('.') ? domain.substr(1) : domain;
   return new Promise(async function(resolve, reject) {
     try {
-      // make sure the domain is valid
-      new URL(`http://${domain}`);
-    } catch (e) {
-      return reject(e);
-    }
-    // delete overwriteEntry
-    if (overwriteEntry !== null) {
-      await deleteWhitelistEntry(overwriteEntry.domain, overwriteEntry.name, overwriteEntry.type);
-    }
-    let setting = browser.storage.local.set({
-      // use prefix 'wl' for whitelist entries and both domain and name as key
-      // last letter is the type: d --> dom storage, c --> cookie
-      //use '|' as separator and encode all the other stuff to prevent fuck ups
-      [`wl|${encodeURI(domain)}|${encodeURI(name)}|${type}`]: ''
-    });
-    setting.then(resolve, async function(error) {
-      // restore overwriteEntry if new entry could not be set
-      if (overwriteEntry !== null) {
-        await addWhitelistEntry(overwriteEntry.domain, overwriteEntry.name, overwriteEntry.type);
+      try {
+        // make sure the domain is valid
+        new URL(`http://${domain}`);
+      } catch (e) {
+        return reject(e);
       }
-      reject(error);
-    });
+      // delete overwriteEntry
+      if (overwriteEntry !== null) {
+        await deleteWhitelistEntry(overwriteEntry.domain, overwriteEntry.name, overwriteEntry.type);
+      }
+      try {
+        let setting = browser.storage.local.set({
+          // use prefix 'wl' for whitelist entries and both domain and name as key
+          // last letter is the type: d --> dom storage, c --> cookie
+          //use '|' as separator and encode all the other stuff to prevent fuck ups
+          [`wl|${encodeURI(domain)}|${encodeURI(name)}|${type}`]: ''
+        });
+      } catch (e) {
+        // restore overwriteEntry if new entry could not be set
+        if (overwriteEntry !== null) {
+          await addWhitelistEntry(overwriteEntry.domain, overwriteEntry.name, overwriteEntry.type);
+        }
+        reject(error);
+      }
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
   });
 }
-
-function deleteWhitelistEntry(domain, name, type) {
+async function deleteWhitelistEntry(domain, name, type) {
   // removes a whitelist entry matching the given data
-  domain = domain.startsWith('.') ? domain.substr(1) : domain;
-  return new Promise(function(resolve, reject) {
-    let key = `wl|${encodeURI(domain)}|${encodeURI(name)}|${type}`;
-    browser.storage.local.remove(key).then(resolve, logError);
+  return new Promise(async function(resolve, reject) {
+    try {
+      domain = domain.startsWith('.') ? domain.substr(1) : domain;
+      let key = `wl|${encodeURI(domain)}|${encodeURI(name)}|${type}`;
+      await browser.storage.local.remove(key);
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
   });
 }
-
-function getDomstorageEntryWhitelistedStateAsResponse(request) {
+async function getDomstorageEntryWhitelistedStateAsResponse(request) {
   // returns whether a dom storage entry from a request is whitelisted and also the name of the entry itself
   return new Promise(async function(resolve, reject) {
-    let whitelisted = await getObjectWhitelistedState(request.domain, request.name, 'd');
-    resolve({
-      name: request.name,
-      whitelisted: whitelisted
-    });
+    try {
+      let whitelisted = await getObjectWhitelistedState(request.domain, request.name, 'd');
+      resolve({
+        name: request.name,
+        whitelisted: whitelisted
+      });
+    } catch (e) {
+      reject(e);
+    }
   });
 }
 /*
 status icon functions
 */
-function updateTabIcon(tabId) {
+async function updateTabIcon(tabId) {
   // updates the icon for a specific tab (not overall) according to the tabs behaviour
+  return new Promise(async function(resolve, reject) {
+    try {
+      let tab = await browser.tabs.get(tabId);
+      if (tab.url.startsWith('http')) {
+        let url = tab.url;
+        let hostname = trimSubdomains(url);
+        let behaviour = await getSiteBehaviour(hostname);
+        setIcon(behaviour);
+      } else {
+        setIcon(-1);
+      }
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
+  });
+
   function setIcon(behaviour) {
     let iconPath = null;
     let badgeColor = null;
@@ -883,7 +976,7 @@ function updateTabIcon(tabId) {
         break;
       default:
         // invalid
-        logError(Error(`invalid Behaviour: ${behaviour}`));
+        console.error(Error(`invalid Behaviour: ${behaviour}`));
     }
     browser.browserAction.setIcon({
       path: iconPath,
@@ -898,89 +991,97 @@ function updateTabIcon(tabId) {
       tabId: tabId
     });
   }
-  let getting = browser.tabs.get(tabId);
-  getting.then(function(tab) {
-    if (tab.url.startsWith('http')) {
-      let url = tab.url;
-      let hostname = trimSubdomains(url);
-      let getting = getSiteBehaviour(hostname);
-      getting.then(setIcon, logError);
-    } else {
-      setIcon(-1);
-    }
-  }, logError);
 }
-
-function updateAllTabsIcons() {
+async function updateAllTabsIcons() {
   // updates icon for all open tabs
-  let querying = browser.tabs.query({});
-  querying.then(function(tabs) {
-    tabs.forEach(function(tab) {
-      updateTabIcon(tab.id);
-    });
-  }, logError);
+  return new Promise(async function(resolve, reject) {
+    try {
+      let tabs = await browser.tabs.query({});
+      var promises = tabs.map(function(tab) {
+        return updateTabIcon(tab.id);
+      });
+      await Promise.all(promises);
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
+  });
 }
 async function updateActiveTabsCounts() {
   // sets cookie count on icon batch according to the behaviour for the active tab
-  if (!await callGetEnableCookieCounter()) {
-    // exit if feature is disabled
-    return;
-  }
-  // get active tab in every window
-  let querying = browser.tabs.query({
-    active: true
-  });
-  querying.then(async function(tabs) {
-    for (let tab of tabs) {
-      if (typeof tab !== 'undefined') {
-        if (tab.url.startsWith('http')) {
-          let cookieStore = await getTabCookieStore(tab.id);
-          // get cookies
-          countCookies(await getAllCookies({
-            url: tab.url,
-            storeId: cookieStore
-          }), tab);
-        } else {
-          setBadgeText(tab.id, '');
+  return new Promise(async function(resolve, reject) {
+    try {
+      let enabled = await callGetEnableCookieCounter();
+      if (!enabled) {
+        // exit if feature is disabled
+        return resolve();
+      }
+      // get active tab in every window
+      let tabs = await browser.tabs.query({
+        active: true
+      });
+      for (let tab of tabs) {
+        if (typeof tab !== 'undefined') {
+          let cookieCount = '';
+          if (tab.url.startsWith('http')) {
+            // get cookies
+            cookieCount = await countCookies(tab);
+          }
+          browser.browserAction.setBadgeText({
+            text: `${cookieCount}`,
+            tabId: tab.id
+          });
         }
       }
+      resolve();
+    } catch (e) {
+      reject(e);
     }
-  }, logError);
-
-  function countCookies(cookies, tab) {
+  });
+  async function countCookies(tab, cookieStore) {
     // count cookies
-    let count = cookies.length;
-    // get dom storage
-    let getting = getTabDomStorage(tab.id);
-    getting.then(async function(response) {
+    return new Promise(async function(resolve, reject) {
+      try {
+        let cookieStore = await getTabCookieStore(tab.id);
+        let cookies = await getAllCookies({
+          url: tab.url,
+          storeId: cookieStore
+        })
+        let count = cookies.length;
+        // get dom storage
+        let response;
+        try {
+          response = await getTabDomStorage(tab.id);
+        } catch (e) {
+          console.warn(e);
+          resolve(count);
+        }
         // count dom storage
         count = count + Object.keys(response.localStorage).length + Object.keys(response.sessionStorage).length;
-        setBadgeText(tab.id, count);
-      },
-      function() {
-        setBadgeText(tab.id, count);
-      });
-  }
-
-  function setBadgeText(tabId, count) {
-    browser.browserAction.setBadgeText({
-      text: `${count}`,
-      tabId: tabId
+        resolve(count);
+      } catch (e) {
+        reject(e);
+      }
     });
   }
 }
-
-function removeAllTabsCounts() {
+async function removeAllTabsCounts() {
   // removes the cookie count from all tabs
-  let querying = browser.tabs.query({});
-  querying.then(function(tabs) {
-    tabs.forEach(function(tab) {
-      browser.browserAction.setBadgeText({
-        text: '',
-        tabId: tab.id
+  return new Promise(async function(resolve, reject) {
+    try {
+      let tabs = await browser.tabs.query({});
+      let promises = tabs.map(function(tab) {
+        return browser.browserAction.setBadgeText({
+          text: '',
+          tabId: tab.id
+        });
       });
-    });
-  }, logError);
+      await Promise.all(promises);
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
+  });
 }
 /*
  * misc functions
@@ -1004,46 +1105,50 @@ function formatDate(date) {
   return `${year}/${month}/${day}`;
 }
 
-function logError(error) {
-  // logs an error to the console
-  console.log(`Cookie Ripper ${error}`);
-  console.error(error);
-}
-
 function getActiveTab() {
   // returns the active Tab
-  return new Promise(function(resolve, reject) {
-    let querying = browser.tabs.query({
-      active: true,
-      currentWindow: true
-    });
-    querying.then(function(tabs) {
+  return new Promise(async function(resolve, reject) {
+    try {
+      let tabs = await browser.tabs.query({
+        active: true,
+        currentWindow: true
+      });
       resolve(tabs[0]);
-    }, logError);
+    } catch (e) {
+      reject(e);
+    }
   });
 }
-
-function getTabCookieStore(tabId) {
+async function getTabCookieStore(tabId) {
   // returns the id of the cookie store which the given tab uses
   // chromium does not supply tab.cookieStoreId :(
-  return new Promise(function(resolve, reject) {
-    let getting = browser.cookies.getAllCookieStores();
-    getting.then(function(cookieStores) {
+  return new Promise(async function(resolve, reject) {
+    try {
+      let cookieStores = await browser.cookies.getAllCookieStores();
       for (let store of cookieStores) {
         if (store.tabIds.includes(tabId)) {
           return resolve(store.id);
         }
       }
-      logError(Error("This tab could not be found in any cookie store."));
-    }, logError);
+      reject(Error("This tab could not be found in any cookie store."));
+    } catch (e) {
+      reject(e);
+    }
   });
 }
 
 function sendInfoMessage(message) {
   // sends a message to the user
-  browser.notifications.create(null, {
-    type: 'basic',
-    message: message,
-    title: "Cookie Ripper Info"
+  return new Promise(async function(resolve, reject) {
+    try {
+      await browser.notifications.create(null, {
+        type: 'basic',
+        message: message,
+        title: "Cookie Ripper Info"
+      });
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
   });
 }

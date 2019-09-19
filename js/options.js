@@ -6,36 +6,38 @@ document.addEventListener('DOMContentLoaded', function() {
   addEventlisteners();
   restoreOptions();
 });
-
-function saveOptions() {
+async function saveOptions() {
   // saves the options from ui
-  let defaultBehaviour = slider.value;
-  let enableCookieCounter = enableCookieCounterCheckbox.checked;
-  let setting = browser.storage.sync.set({
-    defaultBehaviour: defaultBehaviour,
-    enableCookieCounter: enableCookieCounter
-  });
-  setting.then(function() {
+  try {
+    let defaultBehaviour = slider.value;
+    let enableCookieCounter = enableCookieCounterCheckbox.checked;
+    await browser.storage.sync.set({
+      defaultBehaviour: defaultBehaviour,
+      enableCookieCounter: enableCookieCounter
+    });
     successText.textContent = 'Settings were saved!';
     setTimeout(function() {
       successText.textContent = '';
     }, 1000);
-  }, logError);
-  callLoadSettings();
+    await callLoadSettings();
+  } catch (e) {
+    console.error(e);
+  }
 }
-
-function restoreOptions() {
+async function restoreOptions() {
   // loads the current options and puts them into the ui
-  let getting = browser.storage.sync.get({
-    // defaults
-    defaultBehaviour: 2,
-    enableCookieCounter: false
-  });
-  getting.then(function(items) {
+  try {
+    let items = await browser.storage.sync.get({
+      // defaults
+      defaultBehaviour: 2,
+      enableCookieCounter: false
+    });
     slider.value = items.defaultBehaviour;
     highlightActiveOption(Number(items.defaultBehaviour));
     enableCookieCounterCheckbox.checked = items.enableCookieCounter;
-  }, logError);
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 function highlightActiveOption(option) {
@@ -96,9 +98,13 @@ function addEventlisteners() {
   });
   // info icons
   for (let i = 0; i < infoIcons.length; i++) {
-    infoIcons[i].addEventListener('click', function(e) {
-      e.stopPropagation();
-      sendInfoMessage(e.target.title);
+    infoIcons[i].addEventListener('click', async function(e) {
+      try {
+        e.stopPropagation();
+        await sendInfoMessage(e.target.title);
+      } catch (e) {
+        console.error(e);
+      }
     });
   }
 }

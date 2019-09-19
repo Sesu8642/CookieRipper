@@ -5,173 +5,203 @@ let exceptionInEditor = null;
 let filterDomain, filterRule, exceptionTable, selectAllCheckBox, selectCheckBoxes, domainTextBox, denyAllRule, allowSessionRule, allowAllRule, entryEditorError, infoIcons, filterTextBoxes, filterSelects, selectAllCheckBoxTd, deleteButton, saveButton, clearButton, pageSpinner;
 const maxRows = 25;
 let entryList = [];
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
   assignUiElements();
   addEventlisteners();
-  fillExceptionList();
+  try {
+    await fillExceptionList();
+    await buildTableBody();
+  } catch (e) {
+    console.error(e);
+  }
 });
-
-function fillExceptionList() {
+async function fillExceptionList() {
   // filters exceptions and stores them in entryList
-  entryList = [];
-  // get all the entries
-  let getting = browser.storage.local.get();
-  getting.then(function(results) {
-    // create array of all whitelist entries received from storage (the key contains all the information)
-    let entries = [];
-    for (let result in results) {
-      if (result.startsWith('ex|')) {
-        let resultContent = result.split('|');
-        let resultObj = {};
-        resultObj.domain = resultContent[1];
-        resultObj.ruleId = results[result];
-        switch (resultObj.ruleId) {
-          case 0:
-            // deny
-            resultObj.rule = 'Deny all';
-            break;
-          case 1:
-            // allow session
-            resultObj.rule = 'Allow Session Cookies';
-            break;
-          case 2:
-            // allow
-            resultObj.rule = 'Allow All Cookies';
-            break;
-          default:
-            // invalid
-            logError(Error(`invalid rule id: ${resultObj.ruleId}`));
+  return new Promise(async function(resolve, reject) {
+    try {
+      entryList = [];
+      // get all the entries
+      let results = await browser.storage.local.get();
+      // create array of all whitelist entries received from storage (the key contains all the information)
+      let entries = [];
+      for (let result in results) {
+        if (result.startsWith('ex|')) {
+          let resultContent = result.split('|');
+          let resultObj = {};
+          resultObj.domain = resultContent[1];
+          resultObj.ruleId = results[result];
+          switch (resultObj.ruleId) {
+            case 0:
+              // deny
+              resultObj.rule = 'Deny all';
+              break;
+            case 1:
+              // allow session
+              resultObj.rule = 'Allow Session Cookies';
+              break;
+            case 2:
+              // allow
+              resultObj.rule = 'Allow All Cookies';
+              break;
+            default:
+              // invalid
+              return reject(Error(`invalid rule id: ${resultObj.ruleId}`));
+          }
+          entries.push(resultObj)
         }
-        entries.push(resultObj)
       }
-    }
-    // filter the entries
-    for (let entry in entries) {
-      if ((filterDomain.value == '' || entries[entry].domain.toLowerCase().includes(filterDomain.value.toLowerCase())) && (filterRule.value == '' || entries[entry].ruleId == filterRule.value)) {
-        entryList.push(entries[entry]);
+      // filter the entries
+      for (let entry in entries) {
+        if ((filterDomain.value == '' || entries[entry].domain.toLowerCase().includes(filterDomain.value.toLowerCase())) && (filterRule.value == '' || entries[entry].ruleId == filterRule.value)) {
+          entryList.push(entries[entry]);
+        }
       }
-    }
-    // reset page
-    pageSpinner.value = 1;
-    pageSpinner.max = Math.ceil(entryList.length / maxRows);
-    // (re)build table
-    buildTableBody(1);
-  }, logError);
-}
-
-function buildTableBody(page) {
-  // fills the table using the existing entryList and given page number
-  let newTableBody = document.createElement('tbody');
-  newTableBody.id = 'exceptionTableBody';
-  // sort entries by domain first
-  entryList.sort(function(entry1, entry2) {
-    if (entry1.domain.toUpperCase() > entry2.domain.toUpperCase()) {
-      return 1;
-    } else if (entry1.domain.toUpperCase() < entry2.domain.toUpperCase()) {
-      return -1;
-    } else {
-      return 0;
+      // reset page
+      pageSpinner.value = 1;
+      pageSpinner.max = Math.ceil(entryList.length / maxRows);
+      resolve();
+    } catch (e) {
+      reject(e);
     }
   });
-  // add entries to list
-  for (let i = maxRows * (page - 1); i < entryList.length && i < maxRows * page; i++) {
-    let entry = entryList[i];
-    let tr = document.createElement('TR');
-    let td;
-    let selectCheckBox;
-    tr.addEventListener('click', function(e) {
-      fillRuleEditor(this.attachedEntry);
-    });
-    Object.defineProperty(tr, 'attachedEntry', {
-      value: entry,
-      writable: true,
-      enumerable: true,
-      configurable: true
-    });
-    // checkbox
-    selectCheckBox = document.createElement('INPUT');
-    selectCheckBox.type = 'checkbox';
-    selectCheckBox.classList.add('selectCheckBox');
-    selectCheckBox.addEventListener('change', function(e) {
-      this.parentElement.parentElement.classList.toggle('selectedRow');
-      if (selectAllCheckBox.checked && !this.checked) {
-        selectAllCheckBox.checked = false;
+}
+async function buildTableBody(page = 1) {
+  // fills the table using the existing entryList and given page number
+  return new Promise(function(resolve, reject) {
+    try {
+      let newTableBody = document.createElement('tbody');
+      newTableBody.id = 'exceptionTableBody';
+      // sort entries by domain first
+      entryList.sort(function(entry1, entry2) {
+        if (entry1.domain.toUpperCase() > entry2.domain.toUpperCase()) {
+          return 1;
+        } else if (entry1.domain.toUpperCase() < entry2.domain.toUpperCase()) {
+          return -1;
+        } else {
+          return 0;
+        }
+      });
+      // add entries to list
+      for (let i = maxRows * (page - 1); i < entryList.length && i < maxRows * page; i++) {
+        let entry = entryList[i];
+        let tr = document.createElement('TR');
+        let td;
+        let selectCheckBox;
+        tr.addEventListener('click', function(e) {
+          fillRuleEditor(this.attachedEntry);
+        });
+        Object.defineProperty(tr, 'attachedEntry', {
+          value: entry,
+          writable: true,
+          enumerable: true,
+          configurable: true
+        });
+        // checkbox
+        selectCheckBox = document.createElement('INPUT');
+        selectCheckBox.type = 'checkbox';
+        selectCheckBox.classList.add('selectCheckBox');
+        selectCheckBox.addEventListener('change', function(e) {
+          this.parentElement.parentElement.classList.toggle('selectedRow');
+          if (selectAllCheckBox.checked && !this.checked) {
+            selectAllCheckBox.checked = false;
+          }
+          e.stopPropagation();
+        });
+        td = document.createElement('TD');
+        td.appendChild(selectCheckBox);
+        td.addEventListener('click', function(e) {
+          // not to trigger parent elements click event
+          e.stopPropagation();
+          if (e.target !== this) {
+            return;
+          }
+          this.children[0].checked = !this.children[0].checked;
+          let evt = document.createEvent('HTMLEvents');
+          evt.initEvent('change', false, true);
+          this.children[0].dispatchEvent(evt);
+        });
+        tr.appendChild(td);
+        // domain
+        td = document.createElement('TD');
+        td.appendChild(document.createTextNode(entry.domain));
+        tr.appendChild(td);
+        // rule
+        td = document.createElement('TD');
+        td.appendChild(document.createTextNode(entry.rule));
+        tr.appendChild(td);
+        // add row to table body
+        newTableBody.appendChild(tr);
       }
-      e.stopPropagation();
-    });
-    td = document.createElement('TD');
-    td.appendChild(selectCheckBox);
-    td.addEventListener('click', function(e) {
-      // not to trigger parent elements click event
-      e.stopPropagation();
-      if (e.target !== this) {
-        return;
-      }
-      this.children[0].checked = !this.children[0].checked;
-      let evt = document.createEvent('HTMLEvents');
-      evt.initEvent('change', false, true);
-      this.children[0].dispatchEvent(evt);
-    });
-    tr.appendChild(td);
-    // domain
-    td = document.createElement('TD');
-    td.appendChild(document.createTextNode(entry.domain));
-    tr.appendChild(td);
-    // rule
-    td = document.createElement('TD');
-    td.appendChild(document.createTextNode(entry.rule));
-    tr.appendChild(td);
-    // add row to table body
-    newTableBody.appendChild(tr);
-  }
-  // replace old table body with new one
-  exceptionTable.replaceChild(newTableBody, exceptionTable.childNodes[5]);
-  // reset checkbox
-  selectAllCheckBox.checked = false;
+      // replace old table body with new one
+      exceptionTable.replaceChild(newTableBody, exceptionTable.childNodes[5]);
+      // reset checkbox
+      selectAllCheckBox.checked = false;
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
+  });
 }
 async function deleteSelectedEntries() {
   // deletes all selected entries
-  if (selectAllCheckBox.checked) {
-    // delete all entries matching the filters
-    if (confirm(`Are you sure you want to delete ${entryList.length} entries?`)) {
-      let promises = entryList.map(function(entry) {
-        return deleteSiteException(`https://${entry.domain}`);
-      });
-      await Promise.all(promises);
-      fillExceptionList();
-    }
-  } else {
-    // delete only the selected entries
-    let promises = Array.prototype.map.call(selectCheckBoxes, function(selectCheckBox) {
-      if (selectCheckBox.checked) {
-        let entry = selectCheckBox.parentElement.parentElement.attachedEntry;
-        return deleteSiteException(`https://${entry.domain}`);
+  return new Promise(async function(resolve, reject) {
+    try {
+      if (selectAllCheckBox.checked) {
+        // delete all entries matching the filters
+        if (confirm(`Are you sure you want to delete ${entryList.length} entries?`)) {
+          let promises = entryList.map(function(entry) {
+            return deleteSiteException(`https://${entry.domain}`);
+          });
+          await Promise.all(promises);
+          await fillExceptionList();
+          await buildTableBody();
+        }
+      } else {
+        // delete only the selected entries
+        let promises = Array.prototype.map.call(selectCheckBoxes, function(selectCheckBox) {
+          if (selectCheckBox.checked) {
+            let entry = selectCheckBox.parentElement.parentElement.attachedEntry;
+            return deleteSiteException(`https://${entry.domain}`);
+          }
+        });
+        await Promise.all(promises);
+        await fillExceptionList();
+        await buildTableBody();
       }
-    });
-    await Promise.all(promises);
-    fillExceptionList();
-  }
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
+  });
 }
-
-function saveEntry() {
-  // saves the data from the exception editor
-  let rule = null;
-  let domain = domainTextBox.value;
-  if (denyAllRule.checked) {
-    rule = 0;
-  } else if (allowSessionRule.checked) {
-    rule = 1;
-  } else if (allowAllRule.checked) {
-    rule = 2;
-  } else {
-    logError(Error(`Invalid rule input: ${rule}`));
-  }
-  let adding = addSiteException(domain, rule, false, exceptionInEditor);
-  adding.then(function() {
-    fillExceptionList();
-    fillRuleEditor(null);
-  }, function(error) {
-    entryEditorError.innerText = `${error}\r\n\r\n`;
+async function saveEntry() {
+  return new Promise(async function(resolve, reject) {
+    try {
+      // saves the data from the exception editor
+      let rule = null;
+      let domain = domainTextBox.value;
+      if (denyAllRule.checked) {
+        rule = 0;
+      } else if (allowSessionRule.checked) {
+        rule = 1;
+      } else if (allowAllRule.checked) {
+        rule = 2;
+      } else {
+        reject(Error(`Invalid rule input: ${rule}`));
+      }
+      try {
+        await addSiteException(domain, rule, false, exceptionInEditor);
+        await fillExceptionList();
+        fgh
+        await buildTableBody();
+        fillRuleEditor(null);
+      } catch (e) {
+        entryEditorError.innerText = `${e}\r\n\r\n`;
+      }
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
   });
 }
 
@@ -199,7 +229,7 @@ function fillRuleEditor(entry) {
         break;
       default:
         // invalid
-        logError(Error(`Invalid ruleID: ${entry.ruleId}`));
+        console.error(Error(`Invalid ruleID: ${entry.ruleId}`));
     }
   } else {
     // new entry
@@ -237,8 +267,12 @@ function addEventlisteners() {
   // adds all the event listeners to ui elements
   // info icons
   for (let i = 0; i < infoIcons.length; i++) {
-    infoIcons[i].addEventListener('click', function(e) {
-      sendInfoMessage(e.target.title);
+    infoIcons[i].addEventListener('click', async function(e) {
+      try {
+        await sendInfoMessage(e.target.title);
+      } catch (e) {
+        console.error(e);
+      }
     });
   }
   // filter text boxes
@@ -246,8 +280,13 @@ function addEventlisteners() {
     filterTextBoxes[i].addEventListener('click', function(e) {
       e.stopPropagation();
     });
-    filterTextBoxes[i].addEventListener('keyup', function(e) {
-      fillExceptionList();
+    filterTextBoxes[i].addEventListener('keyup', async function(e) {
+      try {
+        await fillExceptionList();
+        await buildTableBody();
+      } catch (e) {
+        console.error(e);
+      }
     });
   }
   // filter dropdowns
@@ -255,8 +294,13 @@ function addEventlisteners() {
     filterSelects[i].addEventListener('click', function(e) {
       e.stopPropagation();
     });
-    filterSelects[i].addEventListener('change', function(e) {
-      fillExceptionList();
+    filterSelects[i].addEventListener('change', async function(e) {
+      try {
+        await fillExceptionList();
+        await buildTableBody();
+      } catch (e) {
+        console.error(e);
+      }
     });
   }
   // select all checkbox
@@ -285,21 +329,29 @@ function addEventlisteners() {
     deleteSelectedEntries();
   });
   // save button
-  saveButton.addEventListener('click', function() {
-    saveEntry();
+  saveButton.addEventListener('click', async function() {
+    try {
+      saveEntry();
+    } catch (e) {
+      console.error(e);
+    }
   });
   // clear button
   clearButton.addEventListener('click', function() {
     fillRuleEditor(null);
   });
   // page spinner
-  pageSpinner.addEventListener('input', function() {
+  pageSpinner.addEventListener('input', async function() {
     if (parseInt(pageSpinner.value, 10) > parseInt(pageSpinner.max, 10)) {
       pageSpinner.value = pageSpinner.max;
     } else if (parseInt(pageSpinner.value, 10) < 1) {
       pageSpinner.value = 1;
     } else if (pageSpinner.value != '') {
-      buildTableBody(pageSpinner.value);
+      try {
+        await buildTableBody(pageSpinner.value);
+      } catch (e) {
+        console.error(e);
+      }
     }
   });
 }
