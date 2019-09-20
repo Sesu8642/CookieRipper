@@ -303,7 +303,7 @@ function addEventlisteners() {
   // info icons
   let infoIcons = document.getElementsByClassName('infoIcon');
   for (let i = 0; i < infoIcons.length; i++) {
-    infoIcons[i].addEventListener('click', function(e) {
+    infoIcons[i].addEventListener('click', async function(e) {
       await sendInfoMessage(e.target.title);
     });
   }
