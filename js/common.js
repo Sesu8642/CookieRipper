@@ -232,7 +232,7 @@ async function deleteAllCookies(url, cookieStore) {
         return deleteCookie(cookie);
       });
       // also remove unwanted cookies from memory
-      promises.push(callClearUnwantedCookiesforHostname(url));
+      promises.push(callClearUnwantedCookiesforDomain(getRuleRelevantPartofDomain(url)));
       await Promise.all(promises);
       resolve();
     } catch (e) {
@@ -241,11 +241,11 @@ async function deleteAllCookies(url, cookieStore) {
   });
 }
 async function deleteExistingUnwantedCookies(url, cookieStore) {
-  // deletes all existung but unwanted cookies from a given url
+  // deletes all existung but unwanted cookies from a given domain
   return new Promise(async function(resolve, reject) {
     try {
-      let hostname = trimSubdomains(url);
-      let behaviour = await getSiteBehaviour(hostname);
+      let domain = getRuleRelevantPartofDomain(url);
+      let behaviour = await getSiteBehaviour(domain);
       let siteCookies = await getAllCookies({
         url: url,
         storeId: cookieStore
@@ -287,8 +287,7 @@ async function getCookieAllowedState(cookie) {
   // returns if a given cookie is allowed (should be accepted) or not
   return new Promise(async function(resolve, reject) {
     try {
-      let hostname = trimSubdomains(`http://${cookie.domain}`);
-      let caseBehaviour = await getSiteBehaviour(hostname);
+      let caseBehaviour = await getSiteBehaviour(getRuleRelevantPartofDomain(cookie.domain));
       // allow if all cookies are allowed for that site
       if (caseBehaviour == 2) {
         return resolve(true);
@@ -341,20 +340,20 @@ async function handleCookieEvent(changeInfo) {
  * unwanted cookie functions
  * the functions either call a funtion in the background page directly or send a message to do their job
  */
-async function callGetUnwantedCookiesForHostname(hostname) {
-  // returns the object that stores the cookies for the given hostname in unwanted list
+async function callgetUnwantedCookiesForDomain(domain) {
+  // returns the object that stores the cookies for the given domain in unwanted list
   return new Promise(async function(resolve, reject) {
     try {
       // use function directly or send message depending on the availability of bgPage
       let cookies;
       if (bgPage !== null) {
-        cookies = await bgPage.getUnwantedCookiesForHostname({
-          hostname: hostname
+        cookies = await bgPage.getUnwantedCookiesForDomain({
+          domain: domain
         });
       } else {
         cookies = await browser.runtime.sendMessage({
-          type: 'getUnwantedCookiesForHostname',
-          hostname: hostname
+          type: 'getUnwantedCookiesForDomain',
+          domain: domain
         });
       }
       resolve(cookies);
@@ -386,21 +385,21 @@ async function callAddUnwantedCookie(cookie) {
     }
   });
 }
-async function callRestoreUnwantedCookie(domain, name, cookieStore) {
+async function callRestoreUnwantedCookie(fullCookieDomain, name, cookieStore) {
   // re-creates a cookie from unwanted list in case the user whitelists it
   return new Promise(async function(resolve, reject) {
     try {
       // use function directly or send message depending on the availability of bgPage
       if (bgPage !== null) {
         await bgPage.restoreUnwantedCookie({
-          domain: domain,
+          domain: fullCookieDomain,
           name: name,
           cookieStore: cookieStore
         });
       } else {
         await browser.runtime.sendMessage({
           type: 'restoreUnwantedCookie',
-          domain: domain,
+          domain: fullCookieDomain,
           name: name,
           cookieStore: cookieStore
         });
@@ -411,16 +410,16 @@ async function callRestoreUnwantedCookie(domain, name, cookieStore) {
     }
   });
 }
-async function callRestoreAllHostnamesUnwantedCookies() {
-  // re-creates cookies from unwanted list in case the user changes the behaviour for a hostname
+async function callRestoreAllDomainsUnwantedCookies() {
+  // re-creates cookies from unwanted list in case the user changes the behaviour for a domain
   return new Promise(async function(resolve, reject) {
     try {
       // use function directly or send message depending on the availability of bgPage
       if (bgPage !== null) {
-        resolve(await bgPage.restoreAllHostnamesUnwantedCookies());
+        resolve(await bgPage.restoreAllDomainsUnwantedCookies());
       } else {
         resolve(await browser.runtime.sendMessage({
-          type: 'restoreAllHostnamesUnwantedCookies'
+          type: 'restoreAllDomainsUnwantedCookies'
         }));
       }
     } catch (e) {
@@ -451,20 +450,19 @@ async function callDeleteUnwantedCookie(domain, name) {
     }
   });
 }
-async function callClearUnwantedCookiesforHostname(url) {
-  // clears all unwanted cookies from the list of unwanted cookies for a hostname
+async function callClearUnwantedCookiesforDomain(domain) {
+  // clears all unwanted cookies from the list of unwanted cookies for a domain
   return new Promise(async function(resolve, reject) {
     try {
-      let hostname = trimSubdomains(url);
       // use function directly or send message depending on the availability of bgPage
       if (bgPage !== null) {
-        await bgPage.clearUnwantedCookiesforHostname({
-          hostname: hostname
+        await bgPage.clearUnwantedCookiesforDomain({
+          domain: domain
         });
       } else {
         await browser.runtime.sendMessage({
-          type: 'clearUnwantedCookiesforHostname',
-          hostname: hostname
+          type: 'clearUnwantedCookiesforDomain',
+          domain: domain
         });
       }
       resolve();
@@ -639,8 +637,8 @@ async function clearTabDomStorage(tabId) {
 /*
  * site exception functions
  */
-async function getSiteException(hostname, temporary) {
-  // returns the exception for the given hostname; returns null if there is none
+async function getSiteException(domain, temporary) {
+  // returns the exception for the given domain; returns null if there is none
   return new Promise(async function(resolve, reject) {
     try {
       let getting;
@@ -649,17 +647,17 @@ async function getSiteException(hostname, temporary) {
         let exception;
         if (bgPage !== null) {
           exception = await bgPage.getTempSiteException({
-            hostname: hostname
+            domain: domain
           });
         } else {
           exception = await browser.runtime.sendMessage({
             type: 'getTempSiteException',
-            hostname: hostname
+            domain: domain
           });
         }
         return resolve(exception);
       } else {
-        let key = `ex|${hostname}`;
+        let key = `ex|${domain}`;
         let items = await browser.storage.local.get({
           [key]: null
         });
@@ -670,41 +668,40 @@ async function getSiteException(hostname, temporary) {
     }
   });
 }
-async function addSiteException(url, rule, temporary, overwriteException = null) {
+async function addSiteException(domain, rule, temporary, overwriteException = null) {
   // adds a new site exception for the given domain
   return new Promise(async function(resolve, reject) {
     try {
       // delete overwriteException
       if (overwriteException !== null) {
-        await deleteSiteException(`https://${overwriteException.domain}`, false);
+        await deleteSiteException(overwriteException.domain, false);
       }
-      let hostname = trimSubdomains(url);
       if (temporary) {
         // use function directly or send message depending on the availability of bgPage
         if (bgPage !== null) {
           await bgPage.addTempSiteException({
-            hostname: hostname,
+            domain: domain,
             rule: rule
           });
         } else {
           await browser.runtime.sendMessage({
             type: 'addTempSiteException',
-            hostname: hostname,
+            domain: domain,
             rule: rule
           });
         }
       } else {
         try {
-          await savePermSiteException(hostname, rule);
+          await savePermSiteException(domain, rule);
         } catch (e) {
           // restore overwriteException if new exception could not be set
           if (overwriteException !== null) {
-            await addSiteException(`https://${overwriteException.domain}`, overwriteException.ruleId, false);
+            await addSiteException(overwriteException.domain, overwriteException.ruleId, false);
           }
           reject(e);
         }
-        await deleteSiteException(`https://${hostname}`, true);
-        await Promise.all([callRestoreAllHostnamesUnwantedCookies(),
+        await deleteSiteException(domain, true);
+        await Promise.all([callRestoreAllDomainsUnwantedCookies(),
           deleteAllTabsExistingUnwantedCookies(), restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()
         ]);
         await Promise.all([updateAllTabsIcons(), updateActiveTabsCounts()]);
@@ -714,22 +711,31 @@ async function addSiteException(url, rule, temporary, overwriteException = null)
       reject(e);
     }
   });
-  async function savePermSiteException(hostname, rule) {
-    // sets an exception for a given hostname
+  async function savePermSiteException(domain, rule) {
+    // sets an exception for a given domain
+    // requires tld.js to be loaded
     return new Promise(async function(resolve, reject) {
       try {
-        // make sure the hostname is valid
-        let url = new URL(`http://${hostname}`);
-        // count . in hostname to reject subdomains
-        let domainCount = url.hostname.split('.').length - 1;
-        if (domainCount > 1) {
+        // make sure the domain is valid
+        let parsedDomain = tldjs.parse(domain);
+        if (!parsedDomain.isValid) {
+          return reject(Error('Invalid domain.'));
+        }
+        // reject subdomains
+        if (parsedDomain.subdomain) {
           return reject(Error('Subdomains are not supportet.'));
-        } else if (domainCount < 1) {
-          return reject(Error('Top-level domains only are not supported.'));
+        }
+        // reject public suffixes only
+        if (parsedDomain.hostname === parsedDomain.publicSuffix) {
+          return reject(Error('Only organization level domains are supported.'));
+        }
+        // reject if there is more info than the domain (e.g. path or port)
+        if (parsedDomain.hostname !== domain) {
+          return reject(Error('Invalid domain.'));
         }
         await browser.storage.local.set({
-          // use prefix 'ex' for exceptions and hostname as key
-          [`ex|${hostname}`]: rule
+          // use prefix 'ex' for exceptions and domain as key
+          [`ex|${domain}`]: rule
         });
         resolve();
       } catch (e) {
@@ -738,11 +744,11 @@ async function addSiteException(url, rule, temporary, overwriteException = null)
     });
   }
 }
-async function deletePermSiteException(hostname) {
-  // deletes the permanent exception for the given hostname (if there is any)
+async function deletePermSiteException(domain) {
+  // deletes the permanent exception for the given domain (if there is any)
   return new Promise(async function(resolve, reject) {
     try {
-      let key = `ex|${encodeURI(hostname)}`;
+      let key = `ex|${encodeURI(domain)}`;
       await browser.storage.local.remove(key)
       resolve();
     } catch (e) {
@@ -750,26 +756,25 @@ async function deletePermSiteException(hostname) {
     }
   });
 }
-async function deleteSiteException(url, temporary) {
-  // deletes the permanent or temporary exception for the given hostname (if there is any)
+async function deleteSiteException(domain, temporary) {
+  // deletes the permanent or temporary exception for the given domain (if there is any)
   return new Promise(async function(resolve, reject) {
     try {
-      let hostname = trimSubdomains(url);
       if (temporary) {
         // use function directly or send message depending on the availability of bgPage
         if (bgPage !== null) {
           await bgPage.deleteTempSiteException({
-            hostname: hostname
+            domain: domain
           });
         } else {
           await browser.runtime.sendMessage({
             type: 'deleteTempSiteException',
-            hostname: hostname
+            domain: domain
           });
         }
       } else {
-        await deletePermSiteException(hostname);
-        await Promise.all([callRestoreAllHostnamesUnwantedCookies(),
+        await deletePermSiteException(domain);
+        await Promise.all([callRestoreAllDomainsUnwantedCookies(),
           deleteAllTabsExistingUnwantedCookies(), restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()
         ]);
         await Promise.all([updateAllTabsIcons(), updateActiveTabsCounts()]);
@@ -798,18 +803,18 @@ async function clearTempSiteExceptions() {
     }
   });
 }
-async function getSiteBehaviour(hostname) {
-  // returns the behaviour for a given hostname
+async function getSiteBehaviour(domain) {
+  // returns the behaviour for a given domain
   // takes temporary and permanent exceptions as well as whitelist entries into account
   return new Promise(async function(resolve, reject) {
     try {
       // first check if there is a temporary exception
-      let tempException = await getSiteException(hostname, true);
+      let tempException = await getSiteException(domain, true);
       if (tempException !== null) {
         return resolve(tempException);
       } else {
         // if there is no temporary exception, check for a permanent one
-        let permSiteException = await getSiteException(hostname, false);
+        let permSiteException = await getSiteException(domain, false);
         if (permSiteException !== null) {
           return resolve(permSiteException);
         } else {
@@ -913,8 +918,8 @@ async function updateTabIcon(tabId) {
       let tab = await browser.tabs.get(tabId);
       if (tab.url.startsWith('http')) {
         let url = tab.url;
-        let hostname = trimSubdomains(url);
-        let behaviour = await getSiteBehaviour(hostname);
+        let domain = getRuleRelevantPartofDomain(url);
+        let behaviour = await getSiteBehaviour(domain);
         setIcon(behaviour);
       } else {
         setIcon(-1);
@@ -1082,15 +1087,11 @@ async function removeAllTabsCounts() {
 /*
  * misc functions
  */
-function trimSubdomains(url) {
-  // takes an URI and only returns the domain.topleveldomain part of it
-  if (!url.startsWith('http') && !url.startsWith('https')) {
-    // return if not a http site
-    return url;
-  }
-  let hostname = (new URL(url)).hostname;
-  let trimmedDomain = hostname.split('.');
-  return `${trimmedDomain[trimmedDomain.length - 2]}.${trimmedDomain[trimmedDomain.length - 1]}`;
+function getRuleRelevantPartofDomain(urlOrHostname) {
+  // returns the part of an url or hostname that is used for rules (domain without subdomains or ip or hostname)
+  // requires tld.js to be loaded
+  let parsedUrl = tldjs.parse(urlOrHostname);
+  return parsedUrl.domain == null ? parsedUrl.hostname : parsedUrl.domain;
 }
 
 function formatDate(date) {

@@ -158,7 +158,7 @@ async function restoreUnwantedStorageEntry(request) {
   });
 }
 async function restoreUnwantedStorageEntries() {
-  // re-creates all hostnames' wanted dom storage entries from unwanted list
+  // re-creates all domains' wanted dom storage entries from unwanted list
   return new Promise(async function(resolve, reject) {
     try {
       let domain = window.location.host;

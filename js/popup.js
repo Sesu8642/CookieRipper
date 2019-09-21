@@ -1,5 +1,5 @@
 'use strict';
-let activeTabUrl, activeTabId, activeTabCookieStore;
+let activeTabUrl, activeTabDomain, activeTabId, activeTabCookieStore;
 //selected cookie for the cookie editor
 let cookieInEditor = null;
 let domStorageEntryInEditor = null;
@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     addEventlisteners();
     let tab = await getActiveTab();
     activeTabUrl = tab.url;
+    activeTabDomain = getRuleRelevantPartofDomain(activeTabUrl);
     activeTabId = tab.id;
     activeTabCookieStore = await getTabCookieStore(activeTabId);
     fillSiteInfo();
@@ -30,7 +31,7 @@ async function enableSiteException(temp) {
   return new Promise(async function(resolve, reject) {
     try {
       let option = Number(slider.value);
-      await addSiteException(activeTabUrl, option, temp);
+      await addSiteException(activeTabDomain, option, temp);
       fillSiteInfo();
       resolve();
     } catch (e) {
@@ -46,11 +47,10 @@ async function fillSiteInfo() {
         // get all the dom storage and cookies
         await Promise.all([fillDomStorageList(), fillUnwantedDomStorageList(), fillCookieList(), fillUnwantedCookieList()]);
         await Promise.all([buildCookieTableBody(), buildDomStorageTableBody()]);
-        let hostname = trimSubdomains(activeTabUrl);
-        headline.textContent = `Settings For ${hostname}`;
+        headline.textContent = `Settings For ${activeTabDomain}`;
         cookieStore.textContent = `Cookie Store ID: ${activeTabCookieStore}`;
         let permSiteException, tempSiteException;
-        [permSiteException, tempSiteException] = await Promise.all([getSiteException(hostname, false), getSiteException(hostname, true)]);
+        [permSiteException, tempSiteException] = await Promise.all([getSiteException(activeTabDomain, false), getSiteException(activeTabDomain, true)]);
         await Promise.all([depictPermException(permSiteException), depictTempException(permSiteException, tempSiteException)]);
       } else {
         nonHttpInfo.classList.remove('hidden');
@@ -176,8 +176,7 @@ async function fillUnwantedCookieList() {
     try {
       unwantedCookieList = [];
       let fullDomain = (new URL(activeTabUrl)).hostname;
-      let hostname = trimSubdomains(activeTabUrl);
-      let unwantedCookies = await callGetUnwantedCookiesForHostname(hostname);
+      let unwantedCookies = await callgetUnwantedCookiesForDomain(activeTabDomain);
       unwantedCookies.forEach(function(cookie) {
         // remove leading . from cookie domain for comparison
         let cookieDomain = (cookie.domain.startsWith('.') ? cookie.domain.substring(1) : cookie.domain);
@@ -907,7 +906,7 @@ function addEventlisteners() {
   });
   useSiteBehaviour.addEventListener('click', async function() {
     try {
-      await deleteSiteException(activeTabUrl, true);
+      await deleteSiteException(activeTabDomain, true);
       await fillSiteInfo();
     } catch (e) {
       console.error(e);
@@ -915,7 +914,7 @@ function addEventlisteners() {
   });
   useSiteBehaviourIcon.addEventListener('click', async function() {
     try {
-      await deleteSiteException(activeTabUrl, false);
+      await deleteSiteException(activeTabDomain, false);
       await fillSiteInfo();
     } catch (e) {
       console.error(e);
@@ -929,7 +928,7 @@ function addEventlisteners() {
   });
   cookieDeleteButton.addEventListener('click', async function() {
     try {
-      await deleteSiteException(activeTabUrl, true);
+      await deleteSiteException(activeTabDomain, true);
       await deleteCookie(cookieInEditor);
       await fillSiteInfo();
       showView(mainView);

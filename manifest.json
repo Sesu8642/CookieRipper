@@ -46,6 +46,7 @@
 	"background": {
 		"scripts": [
 			"lib/browser-polyfill/browser-polyfill.min.js",
+			"lib/tld-browserified.js/tld-browserified.min.js",
 			"js/common.js",
 			"js/bgPage.js"
 		],
