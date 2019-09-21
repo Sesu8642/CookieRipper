@@ -267,7 +267,7 @@ async function fillUnwantedDomStorageList() {
   // gets unwanted dom storage entries and stores them in unwantedDomList
   return new Promise(async function(resolve, reject) {
     try {
-      let response = await getUnwantedDomStoregeEntries(activeTabId);
+      let response = await getUnwantedDomStorageEntries(activeTabId);
       unwantedDomList = response.map(function(entry) {
         entry.domain = (new URL(activeTabUrl)).hostname;
         entry.permanence = entry.persistent ? 'permanent' : 'temporary';
