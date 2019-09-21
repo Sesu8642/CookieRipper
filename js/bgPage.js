@@ -15,9 +15,15 @@ function loadSettings(skipUpdatingScripts = false) {
       enableCookieCounter = items.enableCookieCounter;
       if (skipUpdatingScripts) {
         // when installing, the content scripts are not injected yet
-        await Promise.all([callRestoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()]);
+        await Promise.all([restoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()]);
       } else {
-        await Promise.all([callRestoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies(), restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()]);
+        await Promise.all([restoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()]);
+        try {
+          // this can fail if unable to inject content script
+          await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()]);
+        } catch (e) {
+          console.warn(e);
+        }
       }
       await updateAllTabsIcons();
       if (!enableCookieCounter) {
@@ -80,7 +86,13 @@ async function addTempSiteException(request) {
   return new Promise(async function(resolve, reject) {
     try {
       tempSiteExceptions[encodeURI(request.domain)] = request.rule;
-      await Promise.all([callRestoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies(), restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()]);
+      await Promise.all([restoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()]);
+      try {
+        // this can fail if unable to inject content script
+        await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()]);
+      } catch (e) {
+        console.warn(e);
+      }
       await Promise.all([updateAllTabsIcons(), updateActiveTabsCounts()]);
       resolve();
     } catch (e) {
@@ -93,7 +105,13 @@ async function deleteTempSiteException(request) {
   return new Promise(async function(resolve, reject) {
     try {
       delete tempSiteExceptions[encodeURI(request.domain)];
-      await Promise.all([callRestoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies(), restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()]);
+      await Promise.all([restoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()]);
+      try {
+        // this can fail if unable to inject content script
+        await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()]);
+      } catch (e) {
+        console.warn(e);
+      }
       await Promise.all([updateAllTabsIcons(), updateActiveTabsCounts()]);
       resolve();
     } catch (e) {
@@ -106,7 +124,13 @@ async function clearTempSiteExceptions(request) {
   return new Promise(async function(resolve, reject) {
     try {
       tempSiteExceptions = [];
-      await Promise.all([callRestoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies(), restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()]);
+      await Promise.all([restoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()]);
+      try {
+        // can fail if unable to inject content script
+        await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()]);
+      } catch (e) {
+        console.warn(e);
+      }
       await Promise.all([updateAllTabsIcons(), updateActiveTabsCounts()]);
       resolve();
     } catch (e) {

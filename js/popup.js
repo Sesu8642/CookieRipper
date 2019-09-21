@@ -7,6 +7,9 @@ let cookieList = [];
 let unwantedCookieList = [];
 let domList = [];
 let unwantedDomList = [];
+let contentScriptavailable = true;
+const connectToContentScriptMaxRetries = 5;
+const connectToContentScriptRetryDelayMs = 50;
 // ui elements
 let firstPartyDomainArea, denyOption, sessionOption, allowOption, slider, useSiteBehaviourLbl, useSiteBehaviourIcon, useTempBehaviourArea, useSiteBehaviourArea, useTempBehaviour, useSiteBehaviour, headline, cookieStore, nonHttpInfo, mainView, cookieTable, domStorageTable, cookieDomainTextBox, cookieHostOnly, cookieNameTextBox, cookieValueTextBox, cookieSessionCookie, cookiePersistent, cookieDate, cookieTime, cookiePathTextBox, cookieFirstPartyDomainTextBox, cookieSecure, cookieHttpOnly, cookieDeleteButton, domStorageDomainTextBox, domStorageNameTextBox, domStorageValueTextBox, domStorageTemporary, domStoragePermanent, domStorageDeleteButton, makeRulePerm, cookieEditor, domStorageEditor, advancedCookieProperties, cookieAdvancedToggle, cookieCancelButton, domStorageCancelButton, cookieSaveButton, cookieEditorError, domStorageEditorError, domStorageSaveButton, cookieAddIcon, domAddIcon, cookieDeleteAllIcon, domDeleteAllIcon, optionsDropdown, optionsImage, dropdownItemSettings, dropdownItemClearTemp;
 document.addEventListener('DOMContentLoaded', async function() {
@@ -18,10 +21,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     activeTabDomain = getRuleRelevantPartofDomain(activeTabUrl);
     activeTabId = tab.id;
     activeTabCookieStore = await getTabCookieStore(activeTabId);
-    fillSiteInfo();
     if (firstPartyIsolationSupported) {
       firstPartyDomainArea.classList.remove('hidden');
     }
+    await fillSiteInfo();
   } catch (e) {
     console.error(e);
   }
@@ -32,7 +35,7 @@ async function enableSiteException(temp) {
     try {
       let option = Number(slider.value);
       await addSiteException(activeTabDomain, option, temp);
-      fillSiteInfo();
+      await fillSiteInfo();
       resolve();
     } catch (e) {
       reject(e);
@@ -44,14 +47,24 @@ async function fillSiteInfo() {
   return new Promise(async function(resolve, reject) {
     try {
       if (activeTabUrl.startsWith('http')) {
-        // get all the dom storage and cookies
-        await Promise.all([fillDomStorageList(), fillUnwantedDomStorageList(), fillCookieList(), fillUnwantedCookieList()]);
-        await Promise.all([buildCookieTableBody(), buildDomStorageTableBody()]);
         headline.textContent = `Settings For ${activeTabDomain}`;
         cookieStore.textContent = `Cookie Store ID: ${activeTabCookieStore}`;
         let permSiteException, tempSiteException;
         [permSiteException, tempSiteException] = await Promise.all([getSiteException(activeTabDomain, false), getSiteException(activeTabDomain, true)]);
         await Promise.all([depictPermException(permSiteException), depictTempException(permSiteException, tempSiteException)]);
+        // get all the dom storage and cookies
+        await Promise.all([fillCookieList(), fillUnwantedCookieList()]);
+        await buildCookieTableBody();
+        if (contentScriptavailable) {
+          try {
+            await fillDomStorageList();
+            await fillUnwantedDomStorageList();
+          } catch (e) {
+            // getting dom storage can fail if unable to inject the content script
+            console.warn(e);
+          }
+        }
+        await buildDomStorageTableBody();
       } else {
         nonHttpInfo.classList.remove('hidden');
         mainView.classList.add('hidden');
@@ -190,11 +203,15 @@ async function fillUnwantedCookieList() {
     }
   });
 }
-async function fillDomStorageList() {
+async function fillDomStorageList(retries = 0) {
   // gets dom storage and stores it in domList
   return new Promise(async function(resolve, reject) {
     try {
       domList = [];
+      if (retries === connectToContentScriptMaxRetries) {
+        contentScriptavailable = false;
+        return reject(Error('Failed to connect to content script.'));
+      }
       // get all the entries
       let response;
       try {
@@ -202,10 +219,11 @@ async function fillDomStorageList() {
       } catch (e) {
         console.warn(e);
         console.warn('Trying again in 50 ms');
-        // [UGLY] when injected script is not ready wait 50ms and try again
-        setTimeout(function() {
-          return fillDomStorageList();
-        }, 50);
+        // [UGLY] when injected script is not ready wait some ms and try again
+        await new Promise(async function(resolve) {
+          setTimeout(resolve, connectToContentScriptRetryDelayMs)
+        });
+        await fillDomStorageList(retries + 1);
       }
       let storageItems = [];
       // create array of entry objects first
@@ -1014,7 +1032,11 @@ function addEventlisteners() {
   });
   domDeleteAllIcon.addEventListener('click', async function() {
     try {
-      await clearTabDomStorage(activeTabId);
+      try {
+        await clearTabDomStorage(activeTabId);
+      } catch (e) {
+        console.warn(e);
+      }
       await Promise.all([updateActiveTabsCounts(), fillSiteInfo()]);
     } catch (e) {
       console.error(e);

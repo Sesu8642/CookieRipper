@@ -701,9 +701,13 @@ async function addSiteException(domain, rule, temporary, overwriteException = nu
           reject(e);
         }
         await deleteSiteException(domain, true);
-        await Promise.all([callRestoreAllDomainsUnwantedCookies(),
-          deleteAllTabsExistingUnwantedCookies(), restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()
-        ]);
+        await Promise.all([callRestoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()]);
+        try {
+          // can fail if unable to inject content script
+          await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()]);
+        } catch (e) {
+          console.warn(e);
+        }
         await Promise.all([updateAllTabsIcons(), updateActiveTabsCounts()]);
       }
       resolve();
@@ -774,9 +778,13 @@ async function deleteSiteException(domain, temporary) {
         }
       } else {
         await deletePermSiteException(domain);
-        await Promise.all([callRestoreAllDomainsUnwantedCookies(),
-          deleteAllTabsExistingUnwantedCookies(), restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()
-        ]);
+        await Promise.all([callRestoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()]);
+        try {
+          // can fail if unable to inject content script
+          await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()]);
+        } catch (e) {
+          console.warn(e);
+        }
         await Promise.all([updateAllTabsIcons(), updateActiveTabsCounts()]);
       }
       resolve();
@@ -1054,8 +1062,9 @@ async function updateActiveTabsCounts() {
         try {
           response = await getTabDomStorage(tab.id);
         } catch (e) {
+          // can fail if unable to inject content script
           console.warn(e);
-          resolve(count);
+          return resolve(count);
         }
         // count dom storage
         count = count + Object.keys(response.localStorage).length + Object.keys(response.sessionStorage).length;
