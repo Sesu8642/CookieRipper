@@ -340,7 +340,7 @@ async function handleCookieEvent(changeInfo) {
  * unwanted cookie functions
  * the functions either call a funtion in the background page directly or send a message to do their job
  */
-async function callgetUnwantedCookiesForDomain(domain) {
+async function callGetUnwantedCookiesForDomain(domain) {
   // returns the object that stores the cookies for the given domain in unwanted list
   return new Promise(async function(resolve, reject) {
     try {

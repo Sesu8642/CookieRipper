@@ -189,7 +189,7 @@ async function fillUnwantedCookieList() {
     try {
       unwantedCookieList = [];
       let fullDomain = (new URL(activeTabUrl)).hostname;
-      let unwantedCookies = await callgetUnwantedCookiesForDomain(activeTabDomain);
+      let unwantedCookies = await callGetUnwantedCookiesForDomain(activeTabDomain);
       unwantedCookies.forEach(function(cookie) {
         // remove leading . from cookie domain for comparison
         let cookieDomain = (cookie.domain.startsWith('.') ? cookie.domain.substring(1) : cookie.domain);
