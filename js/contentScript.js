@@ -14,7 +14,7 @@ async function init() {
     }
   });
 }
-// only answer messages from content script if in the top frame
+// only answer messages from background script if in the top frame
 if (window == window.top) {
   browser.runtime.onMessage.addListener(handleMessage);
 }
