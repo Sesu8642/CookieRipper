@@ -1099,6 +1099,8 @@ async function removeAllTabsCounts() {
 function getRuleRelevantPartofDomain(urlOrHostname) {
   // returns the part of an url or hostname that is used for rules (domain without subdomains or ip or hostname)
   // requires tld.js to be loaded
+  // first remove leading '.', if any
+  urlOrHostname = urlOrHostname.startsWith('.') ? urlOrHostname.substr(1) : urlOrHostname;
   let parsedUrl = tldjs.parse(urlOrHostname);
   return parsedUrl.domain == null ? parsedUrl.hostname : parsedUrl.domain;
 }
