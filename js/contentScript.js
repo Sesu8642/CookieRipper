@@ -20,32 +20,16 @@ if (window == window.top) {
 }
 window.addEventListener('message', async function(event) {
   try {
-    if (event.data.type && (event.data.type == 'cookieRipper_domStorageSet')) {
-      let storageItems = [{
-        name: event.data.name,
-        persistent: event.data.persistent
-      }];
-      let response = await browser.runtime.sendMessage({
-        type: 'getTabDomStorageItemsAllowedStates',
-        items: storageItems,
-        domain: window.location.host
-      });
-      // delete the item if unwanted
-      if (!response[0]) {
-        let storage = event.data.persistent ? localStorage : sessionStorage;
-        storage.removeItem(event.data.name);
-        // if the item is in the unwanted list already, remove it first
-        for (let i = 0; i < unwantedDomStorageEntries.length; i++) {
-          if (unwantedDomStorageEntries[i].name === event.data.name && unwantedDomStorageEntries[i].persistent === event.data.persistent) {
-            unwantedDomStorageEntries.splice(i);
-          }
-        }
-        // add entry to unwanted list
-        unwantedDomStorageEntries.push({
-          name: event.data.name,
-          value: event.data.value,
-          persistent: event.data.persistent
-        });
+    if (event.data.type) {
+      switch (event.data.type) {
+        case 'cookieRipper_domStorageSet':
+          await handleNewDomStorageItem(event.data);
+          break;
+        case 'cookieRipper_injectedScriptIsDone':
+          await deleteExistingUnwantedStorageEntries();
+          break;
+        default:
+          // nothing to do, might be some other message the website sent
       }
     }
   } catch (e) {
@@ -245,6 +229,43 @@ async function injectScript() {
       // Add the script tag to the DOM
       (document.head || document.documentElement).appendChild(script);
       script.remove();
+      resolve();
+    } catch (e) {
+      // if storage is not accessible, there is nothing to do
+      reject(e);
+    }
+  });
+}
+async function handleNewDomStorageItem(request) {
+  // if a new dom storage entry was set, delete or keep it
+  return new Promise(async function(resolve, reject) {
+    try {
+      let storageItems = [{
+        name: request.name,
+        persistent: request.persistent
+      }];
+      let response = await browser.runtime.sendMessage({
+        type: 'getTabDomStorageItemsAllowedStates',
+        items: storageItems,
+        domain: window.location.host
+      });
+      // delete the item if unwanted
+      if (!response[0]) {
+        let storage = request.persistent ? localStorage : sessionStorage;
+        storage.removeItem(request.name);
+        // if the item is in the unwanted list already, remove it first
+        for (let i = 0; i < unwantedDomStorageEntries.length; i++) {
+          if (unwantedDomStorageEntries[i].name === request.name && unwantedDomStorageEntries[i].persistent === request.persistent) {
+            unwantedDomStorageEntries.splice(i);
+          }
+        }
+        // add entry to unwanted list
+        unwantedDomStorageEntries.push({
+          name: request.name,
+          value: request.value,
+          persistent: request.persistent
+        });
+      }
       resolve();
     } catch (e) {
       // if storage is not accessible, there is nothing to do
