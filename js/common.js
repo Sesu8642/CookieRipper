@@ -641,7 +641,6 @@ async function getSiteException(domain, temporary) {
   // returns the exception for the given domain; returns null if there is none
   return new Promise(async function(resolve, reject) {
     try {
-      let getting;
       if (temporary) {
         // use function directly or send message depending on the availability of bgPage
         let exception;
@@ -856,9 +855,9 @@ function getObjectWhitelistedState(domain, name, type) {
 }
 async function addWhitelistEntry(domain, name, type, overwriteEntry = null) {
   // adds a new whitelist with the given data
-  domain = domain.startsWith('.') ? domain.substr(1) : domain;
   return new Promise(async function(resolve, reject) {
     try {
+      domain = domain.startsWith('.') ? domain.substr(1) : domain;
       try {
         // make sure the domain is valid
         new URL(`http://${domain}`);
@@ -870,7 +869,7 @@ async function addWhitelistEntry(domain, name, type, overwriteEntry = null) {
         await deleteWhitelistEntry(overwriteEntry.domain, overwriteEntry.name, overwriteEntry.type);
       }
       try {
-        let setting = browser.storage.local.set({
+        await browser.storage.local.set({
           // use prefix 'wl' for whitelist entries and both domain and name as key
           // last letter is the type: d --> dom storage, c --> cookie
           //use '|' as separator and encode all the other stuff to prevent fuck ups
