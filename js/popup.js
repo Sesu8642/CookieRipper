@@ -813,9 +813,9 @@ function toggleAdvancedProperties() {
   let section = advancedCookieProperties;
   section.classList.toggle('hidden');
   if (window.getComputedStyle(section).getPropertyValue('display') === 'none') {
-    cookieAdvancedToggle.innerText = '[show advanced]';
+    cookieAdvancedToggle.textContent = '[show advanced]';
   } else {
-    cookieAdvancedToggle.innerText = '[hide advanced]';
+    cookieAdvancedToggle.textContent = '[hide advanced]';
   }
 }
 
@@ -984,7 +984,7 @@ function addEventlisteners() {
       await fillSiteInfo();
       showView(mainView);
     } catch (e) {
-      domStorageEditorError.textContent = e;
+      domStorageEditorError.textContent = e.message;
     }
   });
   cookieAddIcon.addEventListener('click', function() {

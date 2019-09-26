@@ -212,11 +212,11 @@ async function deleteSelectedCookies() {
 function fillCookieEditor(cookie) {
   // fills the cookie editor ui elements with the given values
   // reset error text
-  cookieEditorError.innerText = '';
+  cookieEditorError.textContent = '';
   let expDate, hour, minute;
   if (cookie !== null) {
     // existing cookie
-    saveButton.innerText = 'Save';
+    saveButton.textContent = 'Save';
     cookieInEditor = cookie;
     domainTextBox.value = cookie.domain;
     cookieHostOnly.checked = cookie.hostOnly;
@@ -240,7 +240,7 @@ function fillCookieEditor(cookie) {
     firstPartyDomainTextBox.value = cookie.firstPartyDomain;
   } else {
     // new cookie
-    saveButton.innerText = 'Add';
+    saveButton.textContent = 'Add';
     cookieInEditor = null;
     domainTextBox.value = '';
     cookieHostOnly.checked = true;
@@ -385,7 +385,7 @@ function addEventlisteners() {
       await buildTableBody();
       fillCookieEditor(null);
     } catch (e) {
-      cookieEditorError.innerText = `${e}\r\n\r\n`;
+      cookieEditorError.textContent = `${e.message}\r\n\r\n`;
     }
   });
   // clear button

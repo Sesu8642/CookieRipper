@@ -178,7 +178,7 @@ async function saveEntry() {
         await buildTableBody();
         fillEntryEditor(null);
       } catch (e) {
-        entryEditorError.innerText = `${e}\r\n\r\n`;
+        entryEditorError.textContent = `${e.message}\r\n\r\n`;
       }
       resolve();
     } catch (e) {
@@ -190,10 +190,10 @@ async function saveEntry() {
 function fillEntryEditor(entry) {
   // fills the entry editor ui elements with the given values
   // reset error text
-  entryEditorError.innerText = '';
+  entryEditorError.textContent = '';
   if (entry !== null) {
     // existing entry
-    saveButton.innerText = 'Save';
+    saveButton.textContent = 'Save';
     entryInEditor = entry;
     if (entry.type === 'c') {
       http.checked = true;
@@ -204,7 +204,7 @@ function fillEntryEditor(entry) {
     nameTextBox.value = entry.name;
   } else {
     // new entry
-    saveButton.innerText = 'Add';
+    saveButton.textContent = 'Add';
     entryInEditor = null;
     http.checked = true;
     dom.checked = false;

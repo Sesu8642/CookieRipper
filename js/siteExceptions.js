@@ -195,7 +195,7 @@ async function saveEntry() {
         await buildTableBody();
         fillRuleEditor(null);
       } catch (e) {
-        entryEditorError.innerText = `${e}\r\n\r\n`;
+        entryEditorError.textContent = `${e.message}\r\n\r\n`;
       }
       resolve();
     } catch (e) {
@@ -207,10 +207,10 @@ async function saveEntry() {
 function fillRuleEditor(entry) {
   // fills the rule editor ui elements with the given values
   // reset error text
-  entryEditorError.innerText = '';
+  entryEditorError.textContent = '';
   if (entry !== null) {
     // existing entry
-    saveButton.innerText = 'Save';
+    saveButton.textContent = 'Save';
     exceptionInEditor = entry;
     domainTextBox.value = entry.domain;
     switch (entry.ruleId) {
@@ -232,7 +232,7 @@ function fillRuleEditor(entry) {
     }
   } else {
     // new entry
-    saveButton.innerText = 'Add';
+    saveButton.textContent = 'Add';
     exceptionInEditor = null;
     domainTextBox.value = '';
     denyAllRule.checked = true;
