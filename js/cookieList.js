@@ -9,15 +9,15 @@ document.addEventListener('DOMContentLoaded', async function() {
   assignUiElements();
   addEventlisteners();
   fillCookieEditor(null);
+  if (firstPartyIsolationSupported) {
+    firstPartyDomainArea.classList.remove('hidden');
+  }
   try {
     await fillCookieStores();
     await fillCookieList();
     await buildTableBody();
   } catch (e) {
     console.error(e);
-  }
-  if (firstPartyIsolationSupported) {
-    firstPartyDomainArea.classList.remove('hidden');
   }
 });
 async function fillCookieStores() {
