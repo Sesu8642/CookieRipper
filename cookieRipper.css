@@ -593,3 +593,36 @@ img.infoIcon {
 .extension-siteExceptions #buttonArea {
   grid-area: buttons;
 }
+
+/* manual */
+.extension-manual .textContent {
+  margin-left: 1rem;
+}
+
+.extension-manual h1,
+.extension-manual h2,
+.extension-manual h3,
+.extension-manual h4,
+.extension-manual h5,
+.extension-manual h6 {
+  margin-top: 2rem;
+}
+
+.extension-manual li {
+  margin: 0.5rem 0;
+}
+
+.extension-manual table {
+  border-collapse: collapse;
+}
+
+.extension-manual table,
+.extension-manual th,
+.extension-manual td {
+  border: thin solid black;
+}
+
+.extension-manual th,
+.extension-manual td {
+  padding: 0.5rem 1rem;
+}
