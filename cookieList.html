@@ -43,7 +43,7 @@
 Example: a non-host-only cookie from sub.example.com can be read by sub.example.com, testing.sub.example.com or www.sub.example.com.
 A host-only cookie from sub.example.com can only be read by sub.example.com and not by testing.sub.example.com or www.sub.example.com.
 In any case, the cookie cannot be read by example.com or stuff.example.com.
-Without this option, a dot will be added in front of the domain name if there is none already for legacy reasons."></div>
+Without this option, a dot will be added before the domain name if there is none already for legacy reasons."></div>
       <div id="firstPartyDomainArea" class="hidden">
         First Party Domain:
         <img
@@ -89,7 +89,7 @@ Example: a cookie from example.com with the path /news/ can be read by example.c
       </div>
     </div>
     <h1>Cookie List</h1>
-    * only contains http cookies; dom storage cannot be displayed like this due to technical limitations<br><br>
+    <p>* only contains HTTP cookies; web storage cannot be displayed like this due to technical limitations<br></p>
     <input type="button" id="deleteButton" value="Delete Selected">
     &emsp;Page:
     <input type="number" id="pageSpinner" min="1" value="1">
