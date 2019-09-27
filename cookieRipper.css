@@ -100,7 +100,7 @@ img.infoIcon {
   background-color: var(--hover-color-primary);
 }
 
-@media screen and (max-width: 60ch) {
+@media screen and (max-width: 70ch) {
   .header a {
     float: none;
     display: block;
