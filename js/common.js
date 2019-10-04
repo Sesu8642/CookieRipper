@@ -1060,13 +1060,12 @@ async function updateActiveTabsCounts() {
         let response;
         try {
           response = await getTabDomStorage(tab.id);
+          // count dom storage
+          count = count + Object.keys(response.localStorage).length + Object.keys(response.sessionStorage).length;
         } catch (e) {
           // can fail if unable to inject content script
           console.warn(e);
-          return resolve(count);
         }
-        // count dom storage
-        count = count + Object.keys(response.localStorage).length + Object.keys(response.sessionStorage).length;
         resolve(count);
       } catch (e) {
         reject(e);
