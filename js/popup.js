@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     addEventlisteners();
     let tab = await getActiveTab();
     activeTabUrl = tab.url;
-    activeTabDomain = getRuleRelevantPartofDomain(activeTabUrl);
+    activeTabDomain = getRuleRelevantPartOfDomain(activeTabUrl);
     activeTabId = tab.id;
     activeTabCookieStore = await getTabCookieStore(activeTabId);
     if (firstPartyIsolationSupported) {

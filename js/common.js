@@ -232,7 +232,7 @@ async function deleteAllCookies(url, cookieStore) {
         return deleteCookie(cookie);
       });
       // also remove unwanted cookies from memory
-      promises.push(callClearUnwantedCookiesforDomain(getRuleRelevantPartofDomain(url)));
+      promises.push(callClearUnwantedCookiesforDomain(getRuleRelevantPartOfDomain(url)));
       await Promise.all(promises);
       resolve();
     } catch (e) {
@@ -244,7 +244,7 @@ async function deleteExistingUnwantedCookies(url, cookieStore) {
   // deletes all existung but unwanted cookies from a given domain
   return new Promise(async function(resolve, reject) {
     try {
-      let domain = getRuleRelevantPartofDomain(url);
+      let domain = getRuleRelevantPartOfDomain(url);
       let behaviour = await getSiteBehaviour(domain);
       let siteCookies = await getAllCookies({
         url: url,
@@ -287,7 +287,7 @@ async function getCookieAllowedState(cookie) {
   // returns if a given cookie is allowed (should be accepted) or not
   return new Promise(async function(resolve, reject) {
     try {
-      let caseBehaviour = await getSiteBehaviour(getRuleRelevantPartofDomain(cookie.domain));
+      let caseBehaviour = await getSiteBehaviour(getRuleRelevantPartOfDomain(cookie.domain));
       // allow if all cookies are allowed for that site
       if (caseBehaviour == 2) {
         return resolve(true);
@@ -925,7 +925,7 @@ async function updateTabIcon(tabId) {
       let tab = await browser.tabs.get(tabId);
       if (tab.url.startsWith('http')) {
         let url = tab.url;
-        let domain = getRuleRelevantPartofDomain(url);
+        let domain = getRuleRelevantPartOfDomain(url);
         let behaviour = await getSiteBehaviour(domain);
         setIcon(behaviour);
       } else {
@@ -1094,7 +1094,7 @@ async function removeAllTabsCounts() {
 /*
  * misc functions
  */
-function getRuleRelevantPartofDomain(urlOrHostname) {
+function getRuleRelevantPartOfDomain(urlOrHostname) {
   // returns the part of an url or hostname that is used for rules (domain without subdomains or ip or hostname)
   // requires tld.js to be loaded
   // first remove leading '.', if any

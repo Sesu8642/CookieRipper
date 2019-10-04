@@ -160,7 +160,7 @@ async function addUnwantedCookie(request) {
   // adds a single cookie to unwanted list
   return new Promise(function(resolve, reject) {
     try {
-      let cookieDomain = getRuleRelevantPartofDomain(request.cookie.domain);
+      let cookieDomain = getRuleRelevantPartOfDomain(request.cookie.domain);
       // if it is undefined, it is a third party cookie which does not need to be recorded
       if (openDomainsUnwantedCookies[cookieDomain] != undefined) {
         let key = `${encodeURI(request.cookie.domain)}|${encodeURI(request.cookie.name)}`;
@@ -177,7 +177,7 @@ async function restoreUnwantedCookie(request) {
   // re-creates a single cookie from unwanted list
   return new Promise(async function(resolve, reject) {
     try {
-      let domain = getRuleRelevantPartofDomain(request.domain);
+      let domain = getRuleRelevantPartOfDomain(request.domain);
       let key = `${encodeURI(request.domain)}|${encodeURI(request.name)}`;
       await addCookieFromObject(JSON.parse(openDomainsUnwantedCookies[domain].unwantedCookies[key]), request.cookieStore);
       delete openDomainsUnwantedCookies[domain].unwantedCookies[key];
@@ -219,7 +219,7 @@ async function deleteUnwantedCookie(request) {
   // deletes a cookie from unwanted list
   return new Promise(function(resolve, reject) {
     try {
-      let domain = getRuleRelevantPartofDomain(request.domain);
+      let domain = getRuleRelevantPartOfDomain(request.domain);
       let key = `${encodeURI(request.domain)}|${encodeURI(request.name)}`;
       delete openDomainsUnwantedCookies[domain].unwantedCookies[key];
       resolve();
@@ -245,7 +245,7 @@ async function populateopenDomainsUnwantedCookies() {
     try {
       let tabs = await browser.tabs.query({});
       tabs.forEach(function(tab) {
-        let domain = getRuleRelevantPartofDomain(tab.url);
+        let domain = getRuleRelevantPartOfDomain(tab.url);
         openDomainsUnwantedCookies[domain] = {
           domain: domain,
           unwantedCookies: {}
@@ -265,7 +265,7 @@ async function removeClosedDomainsFromopenDomainsUnwantedCookies() {
       let openTabsDomains = [];
       let tabs = await browser.tabs.query({});
       tabs.forEach(function(tab) {
-        openTabsDomains.push(getRuleRelevantPartofDomain(tab.url));
+        openTabsDomains.push(getRuleRelevantPartOfDomain(tab.url));
       });
       // iterate all entries in openDomainsUnwantedCookies and remove them if the domain is not open in a tab anymore
       for (let property in openDomainsUnwantedCookies) {
@@ -283,7 +283,7 @@ async function getTabDomStorageItemsAllowedStates(request) {
   // returns an array of booleans meaning whether a dom storage entry is allowed or not
   return new Promise(async function(resolve, reject) {
     try {
-      let behaviour = await getSiteBehaviour(getRuleRelevantPartofDomain(request.domain));
+      let behaviour = await getSiteBehaviour(getRuleRelevantPartOfDomain(request.domain));
       // if behaviour is allow all --> return true for all items
       if (behaviour == 2) {
         return resolve(request.items.map(function() {
@@ -399,7 +399,7 @@ browser.cookies.onChanged.addListener(handleCookieEvent);
 browser.webNavigation.onBeforeNavigate.addListener(async function(details) {
   if (!['auto_subframe', 'manual_subframe'].includes(details.transitionType)) {
     // if new domain --> add it to list
-    let newDomain = getRuleRelevantPartofDomain(details.url);
+    let newDomain = getRuleRelevantPartOfDomain(details.url);
     if (!openDomainsUnwantedCookies.hasOwnProperty(newDomain)) {
       openDomainsUnwantedCookies[newDomain] = {
         domain: newDomain,

@@ -150,7 +150,7 @@ async function deleteSelectedEntries() {
         // delete all entries matching the filters
         if (confirm(`Are you sure you want to delete ${entryList.length} entries?`)) {
           let promises = entryList.map(function(entry) {
-            return deleteSiteException(getRuleRelevantPartofDomain(entry.domain));
+            return deleteSiteException(getRuleRelevantPartOfDomain(entry.domain));
           });
           await Promise.all(promises);
           await fillExceptionList();
@@ -161,7 +161,7 @@ async function deleteSelectedEntries() {
         let promises = Array.prototype.map.call(selectCheckBoxes, function(selectCheckBox) {
           if (selectCheckBox.checked) {
             let entry = selectCheckBox.parentElement.parentElement.attachedEntry;
-            return deleteSiteException(getRuleRelevantPartofDomain(entry.domain));
+            return deleteSiteException(getRuleRelevantPartOfDomain(entry.domain));
           }
         });
         await Promise.all(promises);
