@@ -215,7 +215,7 @@ async function deleteExistingUnwantedStorageEntries() {
       resolve();
     } catch (e) {
       // if storage is not accessible, there is nothing to do
-      reject();
+      reject(e);
     }
   });
 }
