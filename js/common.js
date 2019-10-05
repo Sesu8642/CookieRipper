@@ -524,6 +524,8 @@ async function addDomStorageEntry(tabId, persistent, name, value, overwriteEntry
         }
         reject(e);
       }
+      // delete the entry if unwanted
+      await deleteExistingUnwantedDomStorageEntries(tabId);
       resolve();
     } catch (e) {
       reject(e);
