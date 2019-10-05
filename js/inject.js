@@ -2,12 +2,14 @@
 /*
  * this script is injected into websites using a script tag to be able to overwrite the functions used by the website's js
  */
+// overwrite setItem
 let _setItem = Storage.prototype.setItem;
+let _localStorage = window.localStorage;
 Storage.prototype.setItem = function(name, value) {
   // overwrite setItem
   window.postMessage({
     type: 'cookieRipper_domStorageSet',
-    persistent: this === window.localStorage,
+    persistent: this === _localStorage,
     name: name,
     value: value
   }, window.location.href);
