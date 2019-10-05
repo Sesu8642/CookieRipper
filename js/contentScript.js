@@ -7,7 +7,8 @@ init();
 async function init() {
   return new Promise(async function(resolve, reject) {
     try {
-      await Promise.all([injectScript(), deleteExistingUnwantedStorageEntries()]);
+      await deleteExistingUnwantedStorageEntries();
+      await injectScript();
       resolve();
     } catch (e) {
       reject(e);
