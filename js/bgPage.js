@@ -2,8 +2,7 @@
 let tempSiteExceptions = {};
 let openDomainsUnwantedCookies = {};
 var defaultBehaviour, enableCookieCounter;
-
-function loadSettings(skipUpdatingScripts = false) {
+async function loadSettings(skipUpdatingScripts = false) {
   // loads settings from storage and applies them
   return new Promise(async function(resolve, reject) {
     try {
@@ -356,11 +355,12 @@ function handleMessage(request, sender) {
 /*
  * intialization (parts of it must not be in a separate function to work properly in ff)
  */
-initopenDomainsUnwantedCookies()
-async function initopenDomainsUnwantedCookies() {
-  // inits openDomainsUnwantedCookies
+init()
+async function init() {
   try {
     await populateopenDomainsUnwantedCookies();
+    await loadSettings(true);
+    await injectJsInAllTabs();
   } catch (e) {
     console.error(e);
   }
@@ -389,8 +389,6 @@ browser.runtime.onInstalled.addListener(async function(details) {
       });
       await sendInfoMessage('Thank you for installing Cookie Ripper!\nMake sure cookies are enabled in your browser and the third party cookie setting is adjusted to your liking (I suggest not accepting those). After that, adjust the cookie ripper default behaviour and you are good to go!');
     }
-    await loadSettings(true);
-    await injectJsInAllTabs();
   } catch (e) {
     console.error(e);
   }
