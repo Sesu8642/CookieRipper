@@ -58,6 +58,14 @@ img.infoIcon {
   display: none !important;
 }
 
+.decorativeLogo {
+  width: 100%;
+  max-width: 50ex;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 /* extension pages common*/
 
 .editorTextbox {
@@ -74,6 +82,10 @@ img.infoIcon {
 
 #pageSpinner {
   width: 5ch;
+}
+
+.textContent {
+  margin-left: 1rem;
 }
 
 /* header */
@@ -595,9 +607,6 @@ img.infoIcon {
 }
 
 /* manual */
-.extension-manual .textContent {
-  margin-left: 1rem;
-}
 
 .extension-manual h1,
 .extension-manual h2,
