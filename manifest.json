@@ -67,5 +67,8 @@
 		"48": "icons/cookieRipper_48.png",
 		"96": "icons/cookieRipper_96.png",
 		"128": "icons/cookieRipper_128.png"
-	}
+	},
+	"web_accessible_resources": [
+		"js/inject.js"
+	]
 }
