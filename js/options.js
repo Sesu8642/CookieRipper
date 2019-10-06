@@ -29,7 +29,7 @@ async function restoreOptions() {
   try {
     let items = await browser.storage.sync.get({
       // defaults
-      defaultBehaviour: 2,
+      defaultBehaviour: 0,
       enableCookieCounter: false
     });
     slider.value = items.defaultBehaviour;
