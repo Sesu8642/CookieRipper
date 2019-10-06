@@ -45,7 +45,7 @@
 	],
 	"background": {
 		"scripts": [
-			"lib/browser-polyfill/browser-polyfill.min.js",
+			"lib/browser-polyfill/browser-polyfill.js",
 			"lib/tld-browserified.js/tld-browserified.min.js",
 			"js/common.js",
 			"js/bgPage.js"
@@ -57,7 +57,7 @@
 		"all_frames": true,
 		"run_at": "document_start",
 		"js": [
-			"lib/browser-polyfill/browser-polyfill.min.js",
+			"lib/browser-polyfill/browser-polyfill.js",
 			"js/contentScript.js"
 		]
 	}],

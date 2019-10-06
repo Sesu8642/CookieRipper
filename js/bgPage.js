@@ -48,7 +48,7 @@ async function injectJsInAllTabs() {
           return [];
         }
         return [browser.tabs.executeScript(tab.id, {
-          file: 'lib/browser-polyfill/browser-polyfill.min.js'
+          file: 'lib/browser-polyfill/browser-polyfill.js'
         }), browser.tabs.executeScript(tab.id, {
           file: '/js/contentScript.js'
         })];
