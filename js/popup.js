@@ -660,11 +660,11 @@ async function buildDomStorageTableBody() {
             // whitelist does not differentiate between local and session storage
             let entryVariation1 = {
               name: e.target.parentElement.parentElement.attachedEntry.name,
-              permanence: 'permanent'
+              persistent: true
             };
             let entryVariation2 = {
               name: e.target.parentElement.parentElement.attachedEntry.name,
-              permanence: 'temporary'
+              persistent: false
             };
             await Promise.all([restoreUnwantedDomStorageEntry(activeTabId, entryVariation1), restoreUnwantedDomStorageEntry(activeTabId, entryVariation2)]);
             await Promise.all([updateActiveTabsCounts(), fillSiteInfo()]);
