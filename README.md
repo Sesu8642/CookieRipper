@@ -7,8 +7,8 @@ Cookie Ripper is a browser extension based on the WebExtensions API. It makes it
 Since Cookie Ripper is not available on the extension stores yet, it can only be installed from file. Note that the extension will not auto-update if installed this way.
 
 ### Firefox
-
-Go to the releases page and klick CookieRipper_Firefox_signed.xpi. A popup will appear. Klick Allow.
+Get it here:
+https://addons.mozilla.org/de/firefox/addon/cookie-ripper/
 
 ### Chromium-based browsers (Chromium itself, Chrome, Opera, Brave, ...)
 
