@@ -3,7 +3,9 @@
   <head>
     <meta charset="UTF-8">
     <link rel="shortcut icon" type="image/svg+xml" href="icons/cookieRipper.svg"/>
+    <link href="lib/tabulator/css/tabulator.css" rel="stylesheet">
     <link rel="StyleSheet" href="cookieRipper.css" type="text/css">
+    <script type="text/javascript" src="lib/tabulator/js/tabulator.js"></script>
     <script src="lib/browser-polyfill/browser-polyfill.js" type="text/javascript"></script>
     <script src="lib/tld-browserified.js/tld-browserified.js" type="text/javascript"></script>
     <script src="js/common.js" type="text/javascript"></script>
@@ -92,59 +94,6 @@ Example: a cookie from example.com with the path /news/ can be read by example.c
     <h1>Cookie List</h1>
     <p>* only contains HTTP cookies; web storage cannot be displayed like this due to technical limitations<br></p>
     <input type="button" id="deleteButton" value="Delete Selected">
-    &emsp;Page:
-    <input type="number" id="pageSpinner" min="1" value="1">
-    <span id="tableText">
-      <span id="tableHint"></span>
-      Click any entry to open it in the cookie editor.</span>
-    <table class="dataTable" id="cookieTable">
-      <colgroup>
-        <col span="1" id="colgroup1"/>
-        <col span="1" id="colgroup2"/>
-        <col span="1" id="colgroup3"/>
-        <col span="1" id="colgroup4"/>
-        <col span="1" id="colgroup5"/>
-        <col span="1" id="colgroup6"/>
-        <col span="4" id="colgroup7"/>
-      </colgroup>
-      <thead>
-        <tr>
-          <td id="selectAllCheckBoxTd"><br><input type="checkbox" id="selectAll"></td>
-          <td>Domain<br><input type="text" class="filterTextBox" id="filterDomain"></td>
-          <td>Name<br><input type="text" class="filterTextBox" id="filterName"></td>
-          <td>Value<br><input type="text" class="filterTextBox" id="filterValue"></td>
-          <td>Keep Until<br><input type="text" class="filterTextBox" id="filterDate"></td>
-          <td>Path<br><input type="text" class="filterTextBox" id="filterPath"></td>
-          <td>Host Only<br>
-            <select id="filterHostOnly" class="filterSelect">
-              <option value="">any</option>
-              <option value="true">true</option>
-              <option value="false">false</option>
-            </select>
-          </td>
-          <td>Secure<br>
-            <select id="filterSecure" class="filterSelect">
-              <option value="">any</option>
-              <option value="true">true</option>
-              <option value="false">false</option>
-            </select>
-          </td>
-          <td>Http Only<br>
-            <select id="filterHttpOnly" class="filterSelect">
-              <option value="">any</option>
-              <option value="true">true</option>
-              <option value="false">false</option>
-            </select>
-          </td>
-          <td>White-listed<br>
-            <select id="filterWhitelisted" class="filterSelect">
-              <option value="">any</option>
-              <option value="true">true</option>
-              <option value="false">false</option>
-            </select>
-          </td>
-        </tr>
-      </thead>
-      <tbody id="cookieTableBody"></tbody>
-    </body>
-  </html>
+    <div id="table"></div>
+  </body>
+</html>

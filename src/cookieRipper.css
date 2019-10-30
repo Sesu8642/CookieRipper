@@ -121,6 +121,22 @@ img.infoIcon {
   }
 }
 
+/* tabulator */
+.tabulator {
+  font-size: inherit;
+}
+
+.tabulator
+  .tabulator-tableHolder
+  .tabulator-table
+  .tabulator-row
+  .tabulator-cell {
+  white-space: initial;
+  overflow: hidden;
+  text-overflow: inherit;
+  word-wrap: break-word;
+}
+
 /* data tables */
 
 .dataTable {

@@ -3,7 +3,9 @@
   <head>
     <meta charset="UTF-8">
     <link rel="shortcut icon" type="image/svg+xml" href="icons/cookieRipper.svg"/>
+    <link href="lib/tabulator/css/tabulator.css" rel="stylesheet">
     <link rel="StyleSheet" href="cookieRipper.css" type="text/css">
+    <script type="text/javascript" src="lib/tabulator/js/tabulator.js"></script>
     <script src="lib/browser-polyfill/browser-polyfill.js" type="text/javascript"></script>
     <script src="lib/tld-browserified.js/tld-browserified.js" type="text/javascript"></script>
     <script src="js/common.js"></script>
@@ -42,31 +44,6 @@
   </div>
   <h1>Permanent Exception List</h1>
   <input type="button" id="deleteButton" value="Delete Selected">
-  &emsp;Page:
-  <input type="number" id="pageSpinner" min="1" value="1">
-  <span id="tableText">
-    <span id="tableHint"></span>
-    Click any entry to open it in the exception editor.</span>
-  <table class="dataTable" id="exceptionTable">
-    <colgroup>
-      <col span="1" id="colgroup1"/>
-      <col span="1" id="colgroup2"/>
-      <col span="1" id="colgroup3"/>
-    </colgroup>
-    <thead>
-      <tr>
-        <td id="selectAllCheckBoxTd"><br><input type="checkbox" id="selectAll"></td>
-        <td>Domain<br><input type="text" class="filterTextBox" id="filterDomain"></td>
-        <td>Rule<br>
-          <select id="filterRule" class="filterSelect">
-            <option value="">any</option>
-            <option value="0">Deny all</option>
-            <option value="1">Allow Session Cookies</option>
-            <option value="2">Allow All Cookies</option>
-          </select>
-        </td>
-      </tr>
-    </thead>
-    <tbody id="exceptionTableBody"></tbody>
-  </body>
+  <div id="table"></div>
+</body>
 </html>
