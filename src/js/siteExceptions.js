@@ -31,12 +31,12 @@ function initTable() {
       titleFormatter: 'rowSelection',
       align: 'center',
       headerSort: false,
-      width: '5%'
+      width: '0'
     }, {
       title: 'Domain',
       field: 'domain',
-      headerFilter: 'input',
-      width: '50%'
+      formatter: 'textarea',
+      headerFilter: 'input'
     }, {
       title: 'Rule',
       field: 'ruleId',
@@ -56,10 +56,10 @@ function initTable() {
         fillRuleEditor(cell.getRow().getData());
       },
       headerSort: false,
-      width: '5%'
+      width: '0'
     }],
     selectable: true,
-    layout: 'fitDataFill',
+    layout: 'fitColumns',
     pagination: 'local',
     selectableRangeMode: 'click',
     paginationSize: 15,

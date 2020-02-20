@@ -131,9 +131,6 @@ img.infoIcon {
   .tabulator-table
   .tabulator-row
   .tabulator-cell {
-  white-space: initial;
-  overflow: hidden;
-  text-overflow: inherit;
   word-wrap: break-word;
 }
 

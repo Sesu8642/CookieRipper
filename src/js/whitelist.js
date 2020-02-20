@@ -30,17 +30,18 @@ function initTable() {
       titleFormatter: 'rowSelection',
       align: 'center',
       headerSort: false,
-      width: '5%'
+      width: '0'
     }, {
       title: 'Domain',
       field: 'domain',
       headerFilter: 'input',
+      formatter: 'textarea',
       width: '30%'
     }, {
       title: 'Name',
       field: 'name',
-      headerFilter: 'input',
-      width: '45%'
+      formatter: 'textarea',
+      headerFilter: 'input'
     }, {
       title: 'Type',
       field: 'type',
@@ -60,10 +61,10 @@ function initTable() {
         fillEntryEditor(cell.getRow().getData());
       },
       headerSort: false,
-      width: '5%'
+      width: '0'
     }],
     selectable: true,
-    layout: 'fitDataFill',
+    layout: 'fitColumns',
     pagination: 'local',
     selectableRangeMode: 'click',
     paginationSize: 15,

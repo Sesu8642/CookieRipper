@@ -30,22 +30,24 @@ function initTable() {
       titleFormatter: 'rowSelection',
       align: 'center',
       headerSort: false,
-      width: '5%'
+      width: '0'
     }, {
       title: 'Domain',
       field: 'domain',
       headerFilter: 'input',
+      formatter: 'textarea',
       width: '15%'
     }, {
       title: 'Name',
       field: 'name',
       headerFilter: 'input',
+      formatter: 'textarea',
       width: '15%'
     }, {
       title: 'Value',
       field: 'value',
       headerFilter: 'input',
-      width: '20%'
+      formatter: 'textarea'
     }, {
       title: 'Keep Until',
       field: 'expirationDate',
@@ -61,6 +63,7 @@ function initTable() {
       title: 'Path',
       field: 'path',
       headerFilter: 'input',
+      formatter: 'textarea',
       width: '10%'
     }, {
       title: 'Host Only',
@@ -70,7 +73,7 @@ function initTable() {
       headerFilterParams: {
         values: true,
       },
-      width: '5%'
+      width: '0'
     }, {
       title: 'Secure',
       field: 'secure',
@@ -79,7 +82,7 @@ function initTable() {
       headerFilterParams: {
         values: true,
       },
-      width: '5%'
+      width: '0'
     }, {
       title: 'HTTP Only',
       field: 'httpOnly',
@@ -88,7 +91,7 @@ function initTable() {
       headerFilterParams: {
         values: true,
       },
-      width: '5%'
+      width: '0'
     }, {
       title: 'Whitelisted',
       field: 'whitelisted',
@@ -97,7 +100,7 @@ function initTable() {
       headerFilterParams: {
         values: true,
       },
-      width: '5%'
+      width: '0'
     }, {
       title: 'Edit',
       formatter: editIconFormatter,
@@ -107,10 +110,10 @@ function initTable() {
         fillCookieEditor(cell.getRow().getData());
       },
       headerSort: false,
-      width: '5%'
+      width: '0'
     }],
     selectable: true,
-    layout: 'fitDataFill',
+    layout: 'fitColumns',
     pagination: 'local',
     selectableRangeMode: 'click',
     paginationSize: 15,
