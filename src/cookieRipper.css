@@ -93,6 +93,10 @@ img.infoIcon {
   margin-left: 1rem;
 }
 
+.tabulator {
+  height: 65ex;
+}
+
 /* header */
 .header a {
   float: left;
