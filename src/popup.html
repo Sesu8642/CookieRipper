@@ -2,8 +2,10 @@
 <html class="extension-popup">
   <head>
     <meta charset="UTF-8">
+    <link href="css/tabulator.css" rel="stylesheet">
     <link rel="StyleSheet" href="cookieRipper.css" type="text/css">
     <title>Cookie Ripper Popup</title>
+    <script type="text/javascript" src="lib/tabulator/js/tabulator.js"></script>
     <script src="lib/browser-polyfill/browser-polyfill.js" type="text/javascript"></script>
     <script src="lib/tld-browserified.js/tld-browserified.js" type="text/javascript"></script>
     <script src="js/common.js" type="text/javascript"></script>
@@ -63,51 +65,15 @@
       <br>
       <span id="cookieStore"></span>
       <img src="/icons/info-circle.svg" alt="info" class="infoIcon" title="A cookie store is a container for cookies. There may be multiple of these containers to provide isolation e.g. between normal browsing and private mode.">
-      <div class="tableScrollArea">
-        <table id="cookieTable">
-          <colgroup>
-            <col span="1" class="colgroup1"/>
-            <col span="1" class="colgroup2"/>
-            <col span="1" class="colgroup3"/>
-            <col span="3" class="colgroup4"/>
-          </colgroup>
-          <thead>
-            <tr>
-              <td>Name</td>
-              <td>Keep Until</td>
-              <td>Value</td>
-              <td><img src="/icons/file-alt.svg" alt="whitelist" title="whitelisted" id="cookieWhitelistedIcon" class="tableIcon"></td>
-              <td><img src="/icons/plus.svg" alt="add" title="add" id="cookieAddIcon" class="tableIcon"></td>
-              <td><img src="/icons/trash-alt.svg" alt="delete all" title="delete all" id="cookieDeleteAllIcon" class="tableIcon"></td>
-            </tr>
-          </thead>
-          <tbody id="cookieTableBody"></tbody>
-        </table>
+      <div class="tabulatorContainer">
+        <div id="cookieTable"></div>
       </div>
     </div>
     <div id="domStorageArea">
       <h1>Web Storage Accessible By This Site
         <img src="/icons/info-circle.svg" alt="info" class="infoIcon" title="Web storage is the more modern alternative to cookies. It can only be accessed via JavaScript."></h1>
-      <div class="tableScrollArea">
-        <table id="domStorageTable">
-          <colgroup>
-            <col span="1" class="colgroup1"/>
-            <col span="1" class="colgroup2"/>
-            <col span="1" class="colgroup3"/>
-            <col span="3" class="colgroup4"/>
-          </colgroup>
-          <thead>
-            <tr>
-              <td>Name</td>
-              <td>Permanence</td>
-              <td>Value</td>
-              <td><img src="/icons/file-alt.svg" alt="whitelist" title="whitelisted" id="domWhitelistedIcon" class="tableIcon"></td>
-              <td><img src="/icons/plus.svg" alt="add" title="add" id="domAddIcon" class="tableIcon"></td>
-              <td><img src="/icons/trash-alt.svg" alt="delete all" title="delete all" id="domDeleteAllIcon" class="tableIcon"></td>
-            </tr>
-          </thead>
-          <tbody id="domStorageTableBody"></tbody>
-        </table>
+      <div class="tabulatorContainer">
+        <div id="domStorageTable"></div>
       </div>
     </div>
   </div>
