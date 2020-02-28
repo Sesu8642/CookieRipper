@@ -95,6 +95,20 @@ function initTable() {
     return stringTypeFormatter(cell.getValue(), formatterParams)
   }
 }
+
+async function updateTable() {
+  // updates the table data
+  return new Promise(async function(resolve, reject) {
+    try {
+      await fillWhitelist();
+      table.replaceData(entryList);
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
 async function fillWhitelist() {
   // filters whitelist entries and stores them in entryList
   return new Promise(async function(resolve, reject) {
@@ -133,8 +147,7 @@ async function deleteSelectedEntries() {
         return deleteWhitelistEntry(entry.domain, entry.name, entry.type);
       });
       await Promise.all(promises);
-      await fillWhitelist();
-      table.setData(entryList);
+      updateTable();
       resolve();
     } catch (e) {
       reject(e);
@@ -148,8 +161,7 @@ async function saveEntry() {
       let type = (http.checked ? 'c' : 'd');
       try {
         await addWhitelistEntry(domainTextBox.value, nameTextBox.value, type, entryInEditor);
-        await fillWhitelist();
-        table.setData(entryList);
+        updateTable();
         fillEntryEditor(null);
       } catch (e) {
         entryEditorError.textContent = `${e.message}\r\n\r\n`;

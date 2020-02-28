@@ -153,6 +153,20 @@ function initTable() {
     return cellString.includes(headerValue);
   }
 }
+
+async function updateTable() {
+  // updates the table data
+  return new Promise(async function(resolve, reject) {
+    try {
+      await fillCookieList();
+      table.replaceData(entryList);
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
 async function fillCookieStores() {
   return new Promise(async function(resolve, reject) {
     try {
@@ -210,8 +224,7 @@ async function deleteSelectedCookies() {
         return deleteCookie(entry);
       });
       await Promise.all(promises);
-      await fillCookieList();
-      table.setData(entryList);
+      await updateTable();
       resolve();
     } catch (e) {
       reject(e);
@@ -324,8 +337,7 @@ function addEventlisteners() {
   saveButton.addEventListener('click', async function() {
     try {
       await addCookie(nameTextBox.value, valueTextBox.value, domainTextBox.value, pathTextBox.value, sessionCookie.checked, date.valueAsDate, time.valueAsDate, cookieHostOnly.checked, cookieSecure.checked, cookieHttpOnly.checked, cookieStoreSelect.value, firstPartyDomainTextBox.value, cookieInEditor);
-      await fillCookieList();
-      table.setData(entryList);
+      await updateTable();
       fillCookieEditor(null);
     } catch (e) {
       cookieEditorError.textContent = `${e.message}\r\n\r\n`;

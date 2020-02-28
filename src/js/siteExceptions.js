@@ -90,6 +90,19 @@ function initTable() {
     return stringRuleFormatter(cell.getValue(), formatterParams)
   }
 }
+
+async function updateTable() {
+  // updates the table data
+  return new Promise(async function(resolve, reject) {
+    try {
+      await fillExceptionList();
+      table.replaceData(entryList);
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
 async function fillExceptionList() {
   // filters exceptions and stores them in entryList
   return new Promise(async function(resolve, reject) {
@@ -126,8 +139,7 @@ async function deleteSelectedEntries() {
         return deleteSiteException(getRuleRelevantPartOfDomain(entry.domain));
       });
       await Promise.all(promises);
-      await fillExceptionList();
-      table.setData(entryList);
+      await updateTable();
       resolve();
     } catch (e) {
       reject(e);
@@ -151,8 +163,7 @@ async function saveEntry() {
       }
       try {
         await addSiteException(domain, rule, false, exceptionInEditor);
-        await fillExceptionList();
-        table.setData(entryList);
+        await updateTable();
         fillRuleEditor(null);
       } catch (e) {
         entryEditorError.textContent = `${e.message}\r\n\r\n`;
