@@ -1,6 +1,7 @@
 <!doctype html>
 <html class="extension-popup">
-  <head>
+
+<head>
     <meta charset="UTF-8">
     <link href="css/tabulator.css" rel="stylesheet">
     <link rel="StyleSheet" href="cookieRipper.css" type="text/css">
@@ -10,177 +11,159 @@
     <script src="lib/tld-browserified.js/tld-browserified.js" type="text/javascript"></script>
     <script src="js/common.js" type="text/javascript"></script>
     <script src="js/popup.js" type="text/javascript"></script>
-  </head>
-  <body>
+</head>
+
+<body>
     <span id="nonHttpInfo" class="hidden">Cookies are only available to http(s) sites.</span>
     <div id="mainView">
-      <div id="siteInfo">
-        <div class="dropdown">
-          <svg id="optionsImage" xmlns="http://www.w3.org/2000/svg" viewbox="0 0 448 512">
-            <path
-              id="optionsImagePath"
-              d="M16 132h416c8.837 0 16-7.163 16-16V76c0-8.837-7.163-16-16-16H16C7.163 60 0 67.163 0 76v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16z"/></svg>
-          <!-- icon license note: Font Awesome Free 5.5.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) -->
-          <div id="optionsDropdown" class="hidden">
-            <div id="dropdownItemSettings" class="dropdownItem">Cookie Ripper preferences</div>
-            <div id="dropdownItemClearTemp" class="dropdownItem">Clear all temporary rules</div>
-          </div>
-        </div>
-        <h1 id="headline">Settings For This Site</h1>
-        <br>
-        <div id="useSiteBehaviourArea"><input type="radio" name="siteSetting" id="useSiteBehaviour">
-          <label id="useSiteBehaviourLbl" for="useSiteBehaviour">use site behaviour</label>
-          <img id="useSiteBehaviourIcon" class="deleteRuleIcon" src="/icons/trash-alt.svg" alt="delete" title="delete this rule and use default"></span>
-        <img
-          src="/icons/info-circle.svg"
-          alt="info"
-          class="infoIcon"
-          title="This is the behaviour that will be used when no temporary rule is active. You can set a permanent rule for specific domains. If there are no active rules for a domain, the default behaviour will be used."><br></div>
-      <div id="useTempBehaviourArea"><input type="radio" name="siteSetting" id="useTempBehaviour">
+        <div id="siteInfo">
+            <div class="dropdown">
+                <svg id="optionsImage" xmlns="http://www.w3.org/2000/svg" viewbox="0 0 448 512">
+                    <path id="optionsImagePath" d="M16 132h416c8.837 0 16-7.163 16-16V76c0-8.837-7.163-16-16-16H16C7.163 60 0 67.163 0 76v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16z" /></svg>
+                <!-- icon license note: Font Awesome Free 5.5.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) -->
+                <div id="optionsDropdown" class="hidden">
+                    <div id="dropdownItemSettings" class="dropdownItem">Cookie Ripper preferences</div>
+                    <div id="dropdownItemClearTemp" class="dropdownItem">Clear all temporary rules</div>
+                </div>
+            </div>
+            <h1 id="headline">Settings For This Site</h1>
+            <br>
+            <div id="useSiteBehaviourArea"><input type="radio" name="siteSetting" id="useSiteBehaviour">
+                <label id="useSiteBehaviourLbl" for="useSiteBehaviour">use site behaviour</label>
+                <img id="useSiteBehaviourIcon" class="deleteRuleIcon" src="/icons/trash-alt.svg" alt="delete" title="delete this rule and use default">
+    </span>
+    <img src="/icons/info-circle.svg" alt="info" class="infoIcon" title="This is the behaviour that will be used when no temporary rule is active. You can set a permanent rule for specific domains. If there are no active rules for a domain, the default behaviour will be used."><br></div>
+    <div id="useTempBehaviourArea"><input type="radio" name="siteSetting" id="useTempBehaviour">
         <label for="useTempBehaviour" id="useTempBehaviourLbl">temporarily behave differently:</label>
         <img src="/icons/info-circle.svg" alt="info" class="infoIcon" title="Here you can temporarily overwrite the behaviour for the visited domain. It will be active until the browser is closed."><br><br>
         <div class="selectionArea" id="selectionArea">
-          <input id="slider" type="range" min="0" max="2" step="1"/><br>
-          <div id="denyOption" class="optionArea" title="All Cookies except whitelisted ones will be rejected.">
-            <div><img src="/icons/ban.svg" alt="deny" class="selectIcon"></div>
-            <div class="iconText">deny all cookies</div>
-          </div>
-          <div id="sessionOption" class="optionArea" title="Only session cookies and whitelisted cookes will be kept.">
-            <div><img src="/icons/clock.svg" alt="allow_session" class="selectIcon"></div>
-            <div class="iconText">allow session cookies<br></div>
-          </div>
-          <div id="allowOption" class="optionArea" title="All cookies will be accepted. If you use this as your default setting, you're doing it wrong!">
-            <div><img src="/icons/check-circle.svg" alt="allow" class="selectIcon"></div>
-            <div class="iconText">allow all cookies<br></div>
-          </div>
+            <input id="slider" type="range" min="0" max="2" step="1" /><br>
+            <div id="denyOption" class="optionArea" title="All Cookies except whitelisted ones will be rejected.">
+                <div><img src="/icons/ban.svg" alt="deny" class="selectIcon"></div>
+                <div class="iconText">deny all cookies</div>
+            </div>
+            <div id="sessionOption" class="optionArea" title="Only session cookies and whitelisted cookes will be kept.">
+                <div><img src="/icons/clock.svg" alt="allow_session" class="selectIcon"></div>
+                <div class="iconText">allow session cookies<br></div>
+            </div>
+            <div id="allowOption" class="optionArea" title="All cookies will be accepted. If you use this as your default setting, you're doing it wrong!">
+                <div><img src="/icons/check-circle.svg" alt="allow" class="selectIcon"></div>
+                <div class="iconText">allow all cookies<br></div>
+            </div>
         </div>
-      </div><br>
-      <button id="makeRulePerm">make permanent</button>
+    </div><br>
+    <button id="makeRulePerm">make permanent</button>
     </div>
     <div id="cookieArea">
-      <h1>
+        <h1>
         Cookies Accessible By This Site
         <img src="/icons/info-circle.svg" alt="info" class="infoIcon" title="HTTP cookies are small pieces of information websites can save to your device. They can be accessed via HTTP requests as well as JavaScript.">
       </h1>
-      <br>
-      <span id="cookieStore"></span>
-      <img src="/icons/info-circle.svg" alt="info" class="infoIcon" title="A cookie store is a container for cookies. There may be multiple of these containers to provide isolation e.g. between normal browsing and private mode.">
-      <div class="tabulatorContainer">
-        <div id="cookieTable"></div>
-      </div>
+        <br>
+        <span id="cookieStore"></span>
+        <img src="/icons/info-circle.svg" alt="info" class="infoIcon" title="A cookie store is a container for cookies. There may be multiple of these containers to provide isolation e.g. between normal browsing and private mode.">
+        <div class="tabulatorContainer">
+            <div id="cookieTable"></div>
+        </div>
     </div>
     <div id="domStorageArea">
-      <h1>Web Storage Accessible By This Site
+        <h1>Web Storage Accessible By This Site
         <img src="/icons/info-circle.svg" alt="info" class="infoIcon" title="Web storage is the more modern alternative to cookies. It can only be accessed via JavaScript."></h1>
-      <div class="tabulatorContainer">
-        <div id="domStorageTable"></div>
-      </div>
+        <div class="tabulatorContainer">
+            <div id="domStorageTable"></div>
+        </div>
     </div>
-  </div>
-  <div id="cookieEditor" class="hidden">
-    <h1>Cookie Editor</h1>
-    <br>
-    Domain:
-    <br>
-    <input id="cookieDomainTextBox" type="text">
-    <br>
-    <input type="checkbox" id="cookieHostOnly">
-    <label for="cookieHostOnly">Host Only
-    </label><img
-      src="/icons/info-circle.svg"
-      alt="info"
-      class="infoIcon"
-      id="infoIconHostOnly"
-      title="Restricts the cookie to the exact domain excluding subdomains.
+    </div>
+    <div id="cookieEditor" class="hidden">
+        <h1>Cookie Editor</h1>
+        <br>
+        Domain:
+        <br>
+        <input id="cookieDomainTextBox" type="text">
+        <br>
+        <input type="checkbox" id="cookieHostOnly">
+        <label for="cookieHostOnly">Host Only
+        </label><img src="/icons/info-circle.svg" alt="info" class="infoIcon" id="infoIconHostOnly" title="Restricts the cookie to the exact domain excluding subdomains.
 Example: a non-host-only cookie from sub.example.com can be read by sub.example.com, testing.sub.example.com or www.sub.example.com.
 A host-only cookie from sub.example.com can only be read by sub.example.com and not by testing.sub.example.com or www.sub.example.com.
 In any case, the cookie cannot be read by example.com or stuff.example.com.
 Without this option, a dot will be added before the domain name if there is none already for legacy reasons."><br>
-    <br>
-    Name:<br>
-    <input id="cookieNameTextBox" type="text"><br>
-    <br>
-    Value:
-    <br>
-    <input id="cookieValueTextBox" type="text"><br>
-    <br>
-    Validity:
-    <br>
-    <input type="radio" name="cookieValidity" id="cookieSessionCookie">
-    <label for="cookieSessionCookie">Session Cookie</label>
-    <img src="/icons/info-circle.svg" alt="info" class="infoIcon" id="infoIconSessionCookie" title="Deletes the cookie when the browser session ends (browser is closed).">
-    <div id="cookieEditorDate">
-      <input type="radio" name="cookieValidity" id="cookiePersistent">
-      <label for="persistentCookie">Keep Until</label>&nbsp;&nbsp;&nbsp;
-      <!-- TODO: replace with fancy html5 datetime once available in ff -->
-      <input id="cookieDate" type="date">
-      <input id="cookieTime" type="time">
-    </div><br>
-    <div id="advancedCookieProperties" class="hidden">
-      Path:
-      <img
-        src="/icons/info-circle.svg"
-        alt="info"
-        class="infoIcon"
-        id="infoIconPath"
-        title="Restricts the cookie to a certain path on the server.
+        <br>
+        Name:<br>
+        <input id="cookieNameTextBox" type="text"><br>
+        <br>
+        Value:
+        <br>
+        <input id="cookieValueTextBox" type="text"><br>
+        <br>
+        Validity:
+        <br>
+        <input type="radio" name="cookieValidity" id="cookieSessionCookie">
+        <label for="cookieSessionCookie">Session Cookie</label>
+        <img src="/icons/info-circle.svg" alt="info" class="infoIcon" id="infoIconSessionCookie" title="Deletes the cookie when the browser session ends (browser is closed).">
+        <div id="cookieEditorDate">
+            <input type="radio" name="cookieValidity" id="cookiePersistent">
+            <label for="persistentCookie">Keep Until</label>&nbsp;&nbsp;&nbsp;
+            <!-- TODO: replace with fancy html5 datetime once available in ff -->
+            <input id="cookieDate" type="date">
+            <input id="cookieTime" type="time">
+        </div><br>
+        <div id="advancedCookieProperties" class="hidden">
+            Path:
+            <img src="/icons/info-circle.svg" alt="info" class="infoIcon" id="infoIconPath" title="Restricts the cookie to a certain path on the server.
 Example: a cookie from example.com with the path /news/ can be read by example.com/news/, example.com/news/today/ but not example.com/ or example.com/contact/."><br>
-      <input id="cookiePathTextBox" type="text"><br>
-      <br>
-      <div id="firstPartyDomainArea" class="hidden">
-        First Party Domain:
-        <img
-          src="/icons/info-circle.svg"
-          alt="info"
-          class="infoIcon"
-          id="infoFirstPartyDomain"
-          title="This is the site you visited when you got this cookie. It might be the same site or a third party site (e.g. from an ad). Also used for the first party isolation browser feature.">
-        <input type="text" id="cookieFirstPartyDomainTextBox">
-        <br>
-        <br>
-      </div>
-      <input type="checkbox" id="cookieSecure">
-      <label for="cookieSecure">Secure</label>
-      <img src="/icons/info-circle.svg" alt="info" class="infoIcon" id="infoIconSecure" title="Restricts the cookie to secure connections (typically https)."><br>
-      <input type="checkbox" id="cookieHttpOnly">
-      <label for="cookieHttpOnly">Http Only</label>
-      <img src="/icons/info-circle.svg" alt="info" class="infoIcon" id="infoIconHttpOnly" title="Prevents the cookie from being accessed from client side scripts to increase security."><br>
-      <br>
+            <input id="cookiePathTextBox" type="text"><br>
+            <br>
+            <div id="firstPartyDomainArea" class="hidden">
+                First Party Domain:
+                <img src="/icons/info-circle.svg" alt="info" class="infoIcon" id="infoFirstPartyDomain" title="This is the site you visited when you got this cookie. It might be the same site or a third party site (e.g. from an ad). Also used for the first party isolation browser feature.">
+                <input type="text" id="cookieFirstPartyDomainTextBox">
+                <br>
+                <br>
+            </div>
+            <input type="checkbox" id="cookieSecure">
+            <label for="cookieSecure">Secure</label>
+            <img src="/icons/info-circle.svg" alt="info" class="infoIcon" id="infoIconSecure" title="Restricts the cookie to secure connections (typically https)."><br>
+            <input type="checkbox" id="cookieHttpOnly">
+            <label for="cookieHttpOnly">Http Only</label>
+            <img src="/icons/info-circle.svg" alt="info" class="infoIcon" id="infoIconHttpOnly" title="Prevents the cookie from being accessed from client side scripts to increase security."><br>
+            <br>
+        </div>
+        <span class="spoiler" id="cookieAdvancedToggle">[show advanced]</span><br><br>
+        <div id="cookieEditorError" class="errorText"></div>
+        <button id="cookieSaveButton" type="button">Save</button>
+        <button id="cookieCancelButton" type="button">Cancel</button>
+        <button id="cookieDeleteButton" type="button">Delete</button>
     </div>
-    <span class="spoiler" id="cookieAdvancedToggle">[show advanced]</span><br><br>
-    <div id="cookieEditorError" class="errorText"></div>
-    <button id="cookieSaveButton" type="button">Save</button>
-    <button id="cookieCancelButton" type="button">Cancel</button>
-    <button id="cookieDeleteButton" type="button">Delete</button>
-  </div>
-  <div id="domStorageEditor" class="hidden">
-    <h1>Web Storage Editor</h1>
-    <br>
-    Domain:
-    <br>
-    <input id="domStorageDomainTextBox" type="text" disabled="disabled">
-    <br>
-    Name:
-    <br>
-    <input id="domStorageNameTextBox" type="text"><br>
-    <br>
-    Value:
-    <br>
-    <input id="domStorageValueTextBox" type="text"><br>
-    <br>
-    Permanence:
-    <br>
-    <input type="radio" name="domStoragePermanence" id="domStorageTemporary">
-    <label for="domStorageTemporary">temporary</label>
-    <img src="/icons/info-circle.svg" alt="info" class="infoIcon" id="infoIconDomStorageTemporary" title="Deletes the entry when the browser is closed.">
-    <br>
-    <input type="radio" name="domStoragePermanence" id="domStoragePermanent">
-    <label for="domStoragePermanent">permanent</label>
-    <br><br>
-    <div id="domStorageEditorError" class="errorText"></div>
-    <button id="domStorageSaveButton" type="button">Save</button>
-    <button id="domStorageCancelButton" type="button">Cancel</button>
-    <button id="domStorageDeleteButton" type="button">Delete</button>
-  </div>
+    <div id="domStorageEditor" class="hidden">
+        <h1>Web Storage Editor</h1>
+        <br>
+        Domain:
+        <br>
+        <input id="domStorageDomainTextBox" type="text" disabled="disabled">
+        <br>
+        Name:
+        <br>
+        <input id="domStorageNameTextBox" type="text"><br>
+        <br>
+        Value:
+        <br>
+        <input id="domStorageValueTextBox" type="text"><br>
+        <br>
+        Permanence:
+        <br>
+        <input type="radio" name="domStoragePermanence" id="domStorageTemporary">
+        <label for="domStorageTemporary">temporary</label>
+        <img src="/icons/info-circle.svg" alt="info" class="infoIcon" id="infoIconDomStorageTemporary" title="Deletes the entry when the browser is closed.">
+        <br>
+        <input type="radio" name="domStoragePermanence" id="domStoragePermanent">
+        <label for="domStoragePermanent">permanent</label>
+        <br><br>
+        <div id="domStorageEditorError" class="errorText"></div>
+        <button id="domStorageSaveButton" type="button">Save</button>
+        <button id="domStorageCancelButton" type="button">Cancel</button>
+        <button id="domStorageDeleteButton" type="button">Delete</button>
+    </div>
 </body>
+
 </html>

@@ -1,19 +1,30 @@
 /* colors */
-
 :root {
   /* from https://design.firefox.com/photon/visuals/color.html */
-  --bg-color-general: #f9f9fa; /* grey 10 */
-  --bg-color-menu: #ffffff; /* white */
-  --hover-color-primary: #d7d7db; /* grey 30 */
-  --hover-color-secondary: #ededf0; /* grey 20 */
-  --icon-color-primary: rgba(12, 12, 13, 0.8); /* grey90 a80 */
-  --icon-color-secondary: rgba(12, 12, 13, 0.6); /* grey90 a80 */
-  --text-color-primary: #0c0c0d; /* grey 90 */
-  --text-color-secondary: #4a4a4f; /* grey 60 */
-  --highlighted-color-primary: #0a84ff; /* blue 50 */
-  --highlighted-color-secondary: #45a1ff; /* blue 40 */
-  --highlighted-color-text: #0060df; /* blue 60 */
-  --error-color-text: #ff0039; /* red 50 */
+  /* grey 10 */
+  --bg-color-general: #f9f9fa;
+  /* white */
+  --bg-color-menu: #ffffff;
+  /* grey 30 */
+  --hover-color-primary: #d7d7db;
+  /* grey 20 */
+  --hover-color-secondary: #ededf0;
+  /* grey90 a80 */
+  --icon-color-primary: rgba(12, 12, 13, 0.8);
+  /* grey90 a80 */
+  --icon-color-secondary: rgba(12, 12, 13, 0.6);
+  /* grey 90 */
+  --text-color-primary: #0c0c0d;
+  /* grey 60 */
+  --text-color-secondary: #4a4a4f;
+  /* blue 50 */
+  --highlighted-color-primary: #0a84ff;
+  /* blue 40 */
+  --highlighted-color-secondary: #45a1ff;
+  /* blue 60 */
+  --highlighted-color-text: #0060df;
+  /* red 50 */
+  --error-color-text: #ff0039;
 }
 
 :root {
@@ -22,7 +33,6 @@
 }
 
 /* general */
-
 label {
   vertical-align: middle;
 }
@@ -67,7 +77,6 @@ img.infoIcon {
 }
 
 /* extension pages common*/
-
 .editorTextbox {
   width: 100%;
 }
@@ -85,7 +94,6 @@ img.infoIcon {
 }
 
 /* header */
-
 .header a {
   float: left;
   text-align: center;
@@ -118,7 +126,6 @@ img.infoIcon {
 }
 
 /* selection area (used in popup and options page) */
-
 .selectionArea {
   display: grid;
   grid-template-rows: auto auto auto;
@@ -166,7 +173,6 @@ img.infoIcon {
 }
 
 /* popup */
-
 .extension-popup {
   background-color: var(--bg-color-menu);
 }
@@ -296,33 +302,17 @@ img.infoIcon {
   grid-area: domStorageArea;
 }
 
-.extension-popup
-  .tabulator
-  .tabulator-header
-  .tabulator-col
-  .tabulator-col-content
-  .tabulator-col-title {
+.extension-popup .tabulator .tabulator-header .tabulator-col .tabulator-col-content .tabulator-col-title {
   text-align: center;
   text-overflow: clip;
 }
 
-.extension-popup
-  .tabulator
-  .tabulator-header
-  .tabulator-col
-  .tabulator-col-content
-  .tabulator-col-title
-  img {
+.extension-popup .tabulator .tabulator-header .tabulator-col .tabulator-col-content .tabulator-col-title img {
   font-weight: normal;
   margin: 0 2px;
 }
 
-.extension-popup
-  .tabulator
-  .tabulator-header
-  .tabulator-col[tabulator-field="whitelisted"]
-  .tabulator-col-content
-  .tabulator-col-title {
+.extension-popup .tabulator .tabulator-header .tabulator-col[tabulator-field="whitelisted"] .tabulator-col-content .tabulator-col-title {
   text-align: left;
 }
 
@@ -345,7 +335,6 @@ img.infoIcon {
 }
 
 /* options page */
-
 .extension-options .selectionArea {
   max-width: 70ch;
 }
@@ -495,7 +484,6 @@ img.infoIcon {
 }
 
 /* manual */
-
 .extension-manual h1,
 .extension-manual h2,
 .extension-manual h3,

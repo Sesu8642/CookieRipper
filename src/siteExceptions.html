@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html class="extension-siteExceptions">
-  <head>
+
+<head>
     <meta charset="UTF-8">
-    <link rel="shortcut icon" type="image/svg+xml" href="icons/cookieRipper.svg"/>
+    <link rel="shortcut icon" type="image/svg+xml" href="icons/cookieRipper.svg" />
     <link href="css/tabulator.css" rel="stylesheet">
     <link rel="StyleSheet" href="cookieRipper.css" type="text/css">
     <script type="text/javascript" src="lib/tabulator/js/tabulator.js"></script>
@@ -11,39 +12,41 @@
     <script src="js/common.js"></script>
     <script src="js/siteExceptions.js"></script>
     <title>Cookie Ripper Site Exceptions</title>
-  </head>
-  <body>
+</head>
+
+<body>
     <div class="header">
-      <a href="options.html">Options</a>
-      <a href="cookieList.html">Cookie List</a>
-      <a href="whitelist.html">Whitelist</a>
-      <a class="selectedHeaderTab" href="siteExceptions.html">Site Exceptions</a>
-      <a href="manual.html">Manual</a>
+        <a href="options.html">Options</a>
+        <a href="cookieList.html">Cookie List</a>
+        <a href="whitelist.html">Whitelist</a>
+        <a class="selectedHeaderTab" href="siteExceptions.html">Site Exceptions</a>
+        <a href="manual.html">Manual</a>
     </div>
     <h1>Exception Editor</h1>
     <div id="exceptionEditor">
-      <div id="domainArea">
-        Domain:
-        <br>
-        <input id="domainTextBox" class="editorTextbox" type="text"></div>
-      <div id="ruleArea">Rule:
-        <br>
-        <input type="radio" name="rule" id="allowAllRule">
-        <label for="allowAllRule">Allow All Cookies</label><br>
-        <input type="radio" name="rule" id="allowSessionRule">
-        <label for="allowSessionRule">Allow Session Cookies</label><br>
-        <input type="radio" name="rule" id="denyAllRule" checked="true">
-        <label for="denyAllRule">Deny all</label>
-      </div>
-      <div id="buttonArea">
-        <div id="entryEditorError" class="errorText"></div>
-        <button id="saveButton" type="button">Add</button>
-        <button id="clearButton" type="button">Clear</button>
-      </div>
+        <div id="domainArea">
+            Domain:
+            <br>
+            <input id="domainTextBox" class="editorTextbox" type="text"></div>
+        <div id="ruleArea">Rule:
+            <br>
+            <input type="radio" name="rule" id="allowAllRule">
+            <label for="allowAllRule">Allow All Cookies</label><br>
+            <input type="radio" name="rule" id="allowSessionRule">
+            <label for="allowSessionRule">Allow Session Cookies</label><br>
+            <input type="radio" name="rule" id="denyAllRule" checked="true">
+            <label for="denyAllRule">Deny all</label>
+        </div>
+        <div id="buttonArea">
+            <div id="entryEditorError" class="errorText"></div>
+            <button id="saveButton" type="button">Add</button>
+            <button id="clearButton" type="button">Clear</button>
+        </div>
     </div>
-  </div>
-  <h1>Permanent Exception List</h1>
-  <input type="button" id="deleteButton" value="Delete Selected">
-  <div id="table"></div>
+    </div>
+    <h1>Permanent Exception List</h1>
+    <input type="button" id="deleteButton" value="Delete Selected">
+    <div id="table"></div>
 </body>
+
 </html>

@@ -81,43 +81,43 @@ function initCookieTable() {
           field: 'whitelisted',
           formatter: actionElementsFormatter,
           cellClick: async function(e, cell) {
-              try {
-                e.stopPropagation();
-                let classNames = e.target.className.split(' ');
-                if (classNames.includes('tableCheckBox')) {
-                  // whitelisted checkbox clicked
-                  if (cell.getValue()) {
-                    await deleteWhitelistEntry(cell.getRow().getData().domain, cell.getRow().getData().name, 'c', null);
-                    // could be optimized with function that only checks that one cookie
-                    await deleteExistingUnwantedCookies(activeTabUrl, activeTabCookieStore);
-                    await Promise.all([updateActiveTabsCounts(), updateCookieTable()]);
-                  } else {
-                    await addWhitelistEntry(cell.getRow().getData().domain, cell.getRow().getData().name, 'c');
-                    await callRestoreUnwantedCookie(cell.getRow().getData().domain, cell.getRow().getData().name, activeTabCookieStore);
-                    await Promise.all([updateActiveTabsCounts(), updateCookieTable()]);
-                  }
-                } else if (classNames.includes('editIcon')) {
-                  // edit icon clicked
-                  if (cell.getRow().getData().wanted) {
-                    showView(cookieEditor);
-                    fillCookieEditor(cell.getRow().getData(), null);
-                  }
-                } else if (classNames.includes('deleteIcon')) {
-                  // delete icon clicked
-                  if (cell.getRow().getData().wanted) {
-                    await deleteCookie(cell.getRow().getData());
-                    await Promise.all([updateActiveTabsCounts(), updateCookieTable()]);
-                  } else {
-                    await callDeleteUnwantedCookie(cell.getRow().getData().domain, cell.getRow().getData().name);
-                    await updateCookieTable();
-                  }
+            try {
+              e.stopPropagation();
+              let classNames = e.target.className.split(' ');
+              if (classNames.includes('tableCheckBox')) {
+                // whitelisted checkbox clicked
+                if (cell.getValue()) {
+                  await deleteWhitelistEntry(cell.getRow().getData().domain, cell.getRow().getData().name, 'c', null);
+                  // could be optimized with function that only checks that one cookie
+                  await deleteExistingUnwantedCookies(activeTabUrl, activeTabCookieStore);
+                  await Promise.all([updateActiveTabsCounts(), updateCookieTable()]);
+                } else {
+                  await addWhitelistEntry(cell.getRow().getData().domain, cell.getRow().getData().name, 'c');
+                  await callRestoreUnwantedCookie(cell.getRow().getData().domain, cell.getRow().getData().name, activeTabCookieStore);
+                  await Promise.all([updateActiveTabsCounts(), updateCookieTable()]);
                 }
-              } catch (e) {
-                console.error(e);
+              } else if (classNames.includes('editIcon')) {
+                // edit icon clicked
+                if (cell.getRow().getData().wanted) {
+                  showView(cookieEditor);
+                  fillCookieEditor(cell.getRow().getData(), null);
+                }
+              } else if (classNames.includes('deleteIcon')) {
+                // delete icon clicked
+                if (cell.getRow().getData().wanted) {
+                  await deleteCookie(cell.getRow().getData());
+                  await Promise.all([updateActiveTabsCounts(), updateCookieTable()]);
+                } else {
+                  await callDeleteUnwantedCookie(cell.getRow().getData().domain, cell.getRow().getData().name);
+                  await updateCookieTable();
+                }
               }
-            },
-            headerSort: false,
-            width: '13ex'
+            } catch (e) {
+              console.error(e);
+            }
+          },
+          headerSort: false,
+          width: '13ex'
         }, {
           title: 'wanted',
           field: 'wanted'
@@ -169,42 +169,42 @@ function initDomStorageTable() {
           field: 'whitelisted',
           formatter: actionElementsFormatter,
           cellClick: async function(e, cell) {
-              try {
-                e.stopPropagation();
-                let classNames = e.target.className.split(' ');
-                if (classNames.includes('tableCheckBox')) {
-                  // whitelisted checkbox clicked
-                  if (cell.getValue()) {
-                    await deleteWhitelistEntry(cell.getRow().getData().domain, cell.getRow().getData().name, 'd');
-                    await deleteExistingUnwantedDomStorageEntries(activeTabId);
-                    await Promise.all([updateActiveTabsCounts(), updateDomStorageTable()]);
-                  } else {
-                    await addWhitelistEntry(cell.getRow().getData().domain, cell.getRow().getData().name, 'd');
-                    await restoreUnwantedDomStorageEntry(activeTabId, cell.getRow().getData());
-                    await Promise.all([updateActiveTabsCounts(), updateDomStorageTable()]);
-                  }
-                } else if (classNames.includes('editIcon')) {
-                  // edit icon clicked
-                  if (cell.getRow().getData().wanted) {
-                    showView(domStorageEditor);
-                    fillDomStorageEditor(cell.getRow().getData(), null);
-                  }
-                } else if (classNames.includes('deleteIcon')) {
-                  // delete icon clicked
-                  if (cell.getRow().getData().wanted) {
-                    await deleteDomStorageEntry(activeTabId, cell.getRow().getData());
-                    await Promise.all([updateActiveTabsCounts(), updateDomStorageTable()]);
-                  } else {
-                    deleteUnwantedDomStorageEntry(activeTabId, cell.getRow().getData());
-                    await updateDomStorageTable();
-                  }
+            try {
+              e.stopPropagation();
+              let classNames = e.target.className.split(' ');
+              if (classNames.includes('tableCheckBox')) {
+                // whitelisted checkbox clicked
+                if (cell.getValue()) {
+                  await deleteWhitelistEntry(cell.getRow().getData().domain, cell.getRow().getData().name, 'd');
+                  await deleteExistingUnwantedDomStorageEntries(activeTabId);
+                  await Promise.all([updateActiveTabsCounts(), updateDomStorageTable()]);
+                } else {
+                  await addWhitelistEntry(cell.getRow().getData().domain, cell.getRow().getData().name, 'd');
+                  await restoreUnwantedDomStorageEntry(activeTabId, cell.getRow().getData());
+                  await Promise.all([updateActiveTabsCounts(), updateDomStorageTable()]);
                 }
-              } catch (e) {
-                console.error(e);
+              } else if (classNames.includes('editIcon')) {
+                // edit icon clicked
+                if (cell.getRow().getData().wanted) {
+                  showView(domStorageEditor);
+                  fillDomStorageEditor(cell.getRow().getData(), null);
+                }
+              } else if (classNames.includes('deleteIcon')) {
+                // delete icon clicked
+                if (cell.getRow().getData().wanted) {
+                  await deleteDomStorageEntry(activeTabId, cell.getRow().getData());
+                  await Promise.all([updateActiveTabsCounts(), updateDomStorageTable()]);
+                } else {
+                  deleteUnwantedDomStorageEntry(activeTabId, cell.getRow().getData());
+                  await updateDomStorageTable();
+                }
               }
-            },
-            headerSort: false,
-            width: '13ex'
+            } catch (e) {
+              console.error(e);
+            }
+          },
+          headerSort: false,
+          width: '13ex'
         }, {
           title: 'wanted',
           field: 'wanted',

@@ -1,280 +1,283 @@
 <!DOCTYPE html>
 <html class="extension-manual">
-  <head>
+
+<head>
     <meta charset="UTF-8">
-    <link rel="shortcut icon" type="image/svg+xml" href="icons/cookieRipper.svg"/>
+    <link rel="shortcut icon" type="image/svg+xml" href="icons/cookieRipper.svg" />
     <link rel="StyleSheet" href="cookieRipper.css" type="text/css">
     <title>Cookie Ripper Manual</title>
-  </head>
-  <body>
+</head>
+
+<body>
     <div class="header">
-      <a href="options.html">Options</a>
-      <a href="cookieList.html">Cookie List</a>
-      <a href="whitelist.html">Whitelist</a>
-      <a href="siteExceptions.html">Site Exceptions</a>
-      <a class="selectedHeaderTab" href="manual.html">Manual</a>
+        <a href="options.html">Options</a>
+        <a href="cookieList.html">Cookie List</a>
+        <a href="whitelist.html">Whitelist</a>
+        <a href="siteExceptions.html">Site Exceptions</a>
+        <a class="selectedHeaderTab" href="manual.html">Manual</a>
     </div>
     <div class="textContent">
-      <h1>Content</h1>
-      <ul>
-        <li>
-          <a href="#Storage Concepts and Defintions">Storage Concepts and Defintions</a>
-          <ul>
+        <h1>Content</h1>
+        <ul>
             <li>
-              <a href="#Cookie">Cookie</a>
+                <a href="#Storage Concepts and Defintions">Storage Concepts and Defintions</a>
+                <ul>
+                    <li>
+                        <a href="#Cookie">Cookie</a>
+                    </li>
+                    <li>
+                        <a href="#Session Cookie">Session Cookie</a>
+                    </li>
+                    <li>
+                        <a href="#Third Party Cookie">Third Party Cookie</a>
+                    </li>
+                    <li>
+                        <a href="#Cookie Store">Cookie Store</a>
+                    </li>
+                    <li>
+                        <a href="#Web Storage">Web Storage</a>
+                    </li>
+                    <li>
+                        <a href="#IndexedDB">IndexedDB</a>
+                    </li>
+                    <li>
+                        <a href="#Supercookie">Supercookie</a>
+                    </li>
+                </ul>
             </li>
             <li>
-              <a href="#Session Cookie">Session Cookie</a>
+                <a href="#Cookie Ripper Concepts and Functionality">Cookie Ripper Concepts and Functionality</a>
+                <ul>
+                    <li>
+                        <a href="#Behaviours">Behaviours</a>
+                    </li>
+                    <li>
+                        <a href="#Default Behaviour">Default Behaviour</a>
+                    </li>
+                    <li>
+                        <a href="#Site Exceptions">Site Exceptions</a>
+                    </li>
+                    <li>
+                        <a href="#Whitelist">Whitelist</a>
+                    </li>
+                    <li>
+                        <a href="#Extension Icon">Extension Icon</a>
+                    </li>
+                    <li>
+                        <a href="#Viewing Cookies and Web Storage Entries">Viewing Cookies and Web Storage Entries</a>
+                    </li>
+                    <li>
+                        <a href="#Editing Cookies and Web Storage Entries">Editing Cookies and Web Storage Entries</a>
+                    </li>
+                </ul>
             </li>
             <li>
-              <a href="#Third Party Cookie">Third Party Cookie</a>
+                <a href="#Use Cases">Use Cases</a>
+                <ul>
+                    <li>
+                        <a href="#Preventing Tracking">Preventing Tracking</a>
+                    </li>
+                    <li>
+                        <a href="#Web Development / Testing">Web Development / Testing</a>
+                    </li>
+                </ul>
             </li>
             <li>
-              <a href="#Cookie Store">Cookie Store</a>
+                <a href="#Cookie Ripper vs. Browser Settings">Cookie Ripper vs. Browser Settings</a>
+            </li>
+        </ul>
+        <h1 id="Storage Concepts and Defintions">Storage Concepts and Defintions</h1>
+        <h2 id="Cookie">Cookie</h2>
+        <p>(HTTP) Cookies are small pieces of information that websites can store on your computer. They serve many useful purposes but are also commonly used for tracking the user's activities. They can be accessed via JavaScript as well as HTTP requests. A
+            cookie consists of the following data:</p>
+        <ul>
+            <li>
+                <b>Name</b>: Used to identify the cookie.
             </li>
             <li>
-              <a href="#Web Storage">Web Storage</a>
+                <b>Value</b>: Information to be stored.
             </li>
             <li>
-              <a href="#IndexedDB">IndexedDB</a>
+                <b>ExpirationDate</b>: date when the browser will delete the cookie. Cookies without expiration data are called
+                <b>session cookies</b>
+                and will be deleted when the browser is closed.
             </li>
             <li>
-              <a href="#Supercookie">Supercookie</a>
-            </li>
-          </ul>
-        </li>
-        <li>
-          <a href="#Cookie Ripper Concepts and Functionality">Cookie Ripper Concepts and Functionality</a>
-          <ul>
-            <li>
-              <a href="#Behaviours">Behaviours</a>
+                <b>Domain</b>: The domain that can read the cookie. Websites can only set cookies for their own domain. However, they can choose whether to include subdomains or not. By default, cookies can be read by the domain specified in the cookie and its subdomains.
             </li>
             <li>
-              <a href="#Default Behaviour">Default Behaviour</a>
+                <b>HostOnly</b>: If set, only websites with the exact domain specified in the cookie can read it, excluding subdomains. If not set, browsers will add a '.' before the domain name for legacy reasons.
+            </li>
+            <p>Example: a cookie with the domain
+                <b>sub.example.com</b>
+                can be read by
+                <table>
+                    <tr>
+                        <th>Domain</th>
+                        <th>Not HostOnly</th>
+                        <th>HostOnly</th>
+                    </tr>
+                    <tr>
+                        <td>example.com</td>
+                        <td>no</td>
+                        <td>no</td>
+                    </tr>
+                    <tr>
+                        <td>sub.example.com<br></td>
+                        <td>yes<br></td>
+                        <td>yes</td>
+                    </tr>
+                    <tr>
+                        <td>othersubsub.example.com</td>
+                        <td>no</td>
+                        <td>no</td>
+                    </tr>
+                    <tr>
+                        <td>nested.sub.example.com</td>
+                        <td>yes</td>
+                        <td>no</td>
+                    </tr>
+                </table>
+            </p>
+            <li>
+                <b>Path</b>: Restricts access to the cookie to a path.
+            </li>
+            <p>Example: a (non-hostOnly) cookie with the domain example.com and path
+                <b>/dir</b>
+                can be read by
+                <table>
+                    <tr>
+                        <th>Domain + Path</th>
+                        <th>Access</th>
+                    </tr>
+                    <tr>
+                        <td>example.com/dir</td>
+                        <td>yes</td>
+                    </tr>
+                    <tr>
+                        <td>example.com/dir/subdir</td>
+                        <td>yes</td>
+                    </tr>
+                    <tr>
+                        <td>example.com/otherdir</td>
+                        <td>no</td>
+                    </tr>
+                    <tr>
+                        <td>sub.example.com/dir</td>
+                        <td>yes</td>
+                    </tr>
+                </table>
+            </p>
+            <li>
+                <b>Secure</b>: If set, a cookie will only be transmittet using a secure connection (usually HTTPS).
             </li>
             <li>
-              <a href="#Site Exceptions">Site Exceptions</a>
+                <b>HttpOnly</b>: If set, a cookie will only be accessible via HTTP(S) and not via JavaScript.
             </li>
             <li>
-              <a href="#Whitelist">Whitelist</a>
+                <b>firstPartyDomain</b>: Contains the domain the user visited when the cookie was set.
             </li>
             <li>
-              <a href="#Extension Icon">Extension Icon</a>
+                <b>SameSite</b>: Restricts the requests the cookie will be included in:
+                <ul>
+                    <li>
+                        <b>Not set</b>: will be included in all requests.
+                    </li>
+                    <li>
+                        <b>Lax</b>: will not be included in cross-site requests.
+                    </li>
+                    <li>
+                        <b>Strict</b>: will not be included in cross-site requests and will not be available if navigating the url that set the cookie from an external site (like following a link).
+                    </li>
+                </ul>
             </li>
             <li>
-              <a href="#Viewing Cookies and Web Storage Entries">Viewing Cookies and Web Storage Entries</a>
+                <b>StoreId</b>: The cookie store containing the cookie.
             </li>
-            <li>
-              <a href="#Editing Cookies and Web Storage Entries">Editing Cookies and Web Storage Entries</a>
-            </li>
-          </ul>
-        </li>
-        <li>
-          <a href="#Use Cases">Use Cases</a>
-          <ul>
-            <li>
-              <a href="#Preventing Tracking">Preventing Tracking</a>
-            </li>
-            <li>
-              <a href="#Web Development / Testing">Web Development / Testing</a>
-            </li>
-          </ul>
-        </li>
-        <li>
-          <a href="#Cookie Ripper vs. Browser Settings">Cookie Ripper vs. Browser Settings</a>
-        </li>
-      </ul>
-      <h1 id="Storage Concepts and Defintions">Storage Concepts and Defintions</h1>
-      <h2 id="Cookie">Cookie</h2>
-      <p>(HTTP) Cookies are small pieces of information that websites can store on your computer. They serve many useful purposes but are also commonly used for tracking the user's activities. They can be accessed via JavaScript as well as HTTP requests. A
-        cookie consists of the following data:</p>
-      <ul>
-        <li>
-          <b>Name</b>: Used to identify the cookie.
-        </li>
-        <li>
-          <b>Value</b>: Information to be stored.
-        </li>
-        <li>
-          <b>ExpirationDate</b>: date when the browser will delete the cookie. Cookies without expiration data are called
-          <b>session cookies</b>
-          and will be deleted when the browser is closed.
-        </li>
-        <li>
-          <b>Domain</b>: The domain that can read the cookie. Websites can only set cookies for their own domain. However, they can choose whether to include subdomains or not. By default, cookies can be read by the domain specified in the cookie and its subdomains.
-        </li>
-        <li>
-          <b>HostOnly</b>: If set, only websites with the exact domain specified in the cookie can read it, excluding subdomains. If not set, browsers will add a '.' before the domain name for legacy reasons.
-        </li>
-        <p>Example: a cookie with the domain
-          <b>sub.example.com</b>
-          can be read by
-          <table>
-            <tr>
-              <th>Domain</th>
-              <th>Not HostOnly</th>
-              <th>HostOnly</th>
-            </tr>
-            <tr>
-              <td>example.com</td>
-              <td>no</td>
-              <td>no</td>
-            </tr>
-            <tr>
-              <td>sub.example.com<br></td>
-              <td>yes<br></td>
-              <td>yes</td>
-            </tr>
-            <tr>
-              <td>othersubsub.example.com</td>
-              <td>no</td>
-              <td>no</td>
-            </tr>
-            <tr>
-              <td>nested.sub.example.com</td>
-              <td>yes</td>
-              <td>no</td>
-            </tr>
-          </table>
+        </ul>
+        <p>
+            Note that when reading the cookies, websites only get access to the name and value of a cookie. The properties of a cookie uniquely identifying it are name, domain and path. This means that there may be multiple cookies with the same name and a
+            website cannot distinct between them.
         </p>
-        <li>
-          <b>Path</b>: Restricts access to the cookie to a path.
-        </li>
-        <p>Example: a (non-hostOnly) cookie with the domain example.com and path
-          <b>/dir</b>
-          can be read by
-          <table>
-            <tr>
-              <th>Domain + Path</th>
-              <th>Access</th>
-            </tr>
-            <tr>
-              <td>example.com/dir</td>
-              <td>yes</td>
-            </tr>
-            <tr>
-              <td>example.com/dir/subdir</td>
-              <td>yes</td>
-            </tr>
-            <tr>
-              <td>example.com/otherdir</td>
-              <td>no</td>
-            </tr>
-            <tr>
-              <td>sub.example.com/dir</td>
-              <td>yes</td>
-            </tr>
-          </table>
+        <h2 id="Session Cookie">Session Cookie</h2>
+        <p>Session Cookies are cookies without expiration date. They are deleted when the browser is closed.</p>
+        <h2 id="Third Party Cookie">Third Party Cookie</h2>
+        <p>Third Party Cookies are cookies that are set by a domain other than the one you are actually visiting. They are commonly used for tracking your activities across multiple websites.</p>
+        <h2 id="Cookie Store">Cookie Store</h2>
+        <p>Cookie stores are containers for cookies used by browsers to provide isolation between different contexts like private and regular browsing modes.</p>
+        <h2 id="Web Storage">Web Storage</h2>
+        <p>Web storage is also called DOM Storage. Like cookies, it is used to store pieces of information on your computer. Unlike cookies, they are only accessible via JavaScript. There are two types if web storage:</p>
+        <ul>
+            <li>
+                <b>localStorage</b>: Entries in localStorage are saved permanently.
+            </li>
+            <li>
+                <b>sessionStorage</b>: Entries in sessionStorage are only available until the browser is closed (like session cookies).
+            </li>
+        </ul>
+        <p>Web storage entries are simpler than cookies. They only consist of a name and a value. They can only be accessed by the exact domains they were set by.</p>
+        <h2 id="IndexedDB">IndexedDB</h2>
+        <p>IndexedDB is another possiblity for websites to store information on your computer. Like web storage, it can only be accessed via JavaScript and only read by the exact same domain that set it. It is used to store larger amounts of data than
+            cookies or web storage would allow.
         </p>
-        <li>
-          <b>Secure</b>: If set, a cookie will only be transmittet using a secure connection (usually HTTPS).
-        </li>
-        <li>
-          <b>HttpOnly</b>: If set, a cookie will only be accessible via HTTP(S) and not via JavaScript.
-        </li>
-        <li>
-          <b>firstPartyDomain</b>: Contains the domain the user visited when the cookie was set.
-        </li>
-        <li>
-          <b>SameSite</b>: Restricts the requests the cookie will be included in:
-          <ul>
+        <h2 id="Supercookie">Supercookie</h2>
+        <p>Supercookie is a term used to describe different concepts similar to cookies. It ususally refers to persistent information which the user can not easily remove. Those include Flash cookies or unique identifiers appended by internet providers for
+            tracking purposes. Sometimes web storage is also referred to as supercookies.</p>
+        <h1 id="Cookie Ripper Concepts and Functionality">Cookie Ripper Concepts and Functionality</h1>
+        <h2 id="Behaviours">Behaviours</h2>
+        <p>Cookie Ripper allows you to choose one of three distinct behaviours.</p>
+        <ul>
             <li>
-              <b>Not set</b>: will be included in all requests.
+                <b>Deny all cookies</b>: All cookies and web storage entries will be rejected. This will break many websites at least partly but prevent tracking via cookies. See 'Use Cases' for a strategy to prevent most tracking and keep using the web.
             </li>
             <li>
-              <b>Lax</b>: will not be included in cross-site requests.
+                <b>Allow session cookies</b>: Only session cookies and web storage entries in sessionStorage will be accepted. All other cookies and web storage entries will be rejected. This will break some functionality on some websites but prevent tracking via
+                cookies across browser sessions.
             </li>
             <li>
-              <b>Strict</b>: will not be included in cross-site requests and will not be available if navigating the url that set the cookie from an external site (like following a link).
+                <b>Allow all cookies</b>: All cookies and web storage entries will be accepted. This will allow all websites to function properly but not prevent tracking at all.
             </li>
-          </ul>
-        </li>
-        <li>
-          <b>StoreId</b>: The cookie store containing the cookie.
-        </li>
-      </ul>
-      <p>
-        Note that when reading the cookies, websites only get access to the name and value of a cookie. The properties of a cookie uniquely identifying it are name, domain and path. This means that there may be multiple cookies with the same name and a
-        website cannot distinct between them.
-      </p>
-      <h2 id="Session Cookie">Session Cookie</h2>
-      <p>Session Cookies are cookies without expiration date. They are deleted when the browser is closed.</p>
-      <h2 id="Third Party Cookie">Third Party Cookie</h2>
-      <p>Third Party Cookies are cookies that are set by a domain other than the one you are actually visiting. They are commonly used for tracking your activities across multiple websites.</p>
-      <h2 id="Cookie Store">Cookie Store</h2>
-      <p>Cookie stores are containers for cookies used by browsers to provide isolation between different contexts like private and regular browsing modes.</p>
-      <h2 id="Web Storage">Web Storage</h2>
-      <p>Web storage is also called DOM Storage. Like cookies, it is used to store pieces of information on your computer. Unlike cookies, they are only accessible via JavaScript. There are two types if web storage:</p>
-      <ul>
-        <li>
-          <b>localStorage</b>: Entries in localStorage are saved permanently.
-        </li>
-        <li>
-          <b>sessionStorage</b>: Entries in sessionStorage are only available until the browser is closed (like session cookies).
-        </li>
-      </ul>
-      <p>Web storage entries are simpler than cookies. They only consist of a name and a value. They can only be accessed by the exact domains they were set by.</p>
-      <h2 id="IndexedDB">IndexedDB</h2>
-      <p>IndexedDB is another possiblity for websites to store information on your computer. Like web storage, it can only be accessed via JavaScript and only read by the exact same domain that set it. It is used to store larger amounts of data than
-        cookies or web storage would allow.
-      </p>
-      <h2 id="Supercookie">Supercookie</h2>
-      <p>Supercookie is a term used to describe different concepts similar to cookies. It ususally refers to persistent information which the user can not easily remove. Those include Flash cookies or unique identifiers appended by internet providers for
-        tracking purposes. Sometimes web storage is also referred to as supercookies.</p>
-      <h1 id="Cookie Ripper Concepts and Functionality">Cookie Ripper Concepts and Functionality</h1>
-      <h2 id="Behaviours">Behaviours</h2>
-      <p>Cookie Ripper allows you to choose one of three distinct behaviours.</p>
-      <ul>
-        <li>
-          <b>Deny all cookies</b>: All cookies and web storage entries will be rejected. This will break many websites at least partly but prevent tracking via cookies. See 'Use Cases' for a strategy to prevent most tracking and keep using the web.
-        </li>
-        <li>
-          <b>Allow session cookies</b>: Only session cookies and web storage entries in sessionStorage will be accepted. All other cookies and web storage entries will be rejected. This will break some functionality on some websites but prevent tracking via
-          cookies across browser sessions.
-        </li>
-        <li>
-          <b>Allow all cookies</b>: All cookies and web storage entries will be accepted. This will allow all websites to function properly but not prevent tracking at all.
-        </li>
-      </ul>
-      <p>These behaviours can be applied on different levels.</p>
-      <h3 id="Default Behaviour">Default Behaviour</h3>
-      <p>The default behaviour is applied to any websites you visit without having an exception defined for them.</p>
-      <h3 id="Site Exceptions">Site Exceptions</h3>
-      <p>You can overwrite the default behaviour for specific domains using exceptions. There are two types of exceptions:</p>
-      <ul>
-        <li>
-          <b>Temporary Exceptions</b>: Will be forgotten when the browser is closed.
-        </li>
-        <li>
-          <b>Permanent Exceptions</b>: Are kept permanently.
-        </li>
-      </ul>
-      <p>Site exceptions are set on the organization level domain and will also apply to all subdomains. Example: an exception for example.com will also apply to sub.example.com. It is not possible to define exceptions for specific subdomains.</p>
-      <p>Cookie Ripper does not differentiate between first party and third party cookies. If you have defined an exception for a domain, this will apply to first party cookies from that domain as well as third party ones.</p>
-      <h2 id="Whitelist">Whitelist</h2>
-      <p>The whitelist is used to allow specific cookies or web storage entries. They will be allowed no matter the default behaviour or site exceptions.</p>
-      <h2 id="Extension Icon">Extension Icon</h2>
-      <p>Cookie Ripper will display an icon in your browser indicating the behaviour used for the website you are currently visiting. If enabled in the settings, Cookie Ripper will display the number of cookies and web storage entries the website has
-        access to.</p>
-      <p>The icon can be clicked to open the Cookie Ripper popup window.</p>
-      <h2 id="Viewing Cookies and Web Storage Entries">Viewing Cookies and Web Storage Entries</h2>
-      <p>The popup window displays a list of all the cookies and web storage entries the url you are currently visiting has access to. Note that other urls (different subdomains or paths) may have access to different cookies and web storage entries. To see
-        all cookies in your browser, use the cookie list.
-      </p>
-      <h2 id="Editing Cookies and Web Storage Entries">Editing Cookies and Web Storage Entries</h2>
-      <p>Both the popup and the cookie list allow editing cookies. Dom Storage entries can only be edited in the popup.</p>
-      <h1 id="Use Cases">Use Cases</h1>
-      <h2 id="Preventing Tracking">Preventing Tracking</h2>
-      <p>To prevent tracking with cookies, set the default behaviour to
-        <b>deny all cookies</b>. Create permanent site exceptions for websites you trust. If you need to use some functionality which requires cookies on a website you don't trust, create a temporary exception. If you use the functionality regularly or want
-        the cookies to persist, find out which cookies are required for the functionality and whitelist them.</p>
-      <p>Additionally, I recommend to disable third party cookies in your browser as they are rarely needed for anything except tracking and disable IndexedDB in your browser (use your search engine of choice to find out how to do it in the browser you use).</p>
-      <h2 id="Web Development / Testing">Web Development / Testing</h2>
-      <p>If you are a web developer, Cookie Ripper may be useful for testing how your website reacts to cookies not working or being manipulated. You are probably mostly interested in the popup overview and cookie editor. To prevent other websites from
-        breaking, you may set the default setting to
-        <b>allow all cookies</b>.</p>
-      <h1 id="Cookie Ripper vs. Browser Settings">Cookie Ripper vs. Browser Settings</h1>
-      <p>If your browser settings and cookie ripper settings contradict each other, the stricter setting will apply. I suggest enabling cookies in your browser to give full control to Cookie Ripper.</p>
+        </ul>
+        <p>These behaviours can be applied on different levels.</p>
+        <h3 id="Default Behaviour">Default Behaviour</h3>
+        <p>The default behaviour is applied to any websites you visit without having an exception defined for them.</p>
+        <h3 id="Site Exceptions">Site Exceptions</h3>
+        <p>You can overwrite the default behaviour for specific domains using exceptions. There are two types of exceptions:</p>
+        <ul>
+            <li>
+                <b>Temporary Exceptions</b>: Will be forgotten when the browser is closed.
+            </li>
+            <li>
+                <b>Permanent Exceptions</b>: Are kept permanently.
+            </li>
+        </ul>
+        <p>Site exceptions are set on the organization level domain and will also apply to all subdomains. Example: an exception for example.com will also apply to sub.example.com. It is not possible to define exceptions for specific subdomains.</p>
+        <p>Cookie Ripper does not differentiate between first party and third party cookies. If you have defined an exception for a domain, this will apply to first party cookies from that domain as well as third party ones.</p>
+        <h2 id="Whitelist">Whitelist</h2>
+        <p>The whitelist is used to allow specific cookies or web storage entries. They will be allowed no matter the default behaviour or site exceptions.</p>
+        <h2 id="Extension Icon">Extension Icon</h2>
+        <p>Cookie Ripper will display an icon in your browser indicating the behaviour used for the website you are currently visiting. If enabled in the settings, Cookie Ripper will display the number of cookies and web storage entries the website has
+            access to.</p>
+        <p>The icon can be clicked to open the Cookie Ripper popup window.</p>
+        <h2 id="Viewing Cookies and Web Storage Entries">Viewing Cookies and Web Storage Entries</h2>
+        <p>The popup window displays a list of all the cookies and web storage entries the url you are currently visiting has access to. Note that other urls (different subdomains or paths) may have access to different cookies and web storage entries. To see
+            all cookies in your browser, use the cookie list.
+        </p>
+        <h2 id="Editing Cookies and Web Storage Entries">Editing Cookies and Web Storage Entries</h2>
+        <p>Both the popup and the cookie list allow editing cookies. Dom Storage entries can only be edited in the popup.</p>
+        <h1 id="Use Cases">Use Cases</h1>
+        <h2 id="Preventing Tracking">Preventing Tracking</h2>
+        <p>To prevent tracking with cookies, set the default behaviour to
+            <b>deny all cookies</b>. Create permanent site exceptions for websites you trust. If you need to use some functionality which requires cookies on a website you don't trust, create a temporary exception. If you use the functionality regularly or want
+            the cookies to persist, find out which cookies are required for the functionality and whitelist them.</p>
+        <p>Additionally, I recommend to disable third party cookies in your browser as they are rarely needed for anything except tracking and disable IndexedDB in your browser (use your search engine of choice to find out how to do it in the browser you use).</p>
+        <h2 id="Web Development / Testing">Web Development / Testing</h2>
+        <p>If you are a web developer, Cookie Ripper may be useful for testing how your website reacts to cookies not working or being manipulated. You are probably mostly interested in the popup overview and cookie editor. To prevent other websites from
+            breaking, you may set the default setting to
+            <b>allow all cookies</b>.</p>
+        <h1 id="Cookie Ripper vs. Browser Settings">Cookie Ripper vs. Browser Settings</h1>
+        <p>If your browser settings and cookie ripper settings contradict each other, the stricter setting will apply. I suggest enabling cookies in your browser to give full control to Cookie Ripper.</p>
     </div>
-  </body>
+</body>
+
 </html>
