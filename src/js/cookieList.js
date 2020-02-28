@@ -73,7 +73,7 @@ function initTable() {
       headerFilterParams: {
         values: true,
       },
-      width: '0'
+      width: '3%'
     }, {
       title: 'Secure',
       field: 'secure',
@@ -82,7 +82,7 @@ function initTable() {
       headerFilterParams: {
         values: true,
       },
-      width: '0'
+      width: '3%'
     }, {
       title: 'HTTP Only',
       field: 'httpOnly',
@@ -91,7 +91,7 @@ function initTable() {
       headerFilterParams: {
         values: true,
       },
-      width: '0'
+      width: '3%'
     }, {
       title: 'Whitelisted',
       field: 'whitelisted',
@@ -100,7 +100,7 @@ function initTable() {
       headerFilterParams: {
         values: true,
       },
-      width: '0'
+      width: '3%'
     }, {
       title: 'Edit',
       formatter: editIconFormatter,

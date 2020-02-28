@@ -61,7 +61,7 @@ function initTable() {
         fillEntryEditor(cell.getRow().getData());
       },
       headerSort: false,
-      width: '0'
+      width: '3%'
     }],
     selectable: true,
     layout: 'fitColumns',
