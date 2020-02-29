@@ -66,6 +66,13 @@ function initTable() {
     paginationSizeSelector: true,
     reactiveData: true,
     data: entryList,
+    initialSort: [{
+      column: "ruleId",
+      dir: "asc"
+    }, {
+      column: "domain",
+      dir: "asc"
+    }],
     columnResized: function(row) {
       table.redraw();
     },
