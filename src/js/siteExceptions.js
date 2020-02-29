@@ -116,6 +116,7 @@ async function fillExceptionList() {
           let resultContent = result.split('|');
           let resultObj = {};
           resultObj.domain = resultContent[1];
+          resultObj.ruleId = results[result];
           entryList.push(resultObj)
         }
       }
