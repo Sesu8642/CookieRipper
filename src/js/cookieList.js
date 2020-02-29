@@ -38,6 +38,12 @@ function initTable() {
       formatter: 'textarea',
       width: '15%'
     }, {
+      title: 'First Party Domain',
+      field: 'firstPartyDomain',
+      headerFilter: 'input',
+      formatter: 'textarea',
+      width: '15%'
+    }, {
       title: 'Name',
       field: 'name',
       headerFilter: 'input',
