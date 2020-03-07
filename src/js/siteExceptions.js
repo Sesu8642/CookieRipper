@@ -171,11 +171,11 @@ async function saveEntry() {
       }
       try {
         await addSiteException(domain, rule, false, exceptionInEditor);
-        await updateTable();
         fillRuleEditor(null);
       } catch (e) {
         entryEditorError.textContent = `${e.message}\r\n\r\n`;
       }
+      await updateTable();
       resolve();
     } catch (e) {
       reject(e);

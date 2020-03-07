@@ -168,11 +168,11 @@ async function saveEntry() {
       let type = (http.checked ? 'c' : 'd');
       try {
         await addWhitelistEntry(domainTextBox.value, nameTextBox.value, type, entryInEditor);
-        updateTable();
-        fillEntryEditor(null);
       } catch (e) {
         entryEditorError.textContent = `${e.message}\r\n\r\n`;
       }
+      updateTable();
+      fillEntryEditor(null);
       resolve();
     } catch (e) {
       reject(e);

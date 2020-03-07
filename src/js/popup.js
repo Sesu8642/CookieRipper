@@ -733,22 +733,30 @@ function addEventlisteners() {
   });
   cookieSaveButton.addEventListener('click', async function() {
     try {
-      await addCookie(cookieNameTextBox.value, cookieValueTextBox.value, cookieDomainTextBox.value, cookiePathTextBox.value, cookieSessionCookie.checked, cookieDate.valueAsDate, cookieTime.valueAsDate, cookieHostOnly.checked, cookieSecure.checked, cookieHttpOnly.checked, activeTabCookieStore, cookieFirstPartyDomainTextBox.value, cookieInEditor);
+      try {
+        await addCookie(cookieNameTextBox.value, cookieValueTextBox.value, cookieDomainTextBox.value, cookiePathTextBox.value, cookieSessionCookie.checked, cookieDate.valueAsDate, cookieTime.valueAsDate, cookieHostOnly.checked, cookieSecure.checked, cookieHttpOnly.checked, activeTabCookieStore, cookieFirstPartyDomainTextBox.value, cookieInEditor);
+      } catch (e) {
+        cookieEditorError.textContent = e.message;
+      }
       // return to overview
       await Promise.all([updateCookieTable(), updateActiveTabsCounts()]);
       showView(mainView);
     } catch (e) {
-      cookieEditorError.textContent = e.message;
+      console.error(e);
     }
   });
   domStorageSaveButton.addEventListener('click', async function() {
     try {
-      await addDomStorageEntry(activeTabId, domStoragePermanent.checked, domStorageNameTextBox.value, domStorageValueTextBox.value, domStorageEntryInEditor);
+      try {
+        await addDomStorageEntry(activeTabId, domStoragePermanent.checked, domStorageNameTextBox.value, domStorageValueTextBox.value, domStorageEntryInEditor);
+      } catch (e) {
+        domStorageEditorError.textContent = e.message;
+      }
       // return to overview
       await Promise.all([updateDomStorageTable(), updateActiveTabsCounts()]);
       showView(mainView);
     } catch (e) {
-      domStorageEditorError.textContent = e.message;
+      console.error(e);
     }
   });
   cookieAddIcon.addEventListener('click', function() {

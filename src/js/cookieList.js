@@ -349,11 +349,15 @@ function addEventlisteners() {
   // save button
   saveButton.addEventListener('click', async function() {
     try {
-      await addCookie(nameTextBox.value, valueTextBox.value, domainTextBox.value, pathTextBox.value, sessionCookie.checked, date.valueAsDate, time.valueAsDate, cookieHostOnly.checked, cookieSecure.checked, cookieHttpOnly.checked, cookieStoreSelect.value, firstPartyDomainTextBox.value, cookieInEditor);
-      await updateTable();
+      try {
+        await addCookie(nameTextBox.value, valueTextBox.value, domainTextBox.value, pathTextBox.value, sessionCookie.checked, date.valueAsDate, time.valueAsDate, cookieHostOnly.checked, cookieSecure.checked, cookieHttpOnly.checked, cookieStoreSelect.value, firstPartyDomainTextBox.value, cookieInEditor);
+      } catch (e) {
+        cookieEditorError.textContent = `${e.message}\r\n\r\n`;
+      }
+      await Promise.all([updateTable(), updateActiveTabsCounts()]);
       fillCookieEditor(null);
     } catch (e) {
-      cookieEditorError.textContent = `${e.message}\r\n\r\n`;
+      console.error(e);
     }
   });
   // clear button
