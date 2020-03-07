@@ -42,6 +42,7 @@ function initTable() {
       field: 'firstPartyDomain',
       headerFilter: 'input',
       formatter: 'textarea',
+      visible: firstPartyIsolationSupported,
       width: '15%'
     }, {
       title: 'Name',
@@ -145,7 +146,7 @@ function initTable() {
     }
   });
   table.getColumnDefinitions().forEach(function(definition) {
-    if (!definition.title || !definition.field) {
+    if (!definition.title || !definition.field || definition.visible === false) {
       return
     }
     let checkbox = document.createElement('input');
