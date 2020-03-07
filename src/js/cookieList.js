@@ -2,7 +2,7 @@
 // selected cookie for the cookie editor
 let cookieInEditor;
 // ui elements
-let saveButton, firstPartyDomainArea, cookieTable, cookieEditorError, domainTextBox, cookieHostOnly, nameTextBox, valueTextBox, sessionCookie, persistentCookie, date, time, pathTextBox, cookieSecure, cookieHttpOnly, deleteButton, firstPartyDomainTextBox, clearButton, cookieStoreSelect;
+let saveButton, firstPartyDomainArea, cookieTable, tableColumnSelectionArea, cookieEditorError, domainTextBox, cookieHostOnly, nameTextBox, valueTextBox, sessionCookie, persistentCookie, date, time, pathTextBox, cookieSecure, cookieHttpOnly, deleteButton, firstPartyDomainTextBox, clearButton, cookieStoreSelect;
 let entryList = [];
 // table stuff
 let table;
@@ -116,7 +116,7 @@ function initTable() {
         fillCookieEditor(cell.getRow().getData());
       },
       headerSort: false,
-      width: '0'
+      width: '3%'
     }],
     selectable: true,
     layout: 'fitColumns',
@@ -143,6 +143,27 @@ function initTable() {
         selectedAll = false;
       }
     }
+  });
+  table.getColumnDefinitions().forEach(function(definition) {
+    if (!definition.title || !definition.field) {
+      return
+    }
+    let checkbox = document.createElement('input');
+    checkbox.type = "checkbox";
+    checkbox.id = `${definition.title}ColumnCheckBox`;
+    checkbox.checked = true;
+    checkbox.tabulatorField = definition.field;
+    checkbox.addEventListener('change', function(e) {
+      e.stopPropagation();
+      table.toggleColumn(checkbox.tabulatorField);
+    });
+
+    let label = document.createElement('label');
+    label.htmlFor = checkbox.id;
+    label.appendChild(document.createTextNode(definition.title));
+
+    tableColumnSelectionArea.appendChild(checkbox);
+    tableColumnSelectionArea.appendChild(label);
   });
 
   function editIconFormatter(cell, formatterParams) {
@@ -318,6 +339,7 @@ function assignUiElements() {
   firstPartyDomainTextBox = document.getElementById('firstPartyDomainTextBox');
   clearButton = document.getElementById('clearButton');
   cookieStoreSelect = document.getElementById('cookieStoreSelect');
+  tableColumnSelectionArea = document.getElementById('tableColumnSelectionArea');
 }
 
 function addEventlisteners() {

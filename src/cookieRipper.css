@@ -81,8 +81,12 @@ img.infoIcon {
   width: 100%;
 }
 
-#tableText {
+#tableColumnSelectionArea {
   float: right;
+}
+
+#tableColumnSelectionArea input {
+  margin-left: 1ex;
 }
 
 #deleteButton {
@@ -95,6 +99,7 @@ img.infoIcon {
 
 .tabulator {
   height: 65ex;
+  width: 100%;
 }
 
 /* header */
