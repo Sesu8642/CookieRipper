@@ -120,7 +120,8 @@ function initCookieTable() {
           width: '13ex'
         }, {
           title: 'wanted',
-          field: 'wanted'
+          field: 'wanted',
+          visible: false // needed for sorting but should not be displayed
         }],
         rowFormatter: unwantedRowFormatter,
         height: '18ex',
@@ -139,7 +140,6 @@ function initCookieTable() {
         }],
         placeholder: 'none'
       });
-      cookieTable.hideColumn('wanted'); // needed for sorting but should not be displayed
       resolve();
     } catch (e) {
       reject(e);
@@ -208,6 +208,7 @@ function initDomStorageTable() {
         }, {
           title: 'wanted',
           field: 'wanted',
+          visible: false // needed for sorting but should not be displayed
         }],
         rowFormatter: unwantedRowFormatter,
         height: '18ex',
@@ -225,7 +226,6 @@ function initDomStorageTable() {
         }],
         placeholder: 'none'
       });
-      domStorageTable.hideColumn('wanted'); // needed for sorting but should not be displayed
       resolve();
     } catch (e) {
       reject(e);
