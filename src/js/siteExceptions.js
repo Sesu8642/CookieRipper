@@ -174,6 +174,7 @@ async function saveEntry() {
         fillRuleEditor(null);
       } catch (e) {
         entryEditorError.textContent = `${e.message}\r\n\r\n`;
+        return
       }
       await updateTable();
       resolve();

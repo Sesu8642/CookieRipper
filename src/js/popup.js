@@ -737,6 +737,7 @@ function addEventlisteners() {
         await addCookie(cookieNameTextBox.value, cookieValueTextBox.value, cookieDomainTextBox.value, cookiePathTextBox.value, cookieSessionCookie.checked, cookieDate.valueAsDate, cookieTime.valueAsDate, cookieHostOnly.checked, cookieSecure.checked, cookieHttpOnly.checked, activeTabCookieStore, cookieFirstPartyDomainTextBox.value, cookieInEditor);
       } catch (e) {
         cookieEditorError.textContent = e.message;
+        return
       }
       // return to overview
       await Promise.all([updateCookieTable(), updateActiveTabsCounts()]);
@@ -751,6 +752,7 @@ function addEventlisteners() {
         await addDomStorageEntry(activeTabId, domStoragePermanent.checked, domStorageNameTextBox.value, domStorageValueTextBox.value, domStorageEntryInEditor);
       } catch (e) {
         domStorageEditorError.textContent = e.message;
+        return
       }
       // return to overview
       await Promise.all([updateDomStorageTable(), updateActiveTabsCounts()]);

@@ -170,6 +170,7 @@ async function saveEntry() {
         await addWhitelistEntry(domainTextBox.value, nameTextBox.value, type, entryInEditor);
       } catch (e) {
         entryEditorError.textContent = `${e.message}\r\n\r\n`;
+        return
       }
       updateTable();
       fillEntryEditor(null);

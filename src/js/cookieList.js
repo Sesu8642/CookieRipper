@@ -376,6 +376,7 @@ function addEventlisteners() {
         await addCookie(nameTextBox.value, valueTextBox.value, domainTextBox.value, pathTextBox.value, sessionCookie.checked, date.valueAsDate, time.valueAsDate, cookieHostOnly.checked, cookieSecure.checked, cookieHttpOnly.checked, cookieStoreSelect.value, firstPartyDomainTextBox.value, cookieInEditor);
       } catch (e) {
         cookieEditorError.textContent = `${e.message}\r\n\r\n`;
+        return
       }
       await Promise.all([updateTable(), updateActiveTabsCounts()]);
       fillCookieEditor(null);
