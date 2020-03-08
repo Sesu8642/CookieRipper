@@ -357,6 +357,7 @@ img.infoIcon {
     "name value value"
     "domain path path"
     "firstPartyDomain validity secureHttp"
+    "sameSite . . "
     "buttons buttons buttons";
   grid-gap: 1.5ex 3ch;
 }
@@ -367,8 +368,8 @@ img.infoIcon {
     grid-template-areas:
       "name value"
       "domain path"
-      "firstPartyDomain ."
-      "validity secureHttp"
+      "firstPartyDomain secureHttp"
+      "validity sameSite"
       "buttons buttons";
   }
 }
@@ -383,6 +384,7 @@ img.infoIcon {
       "firstPartyDomain"
       "path"
       "validity"
+      "sameSite"
       "secureHttp"
       "buttons";
   }
@@ -414,6 +416,10 @@ img.infoIcon {
 
 .extension-cookieList #secureHttpOnlyArea {
   grid-area: secureHttp;
+}
+
+.extension-cookieList #sameSiteArea {
+  grid-area: sameSite;
 }
 
 .extension-cookieList #buttonArea {

@@ -181,13 +181,16 @@
                 <b>SameSite</b>: Restricts the requests the cookie will be included in:
                 <ul>
                     <li>
-                        <b>Not set</b>: will be included in all requests.
+                        <b>No Restriction</b>: will be included in all requests.
                     </li>
                     <li>
                         <b>Lax</b>: will not be included in cross-site requests.
                     </li>
                     <li>
                         <b>Strict</b>: will not be included in cross-site requests and will not be available if navigating the url that set the cookie from an external site (like following a link).
+                    </li>
+                    <li>
+                        <b>Unspecified</b>: used in Chromium to indicate that the attribute was not specified.
                     </li>
                 </ul>
             </li>

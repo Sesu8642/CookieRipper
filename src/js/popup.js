@@ -9,7 +9,7 @@ let contentScriptavailable = true;
 const connectToContentScriptMaxRetries = 5;
 const connectToContentScriptRetryDelayMs = 50;
 // ui elements
-let firstPartyDomainArea, denyOption, sessionOption, allowOption, slider, useSiteBehaviourLbl, useSiteBehaviourIcon, useTempBehaviourArea, useSiteBehaviourArea, useTempBehaviour, useSiteBehaviour, headline, cookieStore, nonHttpInfo, mainView, cookieTable, domStorageTable, cookieDomainTextBox, cookieHostOnly, cookieNameTextBox, cookieValueTextBox, cookieSessionCookie, cookiePersistent, cookieDate, cookieTime, cookiePathTextBox, cookieFirstPartyDomainTextBox, cookieSecure, cookieHttpOnly, cookieDeleteButton, domStorageDomainTextBox, domStorageNameTextBox, domStorageValueTextBox, domStorageTemporary, domStoragePermanent, domStorageDeleteButton, makeRulePerm, cookieEditor, domStorageEditor, advancedCookieProperties, cookieAdvancedToggle, cookieCancelButton, domStorageCancelButton, cookieSaveButton, cookieEditorError, domStorageEditorError, domStorageSaveButton, cookieAddIcon, domAddIcon, cookieDeleteAllIcon, domDeleteAllIcon, optionsDropdown, optionsImage, dropdownItemSettings, dropdownItemClearTemp;
+let firstPartyDomainArea, denyOption, sessionOption, allowOption, slider, useSiteBehaviourLbl, useSiteBehaviourIcon, useTempBehaviourArea, useSiteBehaviourArea, useTempBehaviour, useSiteBehaviour, headline, cookieStore, nonHttpInfo, mainView, cookieTable, domStorageTable, cookieDomainTextBox, cookieHostOnly, cookieNameTextBox, cookieValueTextBox, cookieSessionCookie, cookiePersistent, cookieDate, cookieTime, cookiePathTextBox, cookieFirstPartyDomainTextBox, cookieSecure, cookieHttpOnly, sameSiteSelect, cookieDeleteButton, domStorageDomainTextBox, domStorageNameTextBox, domStorageValueTextBox, domStorageTemporary, domStoragePermanent, domStorageDeleteButton, makeRulePerm, cookieEditor, domStorageEditor, advancedCookieProperties, cookieAdvancedToggle, cookieCancelButton, domStorageCancelButton, cookieSaveButton, cookieEditorError, domStorageEditorError, domStorageSaveButton, cookieAddIcon, domAddIcon, cookieDeleteAllIcon, domDeleteAllIcon, optionsDropdown, optionsImage, dropdownItemSettings, dropdownItemClearTemp;
 document.addEventListener('DOMContentLoaded', async function() {
   try {
     let tab = await getActiveTab();
@@ -516,6 +516,7 @@ function fillCookieEditor(cookie, domain) {
     cookieFirstPartyDomainTextBox.value = cookie.firstPartyDomain;
     cookieSecure.checked = cookie.secure;
     cookieHttpOnly.checked = cookie.httpOnly;
+    sameSiteSelect.value = cookie.sameSite;
     cookieDeleteButton.disabled = false;
   } else {
     // new cookie
@@ -536,6 +537,7 @@ function fillCookieEditor(cookie, domain) {
     cookieFirstPartyDomainTextBox.value = '';
     cookieSecure.checked = false;
     cookieHttpOnly.checked = false;
+    sameSiteSelect.value = 'lax';
     cookieDeleteButton.disabled = true;
   }
 }
@@ -642,6 +644,7 @@ function assignUiElements() {
   cookieFirstPartyDomainTextBox = document.getElementById('cookieFirstPartyDomainTextBox');
   cookieSecure = document.getElementById('cookieSecure');
   cookieHttpOnly = document.getElementById('cookieHttpOnly');
+  sameSiteSelect = document.getElementById('sameSiteSelect');
   cookieDeleteButton = document.getElementById('cookieDeleteButton');
   domStorageDomainTextBox = document.getElementById('domStorageDomainTextBox');
   domStorageNameTextBox = document.getElementById('domStorageNameTextBox');
@@ -734,7 +737,7 @@ function addEventlisteners() {
   cookieSaveButton.addEventListener('click', async function() {
     try {
       try {
-        await addCookie(cookieNameTextBox.value, cookieValueTextBox.value, cookieDomainTextBox.value, cookiePathTextBox.value, cookieSessionCookie.checked, cookieDate.valueAsDate, cookieTime.valueAsDate, cookieHostOnly.checked, cookieSecure.checked, cookieHttpOnly.checked, activeTabCookieStore, cookieFirstPartyDomainTextBox.value, cookieInEditor);
+        await addCookie(cookieNameTextBox.value, cookieValueTextBox.value, cookieDomainTextBox.value, cookiePathTextBox.value, cookieSessionCookie.checked, cookieDate.valueAsDate, cookieTime.valueAsDate, cookieHostOnly.checked, cookieSecure.checked, cookieHttpOnly.checked, activeTabCookieStore, cookieFirstPartyDomainTextBox.value, sameSiteSelect.value, cookieInEditor);
       } catch (e) {
         cookieEditorError.textContent = e.message;
         return

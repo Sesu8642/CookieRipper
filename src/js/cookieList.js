@@ -2,7 +2,7 @@
 // selected cookie for the cookie editor
 let cookieInEditor;
 // ui elements
-let saveButton, firstPartyDomainArea, cookieTable, tableColumnSelectionArea, cookieEditorError, domainTextBox, cookieHostOnly, nameTextBox, valueTextBox, sessionCookie, persistentCookie, date, time, pathTextBox, cookieSecure, cookieHttpOnly, deleteButton, firstPartyDomainTextBox, clearButton, cookieStoreSelect;
+let saveButton, firstPartyDomainArea, cookieTable, tableColumnSelectionArea, cookieEditorError, domainTextBox, cookieHostOnly, nameTextBox, valueTextBox, sessionCookie, persistentCookie, date, time, pathTextBox, cookieSecure, cookieHttpOnly, sameSiteSelect, deleteButton, firstPartyDomainTextBox, clearButton, cookieStoreSelect;
 let entryList = [];
 // table stuff
 let table;
@@ -43,13 +43,13 @@ function initTable() {
       headerFilter: 'input',
       formatter: 'textarea',
       visible: firstPartyIsolationSupported,
-      width: '15%'
+      width: '10%'
     }, {
       title: 'Name',
       field: 'name',
       headerFilter: 'input',
       formatter: 'textarea',
-      width: '15%'
+      width: '10%'
     }, {
       title: 'Value',
       field: 'value',
@@ -69,6 +69,12 @@ function initTable() {
     }, {
       title: 'Path',
       field: 'path',
+      headerFilter: 'input',
+      formatter: 'textarea',
+      width: '10%'
+    }, {
+      title: 'Same Site Status',
+      field: 'sameSite',
       headerFilter: 'input',
       formatter: 'textarea',
       width: '10%'
@@ -296,6 +302,7 @@ function fillCookieEditor(cookie) {
     cookieSecure.checked = cookie.secure;
     cookieHttpOnly.checked = cookie.httpOnly;
     firstPartyDomainTextBox.value = cookie.firstPartyDomain;
+    sameSiteSelect.value = cookie.sameSite;
   } else {
     // new cookie
     saveButton.textContent = 'Add';
@@ -316,6 +323,7 @@ function fillCookieEditor(cookie) {
     cookieSecure.checked = false;
     cookieHttpOnly.checked = false;
     firstPartyDomainTextBox.value = '';
+    sameSiteSelect.value = 'lax';
   }
 }
 
@@ -336,6 +344,7 @@ function assignUiElements() {
   pathTextBox = document.getElementById('pathTextBox');
   cookieSecure = document.getElementById('cookieSecure');
   cookieHttpOnly = document.getElementById('cookieHttpOnly');
+  sameSiteSelect = document.getElementById('sameSiteSelect');
   deleteButton = document.getElementById('deleteButton');
   firstPartyDomainTextBox = document.getElementById('firstPartyDomainTextBox');
   clearButton = document.getElementById('clearButton');
@@ -373,7 +382,7 @@ function addEventlisteners() {
   saveButton.addEventListener('click', async function() {
     try {
       try {
-        await addCookie(nameTextBox.value, valueTextBox.value, domainTextBox.value, pathTextBox.value, sessionCookie.checked, date.valueAsDate, time.valueAsDate, cookieHostOnly.checked, cookieSecure.checked, cookieHttpOnly.checked, cookieStoreSelect.value, firstPartyDomainTextBox.value, cookieInEditor);
+        await addCookie(nameTextBox.value, valueTextBox.value, domainTextBox.value, pathTextBox.value, sessionCookie.checked, date.valueAsDate, time.valueAsDate, cookieHostOnly.checked, cookieSecure.checked, cookieHttpOnly.checked, cookieStoreSelect.value, firstPartyDomainTextBox.value, sameSiteSelect.value, cookieInEditor);
       } catch (e) {
         cookieEditorError.textContent = `${e.message}\r\n\r\n`;
         return

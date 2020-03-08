@@ -62,6 +62,22 @@ Without this option, a dot will be added before the domain name if there is none
                 <input id="date" type="date">
                 <input id="time" type="time"></div>
         </div>
+        <div id="sameSiteArea">
+            Same Site Status:
+            <img src="/icons/info-circle.svg" alt="info" class="infoIcon" id="infoIconSecure" title="Restricts the requests the cookie will be included in:
+No Restriction: will be included in all requests.
+Lax: will not be included in cross-site requests.
+Strict: will not be included in cross-site requests and will not be available if navigating the url that set the cookie from an external site (like following a link).
+Unspecified: used in Chromium to indicate that the attribute was not specified.">
+            <br>
+            <select id="sameSiteSelect">
+                <option value="no_restriction">no_restriction</option>
+                <option value="lax">lax</option>
+                <option value="strict">strict</option>
+            </select>
+            <br>
+            <br>
+        </div>
         <div id="pathArea">Path:
             <img src="/icons/info-circle.svg" alt="info" class="infoIcon" id="infoIconPath" title="Restricts the cookie to a certain path on the server.
 Example: a cookie from example.com with the path /news/ can be read by example.com/news/, example.com/news/today/ but not example.com/ or example.com/contact/.">

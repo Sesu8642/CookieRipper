@@ -121,6 +121,20 @@ Example: a cookie from example.com with the path /news/ can be read by example.c
                 <br>
                 <br>
             </div>
+            Same Site Status:
+            <img src="/icons/info-circle.svg" alt="info" class="infoIcon" id="infoIconSecure" title="Restricts the requests the cookie will be included in:
+No Restriction: will be included in all requests.
+Lax: will not be included in cross-site requests.
+Strict: will not be included in cross-site requests and will not be available if navigating the url that set the cookie from an external site (like following a link).
+Unspecified: used in Chromium to indicate that the attribute was not specified.">
+            <br>
+            <select id="sameSiteSelect">
+                <option value="no_restriction">no_restriction</option>
+                <option value="lax">lax</option>
+                <option value="strict">strict</option>
+            </select>
+            <br>
+            <br>
             <input type="checkbox" id="cookieSecure">
             <label for="cookieSecure">Secure</label>
             <img src="/icons/info-circle.svg" alt="info" class="infoIcon" id="infoIconSecure" title="Restricts the cookie to secure connections (typically https)."><br>

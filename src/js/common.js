@@ -103,7 +103,7 @@ function getAllCookies(parameters) {
   }
   return browser.cookies.getAll(parameters);
 }
-async function addCookie(name, value, domain, path, session, date, time, hostOnly, secure, httpOnly, cookieStore, firstPartyDomain, overwriteCookie = null) {
+async function addCookie(name, value, domain, path, session, date, time, hostOnly, secure, httpOnly, cookieStore, firstPartyDomain, sameSite, overwriteCookie = null) {
   // creates a new cookie from the given data; also makes sure the provided overwrite-cookie gets actually overwritten or deleted
   return new Promise(async function(resolve, reject) {
     try {
@@ -126,7 +126,8 @@ async function addCookie(name, value, domain, path, session, date, time, hostOnl
         httpOnly: httpOnly,
         // if not a session cookie convert date to seconds since 1980
         expirationDate: expirationDate,
-        storeId: cookieStore
+        storeId: cookieStore,
+        sameSite: sameSite
       };
       if (firstPartyIsolationSupported) {
         parameters.firstPartyDomain = firstPartyDomain;
@@ -189,7 +190,8 @@ async function addCookieFromObject(cookie, cookieStore) {
         secure: cookie.secure,
         httpOnly: cookie.httpOnly,
         expirationDate: cookie.expirationDate,
-        storeId: cookieStore
+        storeId: cookieStore,
+        sameSite: cookie.sameSite
       };
       if (firstPartyIsolationSupported) {
         parameters.firstPartyDomain = cookie.firstPartyDomain;
