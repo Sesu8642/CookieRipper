@@ -215,6 +215,11 @@ img.infoIcon {
   vertical-align: sub;
 }
 
+.extension-popup .tabulator .tabulator-table .tabulator-row .tabulator-cell input[type="checkbox"] {
+  margin: 0;
+  vertical-align: top;
+}
+
 .extension-popup input[type="radio"] {
   vertical-align: text-bottom;
 }

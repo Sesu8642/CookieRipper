@@ -77,7 +77,7 @@ function initCookieTable() {
           formatter: cellDateFormatter,
           width: '20%'
         }, {
-          title: '<img class="tableIcon" src="/icons/file-alt.svg" alt="whitelisted" title="whitelisted"> <img id="cookieAddIcon" class="tableIcon" src="/icons/plus.svg" alt="add" title="add"><img id="cookieDeleteAllIcon" class="tableIcon" src="/icons/trash-alt.svg" alt="delete all" title="delete all">',
+          title: '<img class="tableIcon" src="/icons/file-alt.svg" alt="whitelisted" title="whitelisted"><img id="cookieAddIcon" class="tableIcon" src="/icons/plus.svg" alt="add" title="add"><img id="cookieDeleteAllIcon" class="tableIcon" src="/icons/trash-alt.svg" alt="delete all" title="delete all">',
           field: 'whitelisted',
           formatter: actionElementsFormatter,
           cellClick: async function(e, cell) {
