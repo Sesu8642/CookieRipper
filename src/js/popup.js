@@ -148,7 +148,7 @@ function initCookieTable() {
 }
 
 function initDomStorageTable() {
-  /* inits the dom storage table */
+  // inits the dom storage table
   return new Promise(async function(resolve, reject) {
     try {
       domStorageTable = new Tabulator('#domStorageTable', {
