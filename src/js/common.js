@@ -493,7 +493,7 @@ async function getTabDomStorage(tabId) {
   });
 }
 async function getUnwantedDomStorageEntries(tabId) {
-  // the unwanted dom storage entries from a given tab
+  // returns the unwanted dom storage entries from a given tab
   return new Promise(async function(resolve, reject) {
     try {
       resolve(await browser.tabs.sendMessage(tabId, {
