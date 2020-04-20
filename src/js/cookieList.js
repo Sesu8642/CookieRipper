@@ -2,7 +2,7 @@
 // selected cookie for the cookie editor
 let cookieInEditor;
 // ui elements
-let saveButton, firstPartyDomainArea, cookieTable, tableColumnSelectionArea, cookieEditorError, domainTextBox, cookieHostOnly, nameTextBox, valueTextBox, sessionCookie, persistentCookie, date, time, pathTextBox, cookieSecure, cookieHttpOnly, sameSiteSelect, deleteButton, firstPartyDomainTextBox, clearButton, cookieStoreSelect;
+let saveButton, firstPartyDomainArea, cookieTable, tableColumnSelectionArea, cookieEditorError, cookieEditorWarning, domainTextBox, cookieHostOnly, nameTextBox, valueTextBox, sessionCookie, persistentCookie, date, time, pathTextBox, cookieSecure, cookieHttpOnly, sameSiteSelect, deleteButton, firstPartyDomainTextBox, clearButton, cookieStoreSelect;
 let entryList = [];
 // table stuff
 let table;
@@ -273,9 +273,9 @@ async function deleteSelectedCookies() {
   });
 }
 
-function fillCookieEditor(cookie) {
+async function fillCookieEditor(cookie) {
   // fills the cookie editor ui elements with the given values
-  // reset error text
+  // reset error and warning text
   cookieEditorError.textContent = '';
   let expDate, hour, minute;
   if (cookie !== null) {
@@ -303,6 +303,7 @@ function fillCookieEditor(cookie) {
     cookieHttpOnly.checked = cookie.httpOnly;
     firstPartyDomainTextBox.value = cookie.firstPartyDomain;
     sameSiteSelect.value = cookie.sameSite;
+    await checkForUnwantedCookieAndDisplayWarning();
   } else {
     // new cookie
     saveButton.textContent = 'Add';
@@ -327,11 +328,23 @@ function fillCookieEditor(cookie) {
   }
 }
 
+async function checkForUnwantedCookieAndDisplayWarning() {
+  cookieEditorWarning.textContent = '';
+  if (!await getCookieAllowedState({
+      domain: domainTextBox.value,
+      name: nameTextBox.value,
+      session: sessionCookie.checked
+    })) {
+    cookieEditorWarning.textContent = `Warning: this cookie is unwanted and will be deleted when you click save.\r\n\r\n`;
+  }
+}
+
 function assignUiElements() {
   // gets all the needed ui elements and stores them in variables for later use
   saveButton = document.getElementById('saveButton');
   firstPartyDomainArea = document.getElementById('firstPartyDomainArea');
   cookieTable = document.getElementById('cookieTable');
+  cookieEditorWarning = document.getElementById('cookieEditorWarning');
   cookieEditorError = document.getElementById('cookieEditorError');
   domainTextBox = document.getElementById('domainTextBox');
   cookieHostOnly = document.getElementById('cookieHostOnly');
@@ -364,8 +377,7 @@ function addEventlisteners() {
   // cookie Store select
   cookieStoreSelect.addEventListener('change', async function(e) {
     try {
-      await fillCookieList();
-      fillCookieEditor(null);
+      await Promise.all([fillCookieList(), fillCookieEditor(null)]);
     } catch (e) {
       console.error(e);
     }
@@ -387,14 +399,17 @@ function addEventlisteners() {
         cookieEditorError.textContent = `${e.message}\r\n\r\n`;
         return
       }
-      await Promise.all([updateTable(), updateActiveTabsCounts()]);
-      fillCookieEditor(null);
+      await Promise.all([updateTable(), updateActiveTabsCounts(), fillCookieEditor(null)]);
     } catch (e) {
       console.error(e);
     }
   });
   // clear button
-  clearButton.addEventListener('click', function() {
-    fillCookieEditor(null);
+  clearButton.addEventListener('click', async function() {
+    await fillCookieEditor(null);
   });
+  // triggers for cookie warning
+  domainTextBox.addEventListener('input', checkForUnwantedCookieAndDisplayWarning);
+  nameTextBox.addEventListener('input', checkForUnwantedCookieAndDisplayWarning);
+  sessionCookie.addEventListener('change', checkForUnwantedCookieAndDisplayWarning);
 }

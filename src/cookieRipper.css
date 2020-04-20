@@ -25,6 +25,8 @@
   --highlighted-color-text: #0060df;
   /* red 50 */
   --error-color-text: #ff0039;
+  /* orange 50 */
+  --warning-color-text: #ff9400;
 }
 
 :root {
@@ -59,9 +61,17 @@ img.infoIcon {
   vertical-align: baseline;
 }
 
+.warningText,
+.errorText {
+  white-space: pre-line;
+}
+
 .errorText {
   color: var(--error-color-text);
-  white-space: pre-line;
+}
+
+.warningText {
+  color: var(--warning-color-text);
 }
 
 .hidden {
