@@ -158,7 +158,7 @@ async function addCookie(name, value, domain, path, session, date, time, hostOnl
         value: value,
         secure: secure,
         httpOnly: httpOnly,
-        // if not a session cookie convert date to seconds since 1980
+        session: session,
         expirationDate: expirationDate,
         storeId: cookieStore
       };
