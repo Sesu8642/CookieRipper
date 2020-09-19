@@ -60,432 +60,346 @@ function unwantedRowFormatter(row) {
 
 function initCookieTable() {
   /* inits the cookie table */
-  return new Promise(async function(resolve, reject) {
-    try {
-      cookieTable = new Tabulator('#cookieTable', {
-        columns: [{
-          title: 'Name',
-          field: 'name',
-          width: '20%'
-        }, {
-          title: 'Value',
-          field: 'value',
-          width: '42%',
-        }, {
-          title: 'Expires',
-          field: 'expirationDate',
-          formatter: cellDateFormatter,
-          width: '20%'
-        }, {
-          title: '<img class="tableIcon" src="/icons/file-alt.svg" alt="whitelisted" title="whitelisted"><img id="cookieAddIcon" class="tableIcon" src="/icons/plus.svg" alt="add" title="add"><img id="cookieDeleteAllIcon" class="tableIcon" src="/icons/trash-alt.svg" alt="delete all" title="delete all">',
-          field: 'whitelisted',
-          formatter: actionElementsFormatter,
-          cellClick: async function(e, cell) {
-            try {
-              e.stopPropagation();
-              let classNames = e.target.className.split(' ');
-              if (classNames.includes('tableCheckBox')) {
-                // whitelisted checkbox clicked
-                if (cell.getValue()) {
-                  await deleteWhitelistEntry(cell.getRow().getData().domain, cell.getRow().getData().name, 'c', null);
-                  // could be optimized with function that only checks that one cookie
-                  await deleteExistingUnwantedCookies(activeTabUrl, activeTabCookieStore);
-                  await Promise.all([updateActiveTabsCounts(), updateCookieTable()]);
-                } else {
-                  await addWhitelistEntry(cell.getRow().getData().domain, cell.getRow().getData().name, 'c');
-                  await callRestoreUnwantedCookie(cell.getRow().getData().domain, cell.getRow().getData().name, activeTabCookieStore);
-                  await Promise.all([updateActiveTabsCounts(), updateCookieTable()]);
-                }
-              } else if (classNames.includes('editIcon')) {
-                // edit icon clicked
-                if (cell.getRow().getData().wanted) {
-                  showView(cookieEditor);
-                  fillCookieEditor(cell.getRow().getData(), null);
-                }
-              } else if (classNames.includes('deleteIcon')) {
-                // delete icon clicked
-                if (cell.getRow().getData().wanted) {
-                  await deleteCookie(cell.getRow().getData());
-                  await Promise.all([updateActiveTabsCounts(), updateCookieTable()]);
-                } else {
-                  await callDeleteUnwantedCookie(cell.getRow().getData().domain, cell.getRow().getData().name);
-                  await updateCookieTable();
-                }
-              }
-            } catch (e) {
-              console.error(e);
+  cookieTable = new Tabulator('#cookieTable', {
+    columns: [{
+      title: 'Name',
+      field: 'name',
+      width: '20%'
+    }, {
+      title: 'Value',
+      field: 'value',
+      width: '42%',
+    }, {
+      title: 'Expires',
+      field: 'expirationDate',
+      formatter: cellDateFormatter,
+      width: '20%'
+    }, {
+      title: '<img class="tableIcon" src="/icons/file-alt.svg" alt="whitelisted" title="whitelisted"><img id="cookieAddIcon" class="tableIcon" src="/icons/plus.svg" alt="add" title="add"><img id="cookieDeleteAllIcon" class="tableIcon" src="/icons/trash-alt.svg" alt="delete all" title="delete all">',
+      field: 'whitelisted',
+      formatter: actionElementsFormatter,
+      cellClick: async function(e, cell) {
+        try {
+          e.stopPropagation();
+          let classNames = e.target.className.split(' ');
+          if (classNames.includes('tableCheckBox')) {
+            // whitelisted checkbox clicked
+            if (cell.getValue()) {
+              await deleteWhitelistEntry(cell.getRow().getData().domain, cell.getRow().getData().name, 'c', null);
+              // could be optimized with function that only checks that one cookie
+              await deleteExistingUnwantedCookies(activeTabUrl, activeTabCookieStore);
+              await Promise.all([updateActiveTabsCounts(), updateCookieTable()]);
+            } else {
+              await addWhitelistEntry(cell.getRow().getData().domain, cell.getRow().getData().name, 'c');
+              await callRestoreUnwantedCookie(cell.getRow().getData().domain, cell.getRow().getData().name, activeTabCookieStore);
+              await Promise.all([updateActiveTabsCounts(), updateCookieTable()]);
             }
-          },
-          headerSort: false,
-          width: '13ex'
-        }, {
-          title: 'wanted',
-          field: 'wanted',
-          visible: false // needed for sorting but should not be displayed
-        }],
-        rowFormatter: unwantedRowFormatter,
-        height: '18ex',
-        layout: 'fitColumns',
-        tooltips: true,
-        data: cookieList,
-        initialSort: [{
-          column: "name",
-          dir: "asc"
-        }, {
-          column: "wanted",
-          dir: "desc"
-        }, {
-          column: "whitelisted",
-          dir: "desc"
-        }],
-        placeholder: 'none'
-      });
-      resolve();
-    } catch (e) {
-      reject(e);
-    }
+          } else if (classNames.includes('editIcon')) {
+            // edit icon clicked
+            if (cell.getRow().getData().wanted) {
+              showView(cookieEditor);
+              fillCookieEditor(cell.getRow().getData(), null);
+            }
+          } else if (classNames.includes('deleteIcon')) {
+            // delete icon clicked
+            if (cell.getRow().getData().wanted) {
+              await deleteCookie(cell.getRow().getData());
+              await Promise.all([updateActiveTabsCounts(), updateCookieTable()]);
+            } else {
+              await callDeleteUnwantedCookie(cell.getRow().getData().domain, cell.getRow().getData().name);
+              await updateCookieTable();
+            }
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      },
+      headerSort: false,
+      width: '13ex'
+    }, {
+      title: 'wanted',
+      field: 'wanted',
+      visible: false // needed for sorting but should not be displayed
+    }],
+    rowFormatter: unwantedRowFormatter,
+    height: '18ex',
+    layout: 'fitColumns',
+    tooltips: true,
+    data: cookieList,
+    initialSort: [{
+      column: "name",
+      dir: "asc"
+    }, {
+      column: "wanted",
+      dir: "desc"
+    }, {
+      column: "whitelisted",
+      dir: "desc"
+    }],
+    placeholder: 'none'
   });
 }
 
 function initDomStorageTable() {
   // inits the dom storage table
-  return new Promise(async function(resolve, reject) {
-    try {
-      domStorageTable = new Tabulator('#domStorageTable', {
-        columns: [{
-          title: 'Name',
-          field: 'name',
-          width: '20%'
-        }, {
-          title: 'Value',
-          field: 'value',
-          width: '42%'
-        }, {
-          title: 'Perm.',
-          field: 'permanence',
-          width: '20%'
-        }, {
-          title: '<img class="tableIcon" src="/icons/file-alt.svg" alt="whitelisted" title="whitelisted"><img id="domAddIcon" class="tableIcon" src="/icons/plus.svg" alt="add" title="add"><img id="domDeleteAllIcon" class="tableIcon" src="/icons/trash-alt.svg" alt="delete all" title="delete all">',
-          field: 'whitelisted',
-          formatter: actionElementsFormatter,
-          cellClick: async function(e, cell) {
-            try {
-              e.stopPropagation();
-              let classNames = e.target.className.split(' ');
-              if (classNames.includes('tableCheckBox')) {
-                // whitelisted checkbox clicked
-                if (cell.getValue()) {
-                  await deleteWhitelistEntry(cell.getRow().getData().domain, cell.getRow().getData().name, 'd');
-                  await deleteExistingUnwantedDomStorageEntries(activeTabId);
-                  await Promise.all([updateActiveTabsCounts(), updateDomStorageTable()]);
-                } else {
-                  await addWhitelistEntry(cell.getRow().getData().domain, cell.getRow().getData().name, 'd');
-                  await restoreUnwantedDomStorageEntry(activeTabId, cell.getRow().getData());
-                  await Promise.all([updateActiveTabsCounts(), updateDomStorageTable()]);
-                }
-              } else if (classNames.includes('editIcon')) {
-                // edit icon clicked
-                if (cell.getRow().getData().wanted) {
-                  showView(domStorageEditor);
-                  fillDomStorageEditor(cell.getRow().getData(), null);
-                }
-              } else if (classNames.includes('deleteIcon')) {
-                // delete icon clicked
-                if (cell.getRow().getData().wanted) {
-                  await deleteDomStorageEntry(activeTabId, cell.getRow().getData());
-                  await Promise.all([updateActiveTabsCounts(), updateDomStorageTable()]);
-                } else {
-                  deleteUnwantedDomStorageEntry(activeTabId, cell.getRow().getData());
-                  await updateDomStorageTable();
-                }
-              }
-            } catch (e) {
-              console.error(e);
+  domStorageTable = new Tabulator('#domStorageTable', {
+    columns: [{
+      title: 'Name',
+      field: 'name',
+      width: '20%'
+    }, {
+      title: 'Value',
+      field: 'value',
+      width: '42%'
+    }, {
+      title: 'Perm.',
+      field: 'permanence',
+      width: '20%'
+    }, {
+      title: '<img class="tableIcon" src="/icons/file-alt.svg" alt="whitelisted" title="whitelisted"><img id="domAddIcon" class="tableIcon" src="/icons/plus.svg" alt="add" title="add"><img id="domDeleteAllIcon" class="tableIcon" src="/icons/trash-alt.svg" alt="delete all" title="delete all">',
+      field: 'whitelisted',
+      formatter: actionElementsFormatter,
+      cellClick: async function(e, cell) {
+        try {
+          e.stopPropagation();
+          let classNames = e.target.className.split(' ');
+          if (classNames.includes('tableCheckBox')) {
+            // whitelisted checkbox clicked
+            if (cell.getValue()) {
+              await deleteWhitelistEntry(cell.getRow().getData().domain, cell.getRow().getData().name, 'd');
+              await deleteExistingUnwantedDomStorageEntries(activeTabId);
+              await Promise.all([updateActiveTabsCounts(), updateDomStorageTable()]);
+            } else {
+              await addWhitelistEntry(cell.getRow().getData().domain, cell.getRow().getData().name, 'd');
+              await restoreUnwantedDomStorageEntry(activeTabId, cell.getRow().getData());
+              await Promise.all([updateActiveTabsCounts(), updateDomStorageTable()]);
             }
-          },
-          headerSort: false,
-          width: '13ex'
-        }, {
-          title: 'wanted',
-          field: 'wanted',
-          visible: false // needed for sorting but should not be displayed
-        }],
-        rowFormatter: unwantedRowFormatter,
-        height: '18ex',
-        tooltips: true,
-        data: domList,
-        initialSort: [{
-          column: "name",
-          dir: "asc"
-        }, {
-          column: "wanted",
-          dir: "desc"
-        }, {
-          column: "whitelisted",
-          dir: "desc"
-        }],
-        placeholder: 'none'
-      });
-      resolve();
-    } catch (e) {
-      reject(e);
-    }
+          } else if (classNames.includes('editIcon')) {
+            // edit icon clicked
+            if (cell.getRow().getData().wanted) {
+              showView(domStorageEditor);
+              fillDomStorageEditor(cell.getRow().getData(), null);
+            }
+          } else if (classNames.includes('deleteIcon')) {
+            // delete icon clicked
+            if (cell.getRow().getData().wanted) {
+              await deleteDomStorageEntry(activeTabId, cell.getRow().getData());
+              await Promise.all([updateActiveTabsCounts(), updateDomStorageTable()]);
+            } else {
+              await deleteUnwantedDomStorageEntry(activeTabId, cell.getRow().getData());
+              await updateDomStorageTable();
+            }
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      },
+      headerSort: false,
+      width: '13ex'
+    }, {
+      title: 'wanted',
+      field: 'wanted',
+      visible: false // needed for sorting but should not be displayed
+    }],
+    rowFormatter: unwantedRowFormatter,
+    height: '18ex',
+    tooltips: true,
+    data: domList,
+    initialSort: [{
+      column: "name",
+      dir: "asc"
+    }, {
+      column: "wanted",
+      dir: "desc"
+    }, {
+      column: "whitelisted",
+      dir: "desc"
+    }],
+    placeholder: 'none'
   });
 }
 async function updateCookieTable() {
   // updates the cookie table data
-  return new Promise(async function(resolve, reject) {
-    try {
-      await fillCookieList();
-      cookieTable.replaceData(cookieList);
-      resolve();
-    } catch (e) {
-      reject(e);
-    }
-  });
+  await fillCookieList();
+  cookieTable.replaceData(cookieList);
 }
 async function updateDomStorageTable() {
   // updates the dom storage table data
-  return new Promise(async function(resolve, reject) {
+  if (contentScriptavailable) {
     try {
-      if (contentScriptavailable) {
-        try {
-          await fillDomStorageList();
-        } catch (e) {
-          // getting dom storage can fail if unable to inject the content script
-          console.warn(e);
-        }
-        domStorageTable.replaceData(domList);
-      }
-      resolve();
+      await fillDomStorageList();
     } catch (e) {
-      reject(e);
+      // getting dom storage can fail if unable to inject the content script
+      console.warn(e);
     }
-  });
+    domStorageTable.replaceData(domList);
+  }
 }
 async function enableSiteException(temp) {
   // adds a site exception
-  return new Promise(async function(resolve, reject) {
-    try {
-      let option = Number(slider.value);
-      await addSiteException(activeTabDomain, option, temp);
-      await Promise.all([fillSiteInfo(), updateCookieTable(), updateDomStorageTable()]);
-      resolve();
-    } catch (e) {
-      reject(e);
-    }
-  });
+  let option = Number(slider.value);
+  await addSiteException(activeTabDomain, option, temp);
+  await Promise.all([fillSiteInfo(), updateCookieTable(), updateDomStorageTable()]);
 }
 async function fillSiteInfo() {
   // puts site specific info in ui including cookies and dom storage
-  return new Promise(async function(resolve, reject) {
-    try {
-      if (activeTabUrl.startsWith('http')) {
-        headline.textContent = `Settings For ${activeTabDomain}`;
-        cookieStore.textContent = `Cookie Store ID: ${activeTabCookieStore}`;
-        let permSiteException, tempSiteException;
-        [permSiteException, tempSiteException] = await Promise.all([getSiteException(activeTabDomain, false), getSiteException(activeTabDomain, true)]);
-        await Promise.all([depictPermException(permSiteException), depictTempException(permSiteException, tempSiteException)]);
-        if (firstPartyIsolationSupported) {
-          firstPartyDomainArea.classList.remove('hidden');
-        }
-      } else {
-        nonHttpInfo.classList.remove('hidden');
-        mainView.classList.add('hidden');
-      }
-      resolve();
-    } catch (e) {
-      reject(e);
+  if (activeTabUrl.startsWith('http')) {
+    headline.textContent = `Settings For ${activeTabDomain}`;
+    cookieStore.textContent = `Cookie Store ID: ${activeTabCookieStore}`;
+    let permSiteException, tempSiteException;
+    [permSiteException, tempSiteException] = await Promise.all([getSiteException(activeTabDomain, false), getSiteException(activeTabDomain, true)]);
+    await Promise.all([depictPermException(permSiteException), depictTempException(permSiteException, tempSiteException)]);
+    if (firstPartyIsolationSupported) {
+      firstPartyDomainArea.classList.remove('hidden');
     }
-  });
+  } else {
+    nonHttpInfo.classList.remove('hidden');
+    mainView.classList.add('hidden');
+  }
   async function depictPermException(permSiteException) {
     // deal with permanent exception
-    return new Promise(async function(resolve, reject) {
-      try {
-        if (permSiteException === null) {
-          useSiteBehaviourLbl.textContent = `use site behaviour (default; ${getBehaviourString(await callGetDefaultBehaviour())})`;
-          useSiteBehaviourIcon.classList.add('hidden');
-        } else {
-          useSiteBehaviourLbl.textContent = `use site behaviour (${getBehaviourString(permSiteException)})`;
-          useSiteBehaviourIcon.classList.remove('hidden');
-        }
-        resolve();
-      } catch (e) {
-        reject(e);
-      }
-    });
+    if (permSiteException === null) {
+      useSiteBehaviourLbl.textContent = `use site behaviour (default; ${getBehaviourString(await callGetDefaultBehaviour())})`;
+      useSiteBehaviourIcon.classList.add('hidden');
+    } else {
+      useSiteBehaviourLbl.textContent = `use site behaviour (${getBehaviourString(permSiteException)})`;
+      useSiteBehaviourIcon.classList.remove('hidden');
+    }
   }
   async function depictTempException(permSiteException, tempSiteException) {
     // deal with temporary exception
-    return new Promise(async function(resolve, reject) {
-      try {
-        if (tempSiteException !== null) {
-          useTempBehaviourArea.classList.add('selectedBehaviourArea');
-          useSiteBehaviourArea.classList.remove('selectedBehaviourArea');
-          slider.value = tempSiteException;
-          highlightActiveOption(tempSiteException);
-          useTempBehaviour.checked = true;
-          useSiteBehaviour.checked = false;
-        } else if (permSiteException !== null) {
-          useTempBehaviourArea.classList.remove('selectedBehaviourArea');
-          useSiteBehaviourArea.classList.add('selectedBehaviourArea');
-          slider.value = permSiteException;
-          useTempBehaviour.checked = false;
-          useSiteBehaviour.checked = true;
-          highlightActiveOption(permSiteException);
-        } else {
-          useTempBehaviourArea.classList.remove('selectedBehaviourArea');
-          useSiteBehaviourArea.classList.add('selectedBehaviourArea');
-          slider.value = await callGetDefaultBehaviour();
-          useTempBehaviour.checked = false;
-          useSiteBehaviour.checked = true;
-          highlightActiveOption(await callGetDefaultBehaviour());
-        }
-        resolve();
-      } catch (e) {
-        reject(e);
-      }
-    });
+    if (tempSiteException !== null) {
+      useTempBehaviourArea.classList.add('selectedBehaviourArea');
+      useSiteBehaviourArea.classList.remove('selectedBehaviourArea');
+      slider.value = tempSiteException;
+      highlightActiveOption(tempSiteException);
+      useTempBehaviour.checked = true;
+      useSiteBehaviour.checked = false;
+    } else if (permSiteException !== null) {
+      useTempBehaviourArea.classList.remove('selectedBehaviourArea');
+      useSiteBehaviourArea.classList.add('selectedBehaviourArea');
+      slider.value = permSiteException;
+      useTempBehaviour.checked = false;
+      useSiteBehaviour.checked = true;
+      highlightActiveOption(permSiteException);
+    } else {
+      useTempBehaviourArea.classList.remove('selectedBehaviourArea');
+      useSiteBehaviourArea.classList.add('selectedBehaviourArea');
+      slider.value = await callGetDefaultBehaviour();
+      useTempBehaviour.checked = false;
+      useSiteBehaviour.checked = true;
+      highlightActiveOption(await callGetDefaultBehaviour());
+    }
   }
   async function highlightActiveOption(option) {
     // highlights the active option in ui
-    return new Promise(function(resolve, reject) {
-      try {
-        switch (option) {
-          case 0:
-            // deny
-            denyOption.classList.add('selectedBehaviour');
-            sessionOption.classList.remove('selectedBehaviour');
-            allowOption.classList.remove('selectedBehaviour');
-            break;
-          case 1:
-            // allow session
-            denyOption.classList.remove('selectedBehaviour');
-            sessionOption.classList.add('selectedBehaviour');
-            allowOption.classList.remove('selectedBehaviour');
-            break;
-          case 2:
-            // allow all
-            denyOption.classList.remove('selectedBehaviour');
-            sessionOption.classList.remove('selectedBehaviour');
-            allowOption.classList.add('selectedBehaviour');
-            break;
-          default:
-            reject(`Invalid behaviour: ${option}`);
-        }
-        resolve();
-      } catch (e) {
-        reject(e);
-      }
-    });
+    switch (option) {
+      case 0:
+        // deny
+        denyOption.classList.add('selectedBehaviour');
+        sessionOption.classList.remove('selectedBehaviour');
+        allowOption.classList.remove('selectedBehaviour');
+        break;
+      case 1:
+        // allow session
+        denyOption.classList.remove('selectedBehaviour');
+        sessionOption.classList.add('selectedBehaviour');
+        allowOption.classList.remove('selectedBehaviour');
+        break;
+      case 2:
+        // allow all
+        denyOption.classList.remove('selectedBehaviour');
+        sessionOption.classList.remove('selectedBehaviour');
+        allowOption.classList.add('selectedBehaviour');
+        break;
+      default:
+        throw Error(`Invalid behaviour: ${option}`);
+    }
   }
 }
 async function fillCookieList() {
   // gets wanted and unwanted cookies and stores them in cookieList
-  return new Promise(async function(resolve, reject) {
-    try {
-      cookieList = [];
-      // get all the cookies
-      let cookies = await getAllCookies({
-        url: activeTabUrl,
-        storeId: activeTabCookieStore
-      });
-      let promises = cookies.map(async function(cookie) {
-        try {
-          let whitelisted = await getObjectWhitelistedState(cookie.domain, cookie.name, 'c')
-          cookie.whitelisted = whitelisted;
-          cookie.wanted = true;
-          // add cookie to list
-          cookieList.push(cookie);
-        } catch (e) {
-          return reject(e);
-        }
-      });
-      let fullDomain = (new URL(activeTabUrl)).hostname;
-      let unwantedCookies = await callGetUnwantedCookiesForDomain(activeTabDomain);
-      unwantedCookies.forEach(function(cookie) {
-        // remove leading . from cookie domain for comparison
-        let cookieDomain = (cookie.domain.startsWith('.') ? cookie.domain.substring(1) : cookie.domain);
-        if (fullDomain === cookieDomain || (!cookie.hostOnly && fullDomain.endsWith(`${cookieDomain}`))) {
-          cookie.wanted = false;
-          cookieList.push(cookie);
-        }
-      });
-      await Promise.all(promises);
-      resolve();
-    } catch (e) {
-      reject(e);
+  cookieList = [];
+  // get all the cookies
+  let cookies = await getAllCookies({
+    url: activeTabUrl,
+    storeId: activeTabCookieStore
+  });
+  let promises = cookies.map(async function(cookie) {
+    let whitelisted = await getObjectWhitelistedState(cookie.domain, cookie.name, 'c')
+    cookie.whitelisted = whitelisted;
+    cookie.wanted = true;
+    // add cookie to list
+    cookieList.push(cookie);
+  });
+  let fullDomain = (new URL(activeTabUrl)).hostname;
+  let unwantedCookies = await callGetUnwantedCookiesForDomain(activeTabDomain);
+  unwantedCookies.forEach(function(cookie) {
+    // remove leading . from cookie domain for comparison
+    let cookieDomain = (cookie.domain.startsWith('.') ? cookie.domain.substring(1) : cookie.domain);
+    if (fullDomain === cookieDomain || (!cookie.hostOnly && fullDomain.endsWith(`${cookieDomain}`))) {
+      cookie.wanted = false;
+      cookieList.push(cookie);
     }
   });
+  await Promise.all(promises);
 }
 async function fillDomStorageList(retries = 0) {
   // gets wanted and unwanted dom storage and stores it in domList
-  return new Promise(async function(resolve, reject) {
-    try {
-      domList = [];
-      if (retries === connectToContentScriptMaxRetries) {
-        contentScriptavailable = false;
-        return reject(Error('Failed to connect to content script.'));
-      }
-      // get all the entries
-      let response;
-      try {
-        response = await getTabDomStorage(activeTabId);
-      } catch (e) {
-        console.warn(e);
-        console.warn('Trying again in 50 ms');
-        // [UGLY] when injected script is not ready wait some ms and try again
-        await new Promise(async function(resolve) {
-          setTimeout(resolve, connectToContentScriptRetryDelayMs)
-        });
-        await fillDomStorageList(retries + 1);
-      }
-      let storageItems = [];
-      // create array of entry objects first
-      for (let i in response.localStorage) {
-        let entry = {};
-        entry.name = i;
-        entry.value = response.localStorage[i];
-        entry.domain = (new URL(activeTabUrl)).hostname;
-        entry.permanence = 'permanent';
-        entry.persistent = true;
-        storageItems.push(entry);
-      }
-      for (let i in response.sessionStorage) {
-        let entry = {};
-        entry.name = i;
-        entry.value = response.sessionStorage[i];
-        entry.domain = (new URL(activeTabUrl)).hostname;
-        entry.permanence = 'temporary';
-        entry.persistent = false;
-        storageItems.push(entry);
-      }
-      // add whitelist info
-      let promises = storageItems.map(async function(storageItem) {
-        try {
-          let whitelisted = await getObjectWhitelistedState(storageItem.domain, storageItem.name, 'd');
-          storageItem.whitelisted = whitelisted;
-          storageItem.wanted = true;
-          // add item to list
-          domList.push(storageItem);
-        } catch (e) {
-          return reject(e);
-        }
-      });
-      // unwanted storage
-      response = await getUnwantedDomStorageEntries(activeTabId);
-      domList = domList.concat(response.map(function(entry) {
-        entry.domain = (new URL(activeTabUrl)).hostname;
-        entry.permanence = entry.persistent ? 'permanent' : 'temporary';
-        entry.wanted = false;
-        return entry;
-      }));
-      await Promise.all(promises);
-      resolve();
-    } catch (e) {
-      reject(e);
-    }
+  domList = [];
+  if (retries === connectToContentScriptMaxRetries) {
+    contentScriptavailable = false;
+    throw Error('Failed to connect to content script.');
+  }
+  // get all the entries
+  let response;
+  try {
+    response = await getTabDomStorage(activeTabId);
+  } catch (e) {
+    console.warn(e);
+    console.warn('Trying again in 50 ms');
+    // [UGLY] when injected script is not ready wait some ms and try again
+    await new Promise(async function(resolve) {
+      setTimeout(resolve, connectToContentScriptRetryDelayMs)
+    });
+    await fillDomStorageList(retries + 1);
+  }
+  let storageItems = [];
+  // create array of entry objects first
+  for (let i in response.localStorage) {
+    let entry = {};
+    entry.name = i;
+    entry.value = response.localStorage[i];
+    entry.domain = (new URL(activeTabUrl)).hostname;
+    entry.permanence = 'permanent';
+    entry.persistent = true;
+    storageItems.push(entry);
+  }
+  for (let i in response.sessionStorage) {
+    let entry = {};
+    entry.name = i;
+    entry.value = response.sessionStorage[i];
+    entry.domain = (new URL(activeTabUrl)).hostname;
+    entry.permanence = 'temporary';
+    entry.persistent = false;
+    storageItems.push(entry);
+  }
+  // add whitelist info
+  let promises = storageItems.map(async function(storageItem) {
+    let whitelisted = await getObjectWhitelistedState(storageItem.domain, storageItem.name, 'd');
+    storageItem.whitelisted = whitelisted;
+    storageItem.wanted = true;
+    // add item to list
+    domList.push(storageItem);
   });
+  // unwanted storage
+  response = await getUnwantedDomStorageEntries(activeTabId);
+  domList = domList.concat(response.map(function(entry) {
+    entry.domain = (new URL(activeTabUrl)).hostname;
+    entry.permanence = entry.persistent ? 'permanent' : 'temporary';
+    entry.wanted = false;
+    return entry;
+  }));
 }
 
 function fillCookieEditor(cookie, domain) {

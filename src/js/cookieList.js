@@ -197,80 +197,48 @@ function initTable() {
 
 async function updateTable() {
   // updates the table data
-  return new Promise(async function(resolve, reject) {
-    try {
-      await fillCookieList();
-      table.replaceData(entryList);
-      resolve();
-    } catch (e) {
-      reject(e);
-    }
-  });
+  await fillCookieList();
+  table.replaceData(entryList);
 }
 
 async function fillCookieStores() {
-  return new Promise(async function(resolve, reject) {
-    try {
-      // gets all the cookie stores and puts them in the select ui element
-      let cookieStores = await browser.cookies.getAllCookieStores();
-      for (let store of cookieStores) {
-        let option = document.createElement('option');
-        option.text = store.id;
-        cookieStoreSelect.add(option);
-      }
-      resolve();
-    } catch (e) {
-      reject(e);
-    }
-  });
+  // gets all the cookie stores and puts them in the select ui element
+  let cookieStores = await browser.cookies.getAllCookieStores();
+  for (let store of cookieStores) {
+    let option = document.createElement('option');
+    option.text = store.id;
+    cookieStoreSelect.add(option);
+  }
 }
 async function fillCookieList() {
   // filters cookies and stores them in entryList
-  return new Promise(async function(resolve, reject) {
-    try {
-      entryList = [];
-      // get all the cookies
-      let cookies = await getAllCookies({
-        storeId: cookieStoreSelect.value
-      });
-      // filter the cookies
-      let promises = cookies.map(async function(cookie) {
-        try {
-          let whitelisted = await getObjectWhitelistedState(cookie.domain, cookie.name, 'c');
-          cookie.whitelisted = whitelisted;
-          // add cookie to list
-          entryList.push(cookie);
-        } catch (e) {
-          return reject(e);
-        }
-      });
-      await Promise.all(promises);
-      resolve();
-    } catch (e) {
-      reject(e);
-    }
+  entryList = [];
+  // get all the cookies
+  let cookies = await getAllCookies({
+    storeId: cookieStoreSelect.value
   });
+  // filter the cookies
+  let promises = cookies.map(async function(cookie) {
+    let whitelisted = await getObjectWhitelistedState(cookie.domain, cookie.name, 'c');
+    cookie.whitelisted = whitelisted;
+    // add cookie to list
+    entryList.push(cookie);
+  });
+  await Promise.all(promises);
 }
 async function deleteSelectedCookies() {
   // deletes all selected entries
-  return new Promise(async function(resolve, reject) {
-    try {
-      let selectedData = table.getSelectedData();
-      if (selectedData.length > 10) {
-        if (!confirm(`Are you sure you want to delete ${selectedData.length} cookies?`)) {
-          return resolve();
-        }
-      }
-      let promises = selectedData.map(function(entry) {
-        return deleteCookie(entry);
-      });
-      await Promise.all(promises);
-      await updateTable();
-      resolve();
-    } catch (e) {
-      reject(e);
+  let selectedData = table.getSelectedData();
+  if (selectedData.length > 10) {
+    if (!confirm(`Are you sure you want to delete ${selectedData.length} cookies?`)) {
+      return
     }
+  }
+  let promises = selectedData.map(function(entry) {
+    return deleteCookie(entry);
   });
+  await Promise.all(promises);
+  await updateTable();
 }
 
 async function fillCookieEditor(cookie) {

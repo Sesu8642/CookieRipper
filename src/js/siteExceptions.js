@@ -100,88 +100,60 @@ function initTable() {
 
 async function updateTable() {
   // updates the table data
-  return new Promise(async function(resolve, reject) {
-    try {
-      await fillExceptionList();
-      table.replaceData(entryList);
-      resolve();
-    } catch (e) {
-      reject(e);
-    }
-  });
+  await fillExceptionList();
+  table.replaceData(entryList);
 }
 async function fillExceptionList() {
   // filters exceptions and stores them in entryList
-  return new Promise(async function(resolve, reject) {
-    try {
-      entryList = [];
-      // get all the entries
-      let results = await browser.storage.local.get();
-      // create array of all whitelist entries received from storage (the key contains all the information)
-      for (let result in results) {
-        if (result.startsWith('ex|')) {
-          let resultContent = result.split('|');
-          let resultObj = {};
-          resultObj.domain = resultContent[1];
-          resultObj.ruleId = results[result];
-          entryList.push(resultObj)
-        }
-      }
-      resolve();
-    } catch (e) {
-      reject(e);
+  entryList = [];
+  // get all the entries
+  let results = await browser.storage.local.get();
+  // create array of all whitelist entries received from storage (the key contains all the information)
+  for (let result in results) {
+    if (result.startsWith('ex|')) {
+      let resultContent = result.split('|');
+      let resultObj = {};
+      resultObj.domain = resultContent[1];
+      resultObj.ruleId = results[result];
+      entryList.push(resultObj)
     }
-  });
+  }
 }
 async function deleteSelectedEntries() {
   // deletes all selected entries
-  return new Promise(async function(resolve, reject) {
-    try {
-      let selectedData = table.getSelectedData();
-      if (selectedData.length > 10) {
-        if (!confirm(`Are you sure you want to delete ${selectedData.length} entries?`)) {
-          return resolve();
-        }
-      }
-      let promises = selectedData.map(function(entry) {
-        return deleteSiteException(getRuleRelevantPartOfDomain(entry.domain));
-      });
-      await Promise.all(promises);
-      await updateTable();
-      resolve();
-    } catch (e) {
-      reject(e);
+  let selectedData = table.getSelectedData();
+  if (selectedData.length > 10) {
+    if (!confirm(`Are you sure you want to delete ${selectedData.length} entries?`)) {
+      return
     }
+  }
+  let promises = selectedData.map(function(entry) {
+    return deleteSiteException(getRuleRelevantPartOfDomain(entry.domain));
   });
+  await Promise.all(promises);
+  await updateTable();
 }
 async function saveEntry() {
-  return new Promise(async function(resolve, reject) {
-    try {
-      // saves the data from the exception editor
-      let rule = null;
-      let domain = domainTextBox.value;
-      if (denyAllRule.checked) {
-        rule = 0;
-      } else if (allowSessionRule.checked) {
-        rule = 1;
-      } else if (allowAllRule.checked) {
-        rule = 2;
-      } else {
-        reject(Error(`Invalid rule input: ${rule}`));
-      }
-      try {
-        await addSiteException(domain, rule, false, exceptionInEditor);
-        fillRuleEditor(null);
-      } catch (e) {
-        entryEditorError.textContent = `${e.message}\r\n\r\n`;
-        return
-      }
-      await updateTable();
-      resolve();
-    } catch (e) {
-      reject(e);
-    }
-  });
+  // saves the data from the exception editor
+  let rule = null;
+  let domain = domainTextBox.value;
+  if (denyAllRule.checked) {
+    rule = 0;
+  } else if (allowSessionRule.checked) {
+    rule = 1;
+  } else if (allowAllRule.checked) {
+    rule = 2;
+  } else {
+    throw Error(`Invalid rule input: ${rule}`);
+  }
+  try {
+    await addSiteException(domain, rule, false, exceptionInEditor);
+    fillRuleEditor(null);
+  } catch (e) {
+    entryEditorError.textContent = `${e.message}\r\n\r\n`;
+    return
+  }
+  await updateTable();
 }
 
 function fillRuleEditor(entry) {

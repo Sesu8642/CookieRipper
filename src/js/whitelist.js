@@ -105,80 +105,52 @@ function initTable() {
 
 async function updateTable() {
   // updates the table data
-  return new Promise(async function(resolve, reject) {
-    try {
-      await fillWhitelist();
-      table.replaceData(entryList);
-      resolve();
-    } catch (e) {
-      reject(e);
-    }
-  });
+  await fillWhitelist();
+  table.replaceData(entryList);
 }
 
 async function fillWhitelist() {
   // filters whitelist entries and stores them in entryList
-  return new Promise(async function(resolve, reject) {
-    try {
-      entryList = [];
-      // get all the entries
-      let results = await browser.storage.local.get();
-      // create array of all whitelist entries received from storage (the key contains all the information)
-      for (let result in results) {
-        if (result.startsWith('wl|')) {
-          let resultContent = result.split('|');
-          let resultObj = {};
-          resultObj.domain = decodeURI(resultContent[1]);
-          resultObj.name = decodeURI(resultContent[2]);
-          resultObj.type = resultContent[3];
-          entryList.push(resultObj)
-        }
-      }
-      resolve();
-    } catch (e) {
-      reject(e);
+  entryList = [];
+  // get all the entries
+  let results = await browser.storage.local.get();
+  // create array of all whitelist entries received from storage (the key contains all the information)
+  for (let result in results) {
+    if (result.startsWith('wl|')) {
+      let resultContent = result.split('|');
+      let resultObj = {};
+      resultObj.domain = decodeURI(resultContent[1]);
+      resultObj.name = decodeURI(resultContent[2]);
+      resultObj.type = resultContent[3];
+      entryList.push(resultObj)
     }
-  });
+  }
 }
 async function deleteSelectedEntries() {
   // deletes all selected entries
-  return new Promise(async function(resolve, reject) {
-    try {
-      let selectedData = table.getSelectedData();
-      if (selectedData.length > 10) {
-        if (!confirm(`Are you sure you want to delete ${selectedData.length} entries?`)) {
-          return resolve();
-        }
-      }
-      let promises = selectedData.map(function(entry) {
-        return deleteWhitelistEntry(entry.domain, entry.name, entry.type);
-      });
-      await Promise.all(promises);
-      updateTable();
-      resolve();
-    } catch (e) {
-      reject(e);
+  let selectedData = table.getSelectedData();
+  if (selectedData.length > 10) {
+    if (!confirm(`Are you sure you want to delete ${selectedData.length} entries?`)) {
+      return
     }
+  }
+  let promises = selectedData.map(function(entry) {
+    return deleteWhitelistEntry(entry.domain, entry.name, entry.type);
   });
+  await Promise.all(promises);
+  updateTable();
 }
 async function saveEntry() {
   // saves the data from the entry editor
-  return new Promise(async function(resolve, reject) {
-    try {
-      let type = (http.checked ? 'c' : 'd');
-      try {
-        await addWhitelistEntry(domainTextBox.value, nameTextBox.value, type, entryInEditor);
-      } catch (e) {
-        entryEditorError.textContent = `${e.message}\r\n\r\n`;
-        return
-      }
-      updateTable();
-      fillEntryEditor(null);
-      resolve();
-    } catch (e) {
-      reject(e);
-    }
-  });
+  let type = (http.checked ? 'c' : 'd');
+  try {
+    await addWhitelistEntry(domainTextBox.value, nameTextBox.value, type, entryInEditor);
+  } catch (e) {
+    entryEditorError.textContent = `${e.message}\r\n\r\n`;
+    return
+  }
+  updateTable();
+  fillEntryEditor(null);
 }
 
 function fillEntryEditor(entry) {
