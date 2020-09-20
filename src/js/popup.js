@@ -106,7 +106,7 @@ function initCookieTable() {
               await deleteCookie(cell.getRow().getData());
               await Promise.all([updateActiveTabsCounts(), updateCookieTable()]);
             } else {
-              await callDeleteUnwantedCookie(cell.getRow().getData().domain, cell.getRow().getData().name);
+              await callDeleteUnwantedCookie(cell.getRow().getData().domain, cell.getRow().getData().name, activeTabCookieStore);
               await updateCookieTable();
             }
           }
@@ -333,7 +333,7 @@ async function fillCookieList() {
     cookieList.push(cookie);
   });
   let fullDomain = (new URL(activeTabUrl)).hostname;
-  let unwantedCookies = await callGetUnwantedCookiesForDomain(activeTabDomain);
+  let unwantedCookies = await callGetUnwantedCookiesForDomain(activeTabDomain, activeTabCookieStore);
   unwantedCookies.forEach(function(cookie) {
     // remove leading . from cookie domain for comparison
     let cookieDomain = (cookie.domain.startsWith('.') ? cookie.domain.substring(1) : cookie.domain);
@@ -400,6 +400,7 @@ async function fillDomStorageList(retries = 0) {
     entry.wanted = false;
     return entry;
   }));
+  await Promise.all(promises);
 }
 
 function fillCookieEditor(cookie, domain) {

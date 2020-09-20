@@ -99,11 +99,11 @@ async function clearTempSiteExceptions(request) {
 async function getUnwantedCookiesForDomain(request) {
   // returns a domain's cookies from unwanted list
   let cookies = [];
-  if (typeof openDomainsUnwantedCookies[request.domain] === "undefined") {
+  if (typeof openDomainsUnwantedCookies[request.domain] === "undefined" || typeof openDomainsUnwantedCookies[request.domain].cookieStores[request.cookieStore] === "undefined") {
     return [];
   }
-  for (let key in openDomainsUnwantedCookies[request.domain].unwantedCookies) {
-    let cookie = JSON.parse(openDomainsUnwantedCookies[request.domain].unwantedCookies[key]);
+  for (let key in openDomainsUnwantedCookies[request.domain].cookieStores[request.cookieStore].unwantedCookies) {
+    let cookie = JSON.parse(openDomainsUnwantedCookies[request.domain].cookieStores[request.cookieStore].unwantedCookies[key]);
     cookies.push(cookie);
   }
   return cookies;
@@ -113,34 +113,48 @@ async function addUnwantedCookie(request) {
   let cookieDomain = getRuleRelevantPartOfDomain(request.cookie.domain);
   // if it is undefined, it is a third party cookie which does not need to be recorded
   if (openDomainsUnwantedCookies[cookieDomain] != undefined) {
+    // add cookie store to domain if needed
+    if (openDomainsUnwantedCookies[cookieDomain].cookieStores[request.cookie.storeId] === undefined) {
+      openDomainsUnwantedCookies[cookieDomain].cookieStores[request.cookie.storeId].unwantedCookies = {}
+    }
     let key = `${encodeURI(request.cookie.domain)}|${encodeURI(request.cookie.name)}`;
     let value = JSON.stringify(request.cookie);
-    openDomainsUnwantedCookies[cookieDomain].unwantedCookies[key] = value;
+    openDomainsUnwantedCookies[cookieDomain].cookieStores[request.cookie.storeId].unwantedCookies[key] = value;
   }
 }
 async function restoreUnwantedCookie(request) {
   // re-creates a single cookie from unwanted list
   let domain = getRuleRelevantPartOfDomain(request.domain);
   let key = `${encodeURI(request.domain)}|${encodeURI(request.name)}`;
-  await addCookieFromObject(JSON.parse(openDomainsUnwantedCookies[domain].unwantedCookies[key]), request.cookieStore);
-  delete openDomainsUnwantedCookies[domain].unwantedCookies[key];
+  try {
+    let cookie = JSON.parse(openDomainsUnwantedCookies[domain].cookieStores[request.cookieStore].unwantedCookies[key]);
+    await addCookieFromObject(cookie, cookie.storeId);
+  } catch {
+    console.log("unwanted cookie is undefined! " + key)
+    console.log(openDomainsUnwantedCookies[domain].cookieStores[request.cookieStore].unwantedCookies[key])
+    return
+  }
+  delete openDomainsUnwantedCookies[domain].cookieStores[request.cookieStore].unwantedCookies[key];
 }
 async function restoreAllDomainsUnwantedCookies(request) {
   // re-creates all domains' wanted cookies from unwanted list
   let domainPromises = Object.keys(openDomainsUnwantedCookies).map(function(domain) {
     // get behaviour for domain
     return getSiteBehaviour(domain).then(async function(behaviour) {
-      // break if behaviour is 'deny'
+      // exit if behaviour is 'deny'
       if (!(behaviour === 0)) {
-        let cookiePromises = Object.keys(openDomainsUnwantedCookies[domain].unwantedCookies).map(async function(key) {
-          let cookie = JSON.parse(openDomainsUnwantedCookies[domain].unwantedCookies[key]);
-          // check if cookie should be restored
-          if (behaviour === 2 || behaviour === 1 && cookie.session) {
-            await addCookieFromObject(cookie, cookie.storeId);
-            delete openDomainsUnwantedCookies[domain].unwantedCookies[key];
-          }
+        let cookieStorePromises = Object.keys(openDomainsUnwantedCookies[domain].cookieStores).map(async function(storeKey) {
+          let cookiePromises = Object.keys(openDomainsUnwantedCookies[domain].cookieStores[storeKey].unwantedCookies).map(async function(cookieKey) {
+            let cookie = JSON.parse(openDomainsUnwantedCookies[domain].cookieStores[storeKey].unwantedCookies[cookieKey]);
+            // check if cookie should be restored
+            if (behaviour === 2 || behaviour === 1 && cookie.session) {
+              await addCookieFromObject(cookie, cookie.storeId);
+              delete openDomainsUnwantedCookies[domain].cookieStores[storeKey].unwantedCookies[cookieKey];
+            }
+          });
+          await Promise.all(cookiePromises);
         });
-        await Promise.all(cookiePromises);
+        await Promise.all(cookieStorePromises);
       }
     })
   });
@@ -149,20 +163,31 @@ async function restoreAllDomainsUnwantedCookies(request) {
 async function deleteUnwantedCookie(request) {
   // deletes a cookie from unwanted list
   let domain = getRuleRelevantPartOfDomain(request.domain);
-  let key = `${encodeURI(request.domain)}|${encodeURI(request.name)}`;
-  delete openDomainsUnwantedCookies[domain].unwantedCookies[key];
+  let cookieKey = `${encodeURI(request.domain)}|${encodeURI(request.name)}`;
+  delete openDomainsUnwantedCookies[domain].cookieStores[request.cookieStore].unwantedCookies[cookieKey];
 }
 async function clearUnwantedCookiesforDomain(request) {
   // deletes a domain's cookies from unwanted list
-  openDomainsUnwantedCookies[request.domain].unwantedCookies = {};
+  openDomainsUnwantedCookies[request.domain].cookieStores[request.cookieStore].unwantedCookies = {};
 }
 async function populateopenDomainsUnwantedCookies() {
   // adds all open sites to openDomainsUnwantedCookies
   let tabs = await browser.tabs.query({});
-  tabs.forEach(function(tab) {
+  tabs.forEach(async function(tab) {
+    let cookieStore;
+    try {
+      cookieStore = await getTabCookieStore(tab.id);
+    } catch {
+      return;
+    }
     let domain = getRuleRelevantPartOfDomain(tab.url);
-    openDomainsUnwantedCookies[domain] = {
-      domain: domain,
+    if (typeof(openDomainsUnwantedCookies[domain]) === 'undefined') {
+      openDomainsUnwantedCookies[domain] = {
+        domain: domain,
+        cookieStores: {}
+      }
+    }
+    openDomainsUnwantedCookies[domain].cookieStores[cookieStore] = {
       unwantedCookies: {}
     }
   });
@@ -170,15 +195,25 @@ async function populateopenDomainsUnwantedCookies() {
 async function removeClosedDomainsFromopenDomainsUnwantedCookies() {
   // removes all sites from openDomainsUnwantedCookies that are not open anymore
   // create array of all open domains
-  let openTabsDomains = [];
+  let openTabsDomainsCookieStores = {};
   let tabs = await browser.tabs.query({});
-  tabs.forEach(function(tab) {
-    openTabsDomains.push(getRuleRelevantPartOfDomain(tab.url));
+  tabs.forEach(async function(tab) {
+    let cookieStore = await getTabCookieStore(tab.id);
+    if (openTabsDomainsCookieStores[tab.url] === undefined) {
+      openTabsDomainsCookieStores[tab.url] = [cookieStore]
+    } else {
+      openTabsDomainsCookieStores[tab.url].push(cookieStore);
+    }
   });
   // iterate all entries in openDomainsUnwantedCookies and remove them if the domain is not open in a tab anymore
-  for (let property in openDomainsUnwantedCookies) {
-    if (!(openTabsDomains.includes(property))) {
-      delete openDomainsUnwantedCookies[property];
+  for (let domain in openDomainsUnwantedCookies) {
+    for (let cookieStore in openDomainsUnwantedCookies[domain].cookieStores) {
+      if (typeof openTabsDomainsCookieStores[domain] !== 'undefined' && !openTabsDomainsCookieStores[domain].includes(cookieStore)) {
+        delete openDomainsUnwantedCookies[domain].cookieStores[cookieStore];
+        if (openDomainsUnwantedCookies.size == 0) {
+          delete openDomainsUnwantedCookies[domain]
+        }
+      }
     }
   }
 }
@@ -298,6 +333,12 @@ browser.webNavigation.onBeforeNavigate.addListener(async function(details) {
     if (!openDomainsUnwantedCookies.hasOwnProperty(newDomain)) {
       openDomainsUnwantedCookies[newDomain] = {
         domain: newDomain,
+        cookieStores: {}
+      }
+    }
+    let cookieStore = await getTabCookieStore(details.tabId);
+    if (!openDomainsUnwantedCookies[newDomain].cookieStores.hasOwnProperty(cookieStore)) {
+      openDomainsUnwantedCookies[newDomain].cookieStores[cookieStore] = {
         unwantedCookies: {}
       }
     }

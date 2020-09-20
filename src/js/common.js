@@ -190,7 +190,7 @@ async function deleteAllCookies(url, cookieStore) {
     return deleteCookie(cookie);
   });
   // also remove unwanted cookies from memory
-  promises.push(callClearUnwantedCookiesforDomain(getRuleRelevantPartOfDomain(url)));
+  promises.push(callClearUnwantedCookiesforDomain(getRuleRelevantPartOfDomain(url), cookieStore));
   await Promise.all(promises);
 }
 async function deleteExistingUnwantedCookies(url, cookieStore) {
@@ -273,18 +273,20 @@ async function handleCookieEvent(changeInfo) {
  * unwanted cookie functions
  * the functions either call a funtion in the background page directly or send a message to do their job
  */
-async function callGetUnwantedCookiesForDomain(domain) {
+async function callGetUnwantedCookiesForDomain(domain, cookieStore) {
   // returns the object that stores the cookies for the given domain in unwanted list
   // use function directly or send message depending on the availability of bgPage
   let cookies;
   if (bgPage !== null) {
     cookies = await bgPage.getUnwantedCookiesForDomain({
-      domain: domain
+      domain: domain,
+      cookieStore: cookieStore
     });
   } else {
     cookies = await browser.runtime.sendMessage({
       type: 'getUnwantedCookiesForDomain',
-      domain: domain
+      domain: domain,
+      cookieStore: cookieStore
     });
   }
   return cookies;
@@ -334,33 +336,37 @@ async function callRestoreAllDomainsUnwantedCookies() {
     });
   }
 }
-async function callDeleteUnwantedCookie(domain, name) {
+async function callDeleteUnwantedCookie(domain, name, cookieStore) {
   // deletes a cookie from the list of unwanted cookies
   // use function directly or send message depending on the availability of bgPage
   if (bgPage !== null) {
     await bgPage.deleteUnwantedCookie({
       domain: domain,
-      name: name
+      name: name,
+      cookieStore: cookieStore
     });
   } else {
     await browser.runtime.sendMessage({
       type: 'deleteUnwantedCookie',
       domain: domain,
-      name: name
+      name: name,
+      cookieStore: cookieStore
     });
   }
 }
-async function callClearUnwantedCookiesforDomain(domain) {
+async function callClearUnwantedCookiesforDomain(domain, cookieStore) {
   // clears all unwanted cookies from the list of unwanted cookies for a domain
   // use function directly or send message depending on the availability of bgPage
   if (bgPage !== null) {
     await bgPage.clearUnwantedCookiesforDomain({
-      domain: domain
+      domain: domain,
+      cookieStore: cookieStore
     });
   } else {
     await browser.runtime.sendMessage({
       type: 'clearUnwantedCookiesforDomain',
-      domain: domain
+      domain: domain,
+      cookieStore: cookieStore
     });
   }
 }
