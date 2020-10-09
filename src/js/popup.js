@@ -10,7 +10,7 @@ const connectToContentScriptMaxRetries = 5
 const connectToContentScriptRetryDelayMs = 50
 // ui elements
 let firstPartyDomainArea, denyOption, sessionOption, allowOption, slider, useSiteBehaviourLbl, useSiteBehaviourIcon, useTempBehaviourArea, useSiteBehaviourArea, useTempBehaviour, useSiteBehaviour, headline, cookieStore, nonHttpInfo, mainView, cookieTable, domStorageTable, cookieDomainTextBox, cookieHostOnly, cookieNameTextBox, cookieValueTextBox, cookieSessionCookie, cookiePersistent, cookieDate, cookieTime, cookiePathTextBox, cookieFirstPartyDomainTextBox, cookieSecure, cookieHttpOnly, sameSiteSelect, cookieDeleteButton, domStorageDomainTextBox, domStorageNameTextBox, domStorageValueTextBox, domStorageTemporary, domStoragePermanent, domStorageDeleteButton, makeRulePerm, cookieEditor, domStorageEditor, advancedCookieProperties, cookieAdvancedToggle, cookieCancelButton, domStorageCancelButton, cookieSaveButton, cookieEditorError, domStorageEditorError, domStorageSaveButton, cookieAddIcon, domAddIcon, cookieDeleteAllIcon, domDeleteAllIcon, optionsDropdown, optionsImage, dropdownItemSettings, dropdownItemClearTemp
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', async _ => {
   try {
     let tab = await getActiveTab()
     activeTabUrl = tab.url
@@ -78,7 +78,7 @@ function initCookieTable() {
       title: '<img class="tableIcon" src="/icons/file-alt.svg" alt="whitelisted" title="whitelisted"><img id="cookieAddIcon" class="tableIcon" src="/icons/plus.svg" alt="add" title="add"><img id="cookieDeleteAllIcon" class="tableIcon" src="/icons/trash-alt.svg" alt="delete all" title="delete all">',
       field: 'whitelisted',
       formatter: actionElementsFormatter,
-      cellClick: async function(e, cell) {
+      cellClick: async (e, cell) => {
         try {
           e.stopPropagation()
           let classNames = e.target.className.split(' ')
@@ -159,7 +159,7 @@ function initDomStorageTable() {
       title: '<img class="tableIcon" src="/icons/file-alt.svg" alt="whitelisted" title="whitelisted"><img id="domAddIcon" class="tableIcon" src="/icons/plus.svg" alt="add" title="add"><img id="domDeleteAllIcon" class="tableIcon" src="/icons/trash-alt.svg" alt="delete all" title="delete all">',
       field: 'whitelisted',
       formatter: actionElementsFormatter,
-      cellClick: async function(e, cell) {
+      cellClick: async (e, cell) => {
         try {
           e.stopPropagation()
           let classNames = e.target.className.split(' ')
@@ -325,7 +325,7 @@ async function fillCookieList() {
     url: activeTabUrl,
     storeId: activeTabCookieStore
   })
-  let promises = cookies.map(async function(cookie) {
+  let promises = cookies.map(async cookie => {
     let whitelisted = await getObjectWhitelistedState(cookie.domain, cookie.name, 'c')
     cookie.whitelisted = whitelisted
     cookie.wanted = true
@@ -334,7 +334,7 @@ async function fillCookieList() {
   })
   let fullDomain = (new URL(activeTabUrl)).hostname
   let unwantedCookies = await callGetUnwantedCookiesForDomain(activeTabDomain, activeTabCookieStore)
-  unwantedCookies.forEach(function(cookie) {
+  unwantedCookies.forEach(cookie => {
     // remove leading . from cookie domain for comparison
     let cookieDomain = (cookie.domain.startsWith('.') ? cookie.domain.substring(1) : cookie.domain)
     if (fullDomain === cookieDomain || (!cookie.hostOnly && fullDomain.endsWith(`${cookieDomain}`))) {
@@ -359,7 +359,7 @@ async function fillDomStorageList(retries = 0) {
     console.warn(e)
     console.warn('Trying again in 50 ms')
     // [UGLY] when injected script is not ready wait some ms and try again
-    await new Promise(async function(resolve) {
+    await new Promise(async resolve => {
       setTimeout(resolve, connectToContentScriptRetryDelayMs)
     })
     await fillDomStorageList(retries + 1)
@@ -385,7 +385,7 @@ async function fillDomStorageList(retries = 0) {
     storageItems.push(entry)
   }
   // add whitelist info
-  let promises = storageItems.map(async function(storageItem) {
+  let promises = storageItems.map(async storageItem => {
     let whitelisted = await getObjectWhitelistedState(storageItem.domain, storageItem.name, 'd')
     storageItem.whitelisted = whitelisted
     storageItem.wanted = true
@@ -394,7 +394,7 @@ async function fillDomStorageList(retries = 0) {
   })
   // unwanted storage
   response = await getUnwantedDomStorageEntries(activeTabId)
-  domList = domList.concat(response.map(function(entry) {
+  domList = domList.concat(response.map(entry => {
     entry.domain = (new URL(activeTabUrl)).hostname
     entry.permanence = entry.persistent ? 'permanent' : 'temporary'
     entry.wanted = false
@@ -490,7 +490,7 @@ function fillDomStorageEditor(entry, domain) {
 function showView(view) {
   // shows the given view area (div) and hides the other ones
   const viewAreas = [mainView, cookieEditor, domStorageEditor]
-  viewAreas.forEach(function(item) {
+  viewAreas.forEach(item => {
     item.classList.add('hidden')
   })
   view.classList.remove('hidden')
@@ -588,28 +588,28 @@ function assignUiElements() {
 
 function addEventlisteners() {
   // adds all the event listeners to ui elements
-  slider.addEventListener('change', async function() {
+  slider.addEventListener('change', async _ => {
     try {
       await enableSiteException(true)
     } catch (e) {
       console.error(e)
     }
   })
-  makeRulePerm.addEventListener('click', async function() {
+  makeRulePerm.addEventListener('click', async _ => {
     try {
       await enableSiteException(false)
     } catch (e) {
       console.error(e)
     }
   })
-  useTempBehaviour.addEventListener('click', async function() {
+  useTempBehaviour.addEventListener('click', async _ => {
     try {
       await enableSiteException(true)
     } catch (e) {
       console.error(e)
     }
   })
-  useSiteBehaviour.addEventListener('click', async function() {
+  useSiteBehaviour.addEventListener('click', async _ => {
     try {
       await deleteSiteException(activeTabDomain, true)
       await Promise.all([fillSiteInfo(), updateCookieTable(), updateDomStorageTable()])
@@ -617,7 +617,7 @@ function addEventlisteners() {
       console.error(e)
     }
   })
-  useSiteBehaviourIcon.addEventListener('click', async function() {
+  useSiteBehaviourIcon.addEventListener('click', async _ => {
     try {
       await deleteSiteException(activeTabDomain, false)
       await Promise.all([fillSiteInfo(), updateCookieTable(), updateDomStorageTable()])
@@ -625,13 +625,13 @@ function addEventlisteners() {
       console.error(e)
     }
   })
-  cookieCancelButton.addEventListener('click', function() {
+  cookieCancelButton.addEventListener('click', async _ => {
     showView(mainView)
   })
-  domStorageCancelButton.addEventListener('click', function() {
+  domStorageCancelButton.addEventListener('click', async _ => {
     showView(mainView)
   })
-  cookieDeleteButton.addEventListener('click', async function() {
+  cookieDeleteButton.addEventListener('click', async _ => {
     try {
       await deleteCookie(cookieInEditor)
       await Promise.all([updateCookieTable(), updateActiveTabsCounts()])
@@ -640,7 +640,7 @@ function addEventlisteners() {
       console.error(e)
     }
   })
-  domStorageDeleteButton.addEventListener('click', async function() {
+  domStorageDeleteButton.addEventListener('click', async _ => {
     try {
       await deleteDomStorageEntry(activeTabId, domStorageEntryInEditor)
       await Promise.all([updateDomStorageTable(), updateActiveTabsCounts()])
@@ -649,7 +649,7 @@ function addEventlisteners() {
       console.error(e)
     }
   })
-  cookieSaveButton.addEventListener('click', async function() {
+  cookieSaveButton.addEventListener('click', async _ => {
     try {
       try {
         await addCookie(cookieNameTextBox.value, cookieValueTextBox.value, cookieDomainTextBox.value, cookiePathTextBox.value, cookieSessionCookie.checked, cookieDate.valueAsDate, cookieTime.valueAsDate, cookieHostOnly.checked, cookieSecure.checked, cookieHttpOnly.checked, activeTabCookieStore, cookieFirstPartyDomainTextBox.value, sameSiteSelect.value, cookieInEditor)
@@ -664,7 +664,7 @@ function addEventlisteners() {
       console.error(e)
     }
   })
-  domStorageSaveButton.addEventListener('click', async function() {
+  domStorageSaveButton.addEventListener('click', async _ => {
     try {
       try {
         await addDomStorageEntry(activeTabId, domStoragePermanent.checked, domStorageNameTextBox.value, domStorageValueTextBox.value, domStorageEntryInEditor)
@@ -679,18 +679,18 @@ function addEventlisteners() {
       console.error(e)
     }
   })
-  cookieAddIcon.addEventListener('click', function() {
+  cookieAddIcon.addEventListener('click', _ => {
     fillCookieEditor(null, (new URL(activeTabUrl)).hostname)
     showView(cookieEditor)
   })
-  domAddIcon.addEventListener('click', function() {
+  domAddIcon.addEventListener('click', _ => {
     fillDomStorageEditor(null, (new URL(activeTabUrl)).hostname)
     showView(domStorageEditor)
   })
-  cookieAdvancedToggle.addEventListener('click', function() {
+  cookieAdvancedToggle.addEventListener('click', _ => {
     toggleAdvancedProperties()
   })
-  denyOption.addEventListener('click', async function() {
+  denyOption.addEventListener('click', async _ => {
     try {
       slider.value = 0
       await enableSiteException(true)
@@ -698,7 +698,7 @@ function addEventlisteners() {
       console.error(e)
     }
   })
-  sessionOption.addEventListener('click', async function() {
+  sessionOption.addEventListener('click', async _ => {
     try {
       slider.value = 1
       await enableSiteException(true)
@@ -706,7 +706,7 @@ function addEventlisteners() {
       console.error(e)
     }
   })
-  allowOption.addEventListener('click', async function() {
+  allowOption.addEventListener('click', async _ => {
     try {
       slider.value = 2
       await enableSiteException(true)
@@ -714,7 +714,7 @@ function addEventlisteners() {
       console.error(e)
     }
   })
-  cookieDeleteAllIcon.addEventListener('click', async function() {
+  cookieDeleteAllIcon.addEventListener('click', async _ => {
     try {
       await deleteAllCookies(activeTabUrl, activeTabCookieStore)
       await Promise.all([updateActiveTabsCounts(), updateCookieTable()])
@@ -722,7 +722,7 @@ function addEventlisteners() {
       console.error(e)
     }
   })
-  domDeleteAllIcon.addEventListener('click', async function() {
+  domDeleteAllIcon.addEventListener('click', async _ => {
     try {
       try {
         await clearTabDomStorage(activeTabId)
@@ -734,11 +734,11 @@ function addEventlisteners() {
       console.error(e)
     }
   })
-  optionsImage.addEventListener('click', function() {
+  optionsImage.addEventListener('click', _ => {
     optionsImage.classList.toggle('active')
     optionsDropdown.classList.toggle('hidden')
   })
-  window.addEventListener('click', function(e) {
+  window.addEventListener('click', e => {
     if (!e.target.matches('#optionsImage') && !e.target.matches('#optionsImagePath')) {
       if (window.getComputedStyle(optionsDropdown).getPropertyValue('display') === 'block') {
         optionsDropdown.classList.add('hidden')
@@ -746,7 +746,7 @@ function addEventlisteners() {
       }
     }
   })
-  dropdownItemSettings.addEventListener('click', async function() {
+  dropdownItemSettings.addEventListener('click', async _ => {
     try {
       await browser.tabs.create({
         url: '/options.html'
@@ -755,7 +755,7 @@ function addEventlisteners() {
       console.error(e)
     }
   })
-  dropdownItemClearTemp.addEventListener('click', async function() {
+  dropdownItemClearTemp.addEventListener('click', async _ => {
     try {
       await clearTempSiteExceptions()
       await Promise.all([updateDomStorageTable(), updateActiveTabsCounts(), fillSiteInfo()])
@@ -767,7 +767,7 @@ function addEventlisteners() {
   // info icons
   let infoIcons = document.getElementsByClassName('infoIcon')
   for (let i = 0; i < infoIcons.length; i++) {
-    infoIcons[i].addEventListener('click', async function(e) {
+    infoIcons[i].addEventListener('click', async _ => {
       try {
         e.stopPropagation()
         await sendInfoMessage(e.target.title)

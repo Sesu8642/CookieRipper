@@ -34,7 +34,7 @@ async function injectJsInAllTabs() {
   // also sets the correct icon and count for the open tabs
   let tabs = await browser.tabs.query({})
   var promises = []
-  promises.push(...tabs.flatMap(function(tab) {
+  promises.push(...tabs.flatMap(tab => {
     if (!tab.url.startsWith('http')) {
       return []
     }
@@ -126,7 +126,7 @@ async function restoreUnwantedCookie(request) {
   // re-creates a cookie from unwanted list for all cookie store where it was listed
   let domain = getRuleRelevantPartOfDomain(request.domain)
   let cookieKey = `${encodeURI(request.domain)}|${encodeURI(request.name)}`
-  let cookieStorePromises = Object.keys(openDomainsUnwantedCookies[domain].cookieStores).map(async function(storeKey) {
+  let cookieStorePromises = Object.keys(openDomainsUnwantedCookies[domain].cookieStores).map(async storeKey => {
     let cookie = JSON.parse(openDomainsUnwantedCookies[domain].cookieStores[storeKey].unwantedCookies[cookieKey])
     await addCookieFromObject(cookie, cookie.storeId)
     delete openDomainsUnwantedCookies[domain].cookieStores[storeKey].unwantedCookies[cookieKey]
@@ -136,13 +136,13 @@ async function restoreUnwantedCookie(request) {
 async function restoreAllDomainsUnwantedCookies(request) {
   // re-creates all domains' wanted cookies from unwanted list
   // it is assumed that whitelisted cookies are not in the unwanted list
-  let domainPromises = Object.keys(openDomainsUnwantedCookies).map(function(domain) {
+  let domainPromises = Object.keys(openDomainsUnwantedCookies).map(domain => {
     // get behaviour for domain
-    return getSiteBehaviour(domain).then(async function(behaviour) {
+    return getSiteBehaviour(domain).then(async behaviour => {
       // exit if behaviour is 'deny'
       if (!(behaviour === 0)) {
-        let cookieStorePromises = Object.keys(openDomainsUnwantedCookies[domain].cookieStores).map(async function(storeKey) {
-          let cookiePromises = Object.keys(openDomainsUnwantedCookies[domain].cookieStores[storeKey].unwantedCookies).map(async function(cookieKey) {
+        let cookieStorePromises = Object.keys(openDomainsUnwantedCookies[domain].cookieStores).map(async storeKey => {
+          let cookiePromises = Object.keys(openDomainsUnwantedCookies[domain].cookieStores[storeKey].unwantedCookies).map(async cookieKey => {
             let cookie = JSON.parse(openDomainsUnwantedCookies[domain].cookieStores[storeKey].unwantedCookies[cookieKey])
             // check if cookie should be restored
             if (behaviour === 2 || behaviour === 1 && cookie.session) {
@@ -171,7 +171,7 @@ async function clearUnwantedCookiesforDomain(request) {
 async function populateopenDomainsUnwantedCookies() {
   // adds all open sites to openDomainsUnwantedCookies
   let tabs = await browser.tabs.query({})
-  tabs.forEach(async function(tab) {
+  tabs.forEach(async tab => {
     let cookieStore
     try {
       cookieStore = await getTabCookieStore(tab.id)
@@ -195,7 +195,7 @@ async function removeClosedDomainsFromopenDomainsUnwantedCookies() {
   // create array of all open domains
   let openTabsDomainsCookieStores = {}
   let tabs = await browser.tabs.query({})
-  tabs.forEach(async function(tab) {
+  tabs.forEach(async tab => {
     let cookieStore = await getTabCookieStore(tab.id)
     if (openTabsDomainsCookieStores[tab.url] === undefined) {
       openTabsDomainsCookieStores[tab.url] = [cookieStore]
@@ -220,13 +220,13 @@ async function getTabDomStorageItemsAllowedStates(request) {
   let behaviour = await getSiteBehaviour(getRuleRelevantPartOfDomain(request.domain))
   // if behaviour is allow all --> return true for all items
   if (behaviour == 2) {
-    return request.items.map(function() {
+    return request.items.map(_ => {
       return true
     })
   }
   // if behaviour is not allow all --> check whitelisted state and storage type
-  let promises = request.items.map(function(item) {
-    return getObjectWhitelistedState(request.domain, item.name, 'd').then(function(whitelisted) {
+  let promises = request.items.map(async item => {
+    return getObjectWhitelistedState(request.domain, item.name, 'd').then(whitelisted => {
       return (whitelisted || (behaviour == 1 && !item.persistent))
     })
   })
@@ -297,21 +297,21 @@ async function init() {
   }
 }
 browser.runtime.onMessage.addListener(handleMessage)
-browser.webNavigation.onCompleted.addListener(async function(details) {
+browser.webNavigation.onCompleted.addListener(async details => {
   try {
     await updateActiveTabsCounts()
   } catch (e) {
     console.error(e)
   }
 })
-browser.tabs.onActivated.addListener(async function(activeInfo) {
+browser.tabs.onActivated.addListener(async activeInfo => {
   try {
     await updateActiveTabsCounts()
   } catch (e) {
     console.error(e)
   }
 })
-browser.runtime.onInstalled.addListener(async function(details) {
+browser.runtime.onInstalled.addListener(async details => {
   // shows the user a welcome message and opens the settings page also injects js in open tabs and takes care of the extension icon
   try {
     if (details.reason === "install") {
@@ -324,7 +324,7 @@ browser.runtime.onInstalled.addListener(async function(details) {
   }
 })
 browser.cookies.onChanged.addListener(handleCookieEvent)
-browser.webNavigation.onBeforeNavigate.addListener(async function(details) {
+browser.webNavigation.onBeforeNavigate.addListener(async details => {
   if (!['auto_subframe', 'manual_subframe'].includes(details.transitionType)) {
     // if new domain --> add it to list
     let newDomain = getRuleRelevantPartOfDomain(details.url)
@@ -342,7 +342,7 @@ browser.webNavigation.onBeforeNavigate.addListener(async function(details) {
     }
   }
 })
-browser.webNavigation.onCommitted.addListener(async function(details) {
+browser.webNavigation.onCommitted.addListener(async details => {
   // update icon and count and delete unwanted cookies
   try {
     await updateTabIcon(details.tabId)
@@ -353,7 +353,7 @@ browser.webNavigation.onCommitted.addListener(async function(details) {
     console.error(e)
   }
 })
-browser.tabs.onCreated.addListener(async function(tab) {
+browser.tabs.onCreated.addListener(async tab => {
   try {
     await updateTabIcon(tab.id)
   } catch (e) {

@@ -11,7 +11,7 @@ let entryList = []
 // table stuff
 let table
 let selectedAll = false
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', async _ => {
   try {
     assignUiElements()
     addEventlisteners()
@@ -56,7 +56,7 @@ function initTable() {
       title: 'Edit',
       formatter: editIconFormatter,
       align: 'center',
-      cellClick: function(e, cell) {
+      cellClick: (e, cell) => {
         e.stopPropagation()
         fillEntryEditor(cell.getRow().getData())
       },
@@ -78,10 +78,10 @@ function initTable() {
       column: "domain",
       dir: "asc"
     }],
-    columnResized: function(row) {
+    columnResized: row => {
       table.redraw()
     },
-    rowSelectionChanged: function(data, rows) {
+    rowSelectionChanged: (data, rows) => {
       if (data.length === entryList.length) {
         selectedAll = true
       } else {
@@ -134,8 +134,8 @@ async function deleteSelectedEntries() {
       return
     }
   }
-  let promises = selectedData.map(function(entry) {
-    return deleteWhitelistEntry(entry.domain, entry.name, entry.type).then(async function() {
+  let promises = selectedData.map(entry => {
+    return deleteWhitelistEntry(entry.domain, entry.name, entry.type).then(async _ => {
       if (entry.type === 'c') {
         await deleteAllTabsExistingUnwantedCookies()
       } else {
@@ -207,7 +207,7 @@ function addEventlisteners() {
   // adds all the event listeners to ui elements
   // info icons
   for (let i = 0; i < infoIcons.length; i++) {
-    infoIcons[i].addEventListener('click', async function(e) {
+    infoIcons[i].addEventListener('click', async e => {
       try {
         await sendInfoMessage(e.target.title)
       } catch (e) {
@@ -216,11 +216,11 @@ function addEventlisteners() {
     })
   }
   // delete button
-  deleteButton.addEventListener('click', function(e) {
+  deleteButton.addEventListener('click', e => {
     deleteSelectedEntries()
   })
   // save button
-  saveButton.addEventListener('click', async function() {
+  saveButton.addEventListener('click', async _ => {
     try {
       await saveEntry()
     } catch (e) {
@@ -228,7 +228,7 @@ function addEventlisteners() {
     }
   })
   // clear button
-  clearButton.addEventListener('click', function() {
+  clearButton.addEventListener('click', _ => {
     fillEntryEditor(null)
   })
 }

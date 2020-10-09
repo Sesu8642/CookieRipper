@@ -80,25 +80,25 @@ function assignUiElements() {
 
 function addEventlisteners() {
   // adds all the event listeners to ui elements
-  slider.addEventListener('change', function() {
+  slider.addEventListener('change', _ => {
     highlightActiveOption(Number(this.value))
   })
   saveButton.addEventListener('click', saveOptions)
-  denyOption.addEventListener('click', function() {
+  denyOption.addEventListener('click', _ => {
     slider.value = 0
     highlightActiveOption(0)
   })
-  sessionOption.addEventListener('click', function() {
+  sessionOption.addEventListener('click', _ => {
     slider.value = 1
     highlightActiveOption(1)
   })
-  allowOption.addEventListener('click', function() {
+  allowOption.addEventListener('click', _ => {
     slider.value = 2
     highlightActiveOption(2)
   })
   // info icons
   for (let i = 0; i < infoIcons.length; i++) {
-    infoIcons[i].addEventListener('click', async function(e) {
+    infoIcons[i].addEventListener('click', async e => {
       try {
         e.stopPropagation()
         await sendInfoMessage(e.target.title)

@@ -186,7 +186,7 @@ async function deleteAllCookies(url, cookieStore) {
     url: url,
     storeId: cookieStore
   })
-  let promises = siteCookies.map(function(cookie) {
+  let promises = siteCookies.map(cookie => {
     return deleteCookie(cookie)
   })
   // also remove unwanted cookies from memory
@@ -198,14 +198,14 @@ async function deleteExistingUnwantedCookies(url) {
   let domain = getRuleRelevantPartOfDomain(url)
   let behaviour = await getSiteBehaviour(domain)
   let cookieStores = await browser.cookies.getAllCookieStores()
-  let siteCookiePromises = cookieStores.map(async function(cookieStore) {
+  let siteCookiePromises = cookieStores.map(async cookieStore => {
     return getAllCookies({
       url: url,
       storeId: cookieStore.id
     })
   })
   let siteCookies = (await Promise.all(siteCookiePromises)).flat()
-  let promises = siteCookies.flatMap(async function(cookie) {
+  let promises = siteCookies.flatMap(async cookie => {
     if (behaviour == 0 || (behaviour == 1 && !cookie.session)) {
       let whitelisted = await getObjectWhitelistedState(cookie.domain, cookie.name, 'c')
       if (!whitelisted) {
@@ -218,7 +218,7 @@ async function deleteExistingUnwantedCookies(url) {
 async function deleteAllTabsExistingUnwantedCookies() {
   // deletes all existung but unwanted cookies from all open tabs
   let tabs = await browser.tabs.query({})
-  let promises = tabs.map(async function(tab) {
+  let promises = tabs.map(async tab => {
     if (tab.url.startsWith('http')) {
       return deleteExistingUnwantedCookies(tab.url)
     }
@@ -430,7 +430,7 @@ async function deleteUnwantedDomStorageEntry(tabId, entry) {
 async function deleteUnwantedDomStorageEntriesByName(hostname, name) {
   // deletes unwanted dom storage entries by name
   let tabs = await browser.tabs.query({})
-  let promises = tabs.map(async function(tab) {
+  let promises = tabs.map(async tab => {
     if ((new URL(tab.url)).hostname === hostname) {
       return await browser.tabs.sendMessage(tab.id, {
         type: 'deleteUnwantedEntriesByName',
@@ -443,7 +443,7 @@ async function deleteUnwantedDomStorageEntriesByName(hostname, name) {
 async function restoreUnwantedDomStorageEntriesByName(hostname, name) {
   // re-creates dom storage entries from unwanted list in case the user whitelists one
   let tabs = await browser.tabs.query({})
-  let promises = tabs.map(async function(tab) {
+  let promises = tabs.map(async tab => {
     if ((new URL(tab.url)).hostname === hostname) {
       return await browser.tabs.sendMessage(tab.id, {
         type: 'restoreUnwantedEntriesByName',
@@ -456,7 +456,7 @@ async function restoreUnwantedDomStorageEntriesByName(hostname, name) {
 async function restoreAllTabsUnwantedDomStorageEntries() {
   // re-creates all tabs' wanted dom storage entries from unwanted list
   let tabs = await browser.tabs.query({})
-  let promises = tabs.map(async function(tab) {
+  let promises = tabs.map(async tab => {
     if (tab.url.startsWith('http')) {
       return await browser.tabs.sendMessage(tab.id, {
         type: 'restoreUnwantedEntries'
@@ -468,7 +468,7 @@ async function restoreAllTabsUnwantedDomStorageEntries() {
 async function deleteExistingUnwantedDomStorageEntriesByName(hostname, name) {
   // re-creates dom storage entries from unwanted list in case the user whitelists one
   let tabs = await browser.tabs.query({})
-  let promises = tabs.map(async function(tab) {
+  let promises = tabs.map(async tab => {
     if ((new URL(tab.url)).hostname === hostname) {
       return await browser.tabs.sendMessage(tab.id, {
         type: 'deleteExistingUnwantedEntriesByName',
@@ -487,7 +487,7 @@ async function deleteExistingUnwantedDomStorageEntries(tabId) {
 async function deleteAllTabsExistingUnwantedDomStorageEntries() {
   // deletes all existung but unwanted dom storage entries from all open tabs
   let tabs = await browser.tabs.query({})
-  let promises = tabs.map(async function(tab) {
+  let promises = tabs.map(async tab => {
     if (tab.url.startsWith('http')) {
       await deleteExistingUnwantedDomStorageEntries(tab.id)
     }
@@ -786,7 +786,7 @@ async function updateTabIcon(tabId) {
 async function updateAllTabsIcons() {
   // updates icon for all open tabs
   let tabs = await browser.tabs.query({})
-  var promises = tabs.map(function(tab) {
+  var promises = tabs.map(tab => {
     return updateTabIcon(tab.id)
   })
   await Promise.all(promises)
@@ -839,7 +839,7 @@ async function updateActiveTabsCounts() {
 async function removeAllTabsCounts() {
   // removes the cookie count from all tabs
   let tabs = await browser.tabs.query({})
-  let promises = tabs.map(function(tab) {
+  let promises = tabs.map(tab => {
     return browser.browserAction.setBadgeText({
       text: '',
       tabId: tab.id

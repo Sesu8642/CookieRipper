@@ -7,7 +7,7 @@ let entryList = []
 // table stuff
 let table
 let selectedAll = false
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', async _ => {
   assignUiElements()
   addEventlisteners()
   fillCookieEditor(null)
@@ -118,7 +118,7 @@ function initTable() {
       title: 'Edit',
       formatter: editIconFormatter,
       align: 'center',
-      cellClick: function(e, cell) {
+      cellClick: (e, cell) => {
         e.stopPropagation()
         fillCookieEditor(cell.getRow().getData())
       },
@@ -140,10 +140,10 @@ function initTable() {
       column: "domain",
       dir: "asc"
     }],
-    columnResized: function(row) {
+    columnResized: row => {
       table.redraw()
     },
-    rowSelectionChanged: function(data, rows) {
+    rowSelectionChanged: (data, rows) => {
       if (data.length === entryList.length) {
         selectedAll = true
       } else {
@@ -151,7 +151,7 @@ function initTable() {
       }
     }
   })
-  table.getColumnDefinitions().forEach(function(definition) {
+  table.getColumnDefinitions().forEach(definition => {
     if (!definition.title || !definition.field || definition.visible === false) {
       return
     }
@@ -160,7 +160,7 @@ function initTable() {
     checkbox.id = `${definition.title}ColumnCheckBox`
     checkbox.checked = true
     checkbox.tabulatorField = definition.field
-    checkbox.addEventListener('change', function(e) {
+    checkbox.addEventListener('change', e => {
       e.stopPropagation()
       table.toggleColumn(checkbox.tabulatorField)
     })
@@ -218,7 +218,7 @@ async function fillCookieList() {
     storeId: cookieStoreSelect.value
   })
   // filter the cookies
-  let promises = cookies.map(async function(cookie) {
+  let promises = cookies.map(async cookie => {
     let whitelisted = await getObjectWhitelistedState(cookie.domain, cookie.name, 'c')
     cookie.whitelisted = whitelisted
     // add cookie to list
@@ -234,7 +234,7 @@ async function deleteSelectedCookies() {
       return
     }
   }
-  let promises = selectedData.map(function(entry) {
+  let promises = selectedData.map(entry => {
     return deleteCookie(entry)
   })
   await Promise.all(promises)
@@ -338,12 +338,12 @@ function addEventlisteners() {
   // info icons
   let infoIcons = document.getElementsByClassName('infoIcon')
   for (let i = 0; i < infoIcons.length; i++) {
-    infoIcons[i].addEventListener('click', async function(e) {
+    infoIcons[i].addEventListener('click', async e => {
       await sendInfoMessage(e.target.title)
     })
   }
   // cookie Store select
-  cookieStoreSelect.addEventListener('change', async function(e) {
+  cookieStoreSelect.addEventListener('change', async e => {
     try {
       await Promise.all([fillCookieList(), fillCookieEditor(null)])
     } catch (e) {
@@ -351,7 +351,7 @@ function addEventlisteners() {
     }
   })
   // delete button
-  deleteButton.addEventListener('click', async function(e) {
+  deleteButton.addEventListener('click', async e => {
     try {
       await deleteSelectedCookies()
     } catch (e) {
@@ -359,7 +359,7 @@ function addEventlisteners() {
     }
   })
   // save button
-  saveButton.addEventListener('click', async function() {
+  saveButton.addEventListener('click', async e => {
     try {
       try {
         await addCookie(nameTextBox.value, valueTextBox.value, domainTextBox.value, pathTextBox.value, sessionCookie.checked, date.valueAsDate, time.valueAsDate, cookieHostOnly.checked, cookieSecure.checked, cookieHttpOnly.checked, cookieStoreSelect.value, firstPartyDomainTextBox.value, sameSiteSelect.value, cookieInEditor)
@@ -373,7 +373,7 @@ function addEventlisteners() {
     }
   })
   // clear button
-  clearButton.addEventListener('click', async function() {
+  clearButton.addEventListener('click', async _ => {
     await fillCookieEditor(null)
   })
   // triggers for cookie warning

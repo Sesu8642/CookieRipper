@@ -12,7 +12,7 @@ async function init() {
 if (window == window.top) {
   browser.runtime.onMessage.addListener(handleMessage)
 }
-window.addEventListener('message', async function(event) {
+window.addEventListener('message', async event => {
   try {
     if (event.data.type) {
       switch (event.data.type) {
@@ -102,19 +102,19 @@ async function addStorageEntry(request) {
 }
 async function deleteUnwantedStorageEntriesByName(request) {
   // deletes entries with a given name from unwanted list
-  unwantedDomStorageEntries = unwantedDomStorageEntries.filter(function(entry) {
+  unwantedDomStorageEntries = unwantedDomStorageEntries.filter(entry => {
     return (!(entry.name === request.name))
   })
 }
 async function deleteUnwantedStorageEntry(request) {
   // deletes an entry from unwanted list
-  unwantedDomStorageEntries = unwantedDomStorageEntries.filter(function(entry) {
+  unwantedDomStorageEntries = unwantedDomStorageEntries.filter(entry => {
     return (!(entry.name === request.entry.name && entry.persistent === request.entry.persistent))
   })
 }
 async function restoreUnwantedStorageEntriesByName(request) {
   // re-creates the entries with the given name from unwanted list (possibly two: one permanent, one temporary)
-  unwantedDomStorageEntries.forEach(function(entry) {
+  unwantedDomStorageEntries.forEach(entry => {
     if (entry.name === request.name) {
       let storage = entry.persistent ? localStorage : sessionStorage
       storage.setItem(entry.name, entry.value)
@@ -126,7 +126,7 @@ async function restoreUnwantedStorageEntries() {
   // re-creates wanted dom storage entries from unwanted list
   let domain = window.location.host
   let storageItems = []
-  unwantedDomStorageEntries.forEach(function(entry) {
+  unwantedDomStorageEntries.forEach(entry => {
     // create list of storage items and send them to the background page
     storageItems.push({
       name: entry.name,
@@ -141,7 +141,7 @@ async function restoreUnwantedStorageEntries() {
   // restore the wanted items
   for (let i = 0; i < response.length; i++) {
     if (response[i]) {
-      unwantedDomStorageEntries.forEach(async function(entry) {
+      unwantedDomStorageEntries.forEach(async entry => {
         if (entry.name === storageItems[i].name && entry.persistent === storageItems[i].persistent) {
           let storage = entry.persistent ? localStorage : sessionStorage
           storage.setItem(entry.name, entry.value)
