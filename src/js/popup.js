@@ -87,11 +87,11 @@ function initCookieTable() {
             if (cell.getValue()) {
               await deleteWhitelistEntry(cell.getRow().getData().domain, cell.getRow().getData().name, 'c', null);
               // could be optimized with function that only checks that one cookie
-              await deleteExistingUnwantedCookies(activeTabUrl, activeTabCookieStore);
+              await deleteExistingUnwantedCookies(activeTabUrl);
               await Promise.all([updateActiveTabsCounts(), updateCookieTable()]);
             } else {
               await addWhitelistEntry(cell.getRow().getData().domain, cell.getRow().getData().name, 'c');
-              await callRestoreUnwantedCookie(cell.getRow().getData().domain, cell.getRow().getData().name, activeTabCookieStore);
+              await callRestoreUnwantedCookie(cell.getRow().getData().domain, cell.getRow().getData().name);
               await Promise.all([updateActiveTabsCounts(), updateCookieTable()]);
             }
           } else if (classNames.includes('editIcon')) {
@@ -167,11 +167,11 @@ function initDomStorageTable() {
             // whitelisted checkbox clicked
             if (cell.getValue()) {
               await deleteWhitelistEntry(cell.getRow().getData().domain, cell.getRow().getData().name, 'd');
-              await deleteExistingUnwantedDomStorageEntries(activeTabId);
+              await deleteExistingUnwantedDomStorageEntriesByName(cell.getRow().getData().domain, cell.getRow().getData().name);
               await Promise.all([updateActiveTabsCounts(), updateDomStorageTable()]);
             } else {
               await addWhitelistEntry(cell.getRow().getData().domain, cell.getRow().getData().name, 'd');
-              await restoreUnwantedDomStorageEntry(activeTabId, cell.getRow().getData());
+              await restoreUnwantedDomStorageEntriesByName(cell.getRow().getData().domain, cell.getRow().getData().name);
               await Promise.all([updateActiveTabsCounts(), updateDomStorageTable()]);
             }
           } else if (classNames.includes('editIcon')) {

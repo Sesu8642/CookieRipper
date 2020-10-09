@@ -123,21 +123,19 @@ async function addUnwantedCookie(request) {
   }
 }
 async function restoreUnwantedCookie(request) {
-  // re-creates a single cookie from unwanted list
+  // re-creates a cookie from unwanted list for all cookie store where it was listed
   let domain = getRuleRelevantPartOfDomain(request.domain);
-  let key = `${encodeURI(request.domain)}|${encodeURI(request.name)}`;
-  try {
-    let cookie = JSON.parse(openDomainsUnwantedCookies[domain].cookieStores[request.cookieStore].unwantedCookies[key]);
+  let cookieKey = `${encodeURI(request.domain)}|${encodeURI(request.name)}`;
+  let cookieStorePromises = Object.keys(openDomainsUnwantedCookies[domain].cookieStores).map(async function(storeKey) {
+    let cookie = JSON.parse(openDomainsUnwantedCookies[domain].cookieStores[storeKey].unwantedCookies[cookieKey]);
     await addCookieFromObject(cookie, cookie.storeId);
-  } catch {
-    console.log("unwanted cookie is undefined! " + key)
-    console.log(openDomainsUnwantedCookies[domain].cookieStores[request.cookieStore].unwantedCookies[key])
-    return
-  }
-  delete openDomainsUnwantedCookies[domain].cookieStores[request.cookieStore].unwantedCookies[key];
+    delete openDomainsUnwantedCookies[domain].cookieStores[storeKey].unwantedCookies[cookieKey];
+  });
+  await Promise.all(cookieStorePromises);
 }
 async function restoreAllDomainsUnwantedCookies(request) {
   // re-creates all domains' wanted cookies from unwanted list
+  // it is assumed that whitelisted cookies are not in the unwanted list
   let domainPromises = Object.keys(openDomainsUnwantedCookies).map(function(domain) {
     // get behaviour for domain
     return getSiteBehaviour(domain).then(async function(behaviour) {
@@ -348,8 +346,7 @@ browser.webNavigation.onCommitted.addListener(async function(details) {
   // update icon and count and delete unwanted cookies
   try {
     await updateTabIcon(details.tabId);
-    let cookieStore = await getTabCookieStore(details.tabId);
-    await deleteExistingUnwantedCookies(details.url, cookieStore);
+    await deleteExistingUnwantedCookies(details.url);
     await updateActiveTabsCounts();
     await removeClosedDomainsFromopenDomainsUnwantedCookies();
   } catch (e) {

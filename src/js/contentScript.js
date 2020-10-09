@@ -42,14 +42,19 @@ function handleMessage(request) {
     case 'deleteEntry':
       return deleteStorageEntry(request);
       break;
+    case 'deleteUnwantedEntriesByName':
+      return deleteUnwantedStorageEntriesByName(request);
+      break;
     case 'deleteUnwantedEntry':
       return deleteUnwantedStorageEntry(request);
-      break;
-    case 'restoreUnwantedEntry':
-      return restoreUnwantedStorageEntry(request);
+    case 'restoreUnwantedEntriesByName':
+      return restoreUnwantedStorageEntriesByName(request);
       break;
     case 'restoreUnwantedEntries':
       return restoreUnwantedStorageEntries();
+      break;
+    case 'deleteExistingUnwantedEntriesByName':
+      return deleteExistingUnwantedStorageEntriesByName(request);
       break;
     case 'deleteExistingUnwantedEntries':
       return deleteExistingUnwantedStorageEntries();
@@ -95,24 +100,30 @@ async function addStorageEntry(request) {
   let storage = request.persistent ? localStorage : sessionStorage;
   storage.setItem(request.name, request.value);
 }
+async function deleteUnwantedStorageEntriesByName(request) {
+  // deletes entries with a given name from unwanted list
+  unwantedDomStorageEntries = unwantedDomStorageEntries.filter(function(entry) {
+    return (!(entry.name === request.name))
+  });
+}
 async function deleteUnwantedStorageEntry(request) {
   // deletes an entry from unwanted list
   unwantedDomStorageEntries = unwantedDomStorageEntries.filter(function(entry) {
     return (!(entry.name === request.entry.name && entry.persistent === request.entry.persistent))
   });
 }
-async function restoreUnwantedStorageEntry(request) {
-  // re-creates a single entry from unwanted list
+async function restoreUnwantedStorageEntriesByName(request) {
+  // re-creates the entries with the given name from unwanted list (possibly two: one permanent, one temporary)
   unwantedDomStorageEntries.forEach(function(entry) {
-    if (entry.name === request.entry.name && entry.persistent === request.entry.persistent) {
+    if (entry.name === request.name) {
       let storage = entry.persistent ? localStorage : sessionStorage;
       storage.setItem(entry.name, entry.value);
     }
   });
-  await deleteUnwantedStorageEntry(request);
+  await deleteUnwantedStorageEntriesByName(request);
 }
 async function restoreUnwantedStorageEntries() {
-  // re-creates all domains' wanted dom storage entries from unwanted list
+  // re-creates wanted dom storage entries from unwanted list
   let domain = window.location.host;
   let storageItems = [];
   unwantedDomStorageEntries.forEach(function(entry) {
@@ -130,13 +141,71 @@ async function restoreUnwantedStorageEntries() {
   // restore the wanted items
   for (let i = 0; i < response.length; i++) {
     if (response[i]) {
-      await restoreUnwantedStorageEntry({
-        entry: {
-          name: storageItems[i].name,
-          persistent: storageItems[i].persistent
+      unwantedDomStorageEntries.forEach(async function(entry) {
+        if (entry.name === storageItems[i].name && entry.persistent === storageItems[i].persistent) {
+          let storage = entry.persistent ? localStorage : sessionStorage;
+          storage.setItem(entry.name, entry.value);
         }
+        await deleteUnwantedStorageEntry({
+          entry: entry
+        });
       });
     }
+  }
+}
+async function deleteExistingUnwantedStorageEntriesByName(request) {
+  // deletes existung but unwanted entries by name
+  let domain = window.location.host;
+  // create list of storage items and send them to the background page
+  let existingItems = []
+  let singleItemPerm;
+  if (sessionStorage.getItem(request.name) !== null) {
+    singleItemPerm = false
+    existingItems.push({
+      name: request.name,
+      persistent: false
+    })
+  }
+  if (localStorage.getItem(request.name) !== null) {
+    singleItemPerm = true
+    existingItems.push({
+      name: request.name,
+      persistent: true
+    })
+  }
+  let wanted = await browser.runtime.sendMessage({
+    type: 'getTabDomStorageItemsAllowedStates',
+    items: existingItems,
+    domain: domain
+  })
+  if (wanted.length === 1) {
+    // either a temporary or permanent entry exists
+    if (wanted[0] === false) {
+      let storage = singleItemPerm ? localStorage : sessionStorage;
+      unwantedDomStorageEntries.push({
+        name: request.name,
+        value: storage.getItem(request.name),
+        persistent: singleItemPerm
+      });
+      storage.removeItem(request.name);
+    }
+    return;
+  }
+  if (wanted[0] === false) {
+    unwantedDomStorageEntries.push({
+      name: request.name,
+      value: sessionStorage.getItem(request.name),
+      persistent: false
+    });
+    sessionStorage.removeItem(request.name);
+  }
+  if (wanted[1] === false) {
+    unwantedDomStorageEntries.push({
+      name: request.name,
+      value: localStorage.getItem(request.name),
+      persistent: true
+    });
+    localStorage.removeItem(request.name);
   }
 }
 async function deleteExistingUnwantedStorageEntries() {

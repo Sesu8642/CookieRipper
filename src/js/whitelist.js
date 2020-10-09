@@ -135,10 +135,16 @@ async function deleteSelectedEntries() {
     }
   }
   let promises = selectedData.map(function(entry) {
-    return deleteWhitelistEntry(entry.domain, entry.name, entry.type);
+    return deleteWhitelistEntry(entry.domain, entry.name, entry.type).then(async function() {
+      if (entry.type === 'c') {
+        await deleteAllTabsExistingUnwantedCookies();
+      } else {
+        await deleteExistingUnwantedDomStorageEntriesByName(entry.domain, entry.name);
+      }
+    });
   });
   await Promise.all(promises);
-  updateTable();
+  await Promise.all([updateActiveTabsCounts(), updateTable()])
 }
 async function saveEntry() {
   // saves the data from the entry editor
@@ -149,7 +155,12 @@ async function saveEntry() {
     entryEditorError.textContent = `${e.message}\r\n\r\n`;
     return
   }
-  updateTable();
+  if (type === 'c') {
+    await callRestoreUnwantedCookie(domainTextBox.value, nameTextBox.value);
+  } else {
+    await restoreUnwantedDomStorageEntriesByName(domainTextBox.value, nameTextBox.value);
+  }
+  await Promise.all([updateActiveTabsCounts(), updateTable()])
   fillEntryEditor(null);
 }
 

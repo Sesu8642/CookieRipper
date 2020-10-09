@@ -193,14 +193,18 @@ async function deleteAllCookies(url, cookieStore) {
   promises.push(callClearUnwantedCookiesforDomain(getRuleRelevantPartOfDomain(url), cookieStore));
   await Promise.all(promises);
 }
-async function deleteExistingUnwantedCookies(url, cookieStore) {
-  // deletes all existung but unwanted cookies from a given domain
+async function deleteExistingUnwantedCookies(url) {
+  // deletes all existung but unwanted cookies from a given url
   let domain = getRuleRelevantPartOfDomain(url);
   let behaviour = await getSiteBehaviour(domain);
-  let siteCookies = await getAllCookies({
-    url: url,
-    storeId: cookieStore
+  let cookieStores = await browser.cookies.getAllCookieStores();
+  let siteCookiePromises = cookieStores.map(async function(cookieStore) {
+    return getAllCookies({
+      url: url,
+      storeId: cookieStore.id
+    });
   });
+  let siteCookies = (await Promise.all(siteCookiePromises)).flat();
   let promises = siteCookies.flatMap(async function(cookie) {
     if (behaviour == 0 || (behaviour == 1 && !cookie.session)) {
       let whitelisted = await getObjectWhitelistedState(cookie.domain, cookie.name, 'c');
@@ -216,8 +220,7 @@ async function deleteAllTabsExistingUnwantedCookies() {
   let tabs = await browser.tabs.query({});
   let promises = tabs.map(async function(tab) {
     if (tab.url.startsWith('http')) {
-      let cookieStore = await getTabCookieStore(tab.id);
-      return deleteExistingUnwantedCookies(tab.url, cookieStore);
+      return deleteExistingUnwantedCookies(tab.url);
     }
   });
   await Promise.all(promises);
@@ -307,21 +310,19 @@ async function callAddUnwantedCookie(cookie) {
     });
   }
 }
-async function callRestoreUnwantedCookie(fullCookieDomain, name, cookieStore) {
+async function callRestoreUnwantedCookie(fullCookieDomain, name) {
   // re-creates a cookie from unwanted list in case the user whitelists it
   // use function directly or send message depending on the availability of bgPage
   if (bgPage !== null) {
     await bgPage.restoreUnwantedCookie({
       domain: fullCookieDomain,
-      name: name,
-      cookieStore: cookieStore
+      name: name
     });
   } else {
     await browser.runtime.sendMessage({
       type: 'restoreUnwantedCookie',
       domain: fullCookieDomain,
-      name: name,
-      cookieStore: cookieStore
+      name: name
     });
   }
 }
@@ -426,12 +427,31 @@ async function deleteUnwantedDomStorageEntry(tabId, entry) {
     entry: entry
   });
 }
-async function restoreUnwantedDomStorageEntry(tabId, entry) {
-  // re-creates a dom storage entry from unwanted list in case the user whitelists it
-  await browser.tabs.sendMessage(tabId, {
-    type: 'restoreUnwantedEntry',
-    entry: entry
+async function deleteUnwantedDomStorageEntriesByName(hostname, name) {
+  // deletes unwanted dom storage entries by name
+  let tabs = await browser.tabs.query({});
+  let promises = tabs.map(async function(tab) {
+    if ((new URL(tab.url)).hostname === hostname) {
+      return await browser.tabs.sendMessage(tab.id, {
+        type: 'deleteUnwantedEntriesByName',
+        name: name
+      });
+    }
   });
+  await Promise.all(promises);
+}
+async function restoreUnwantedDomStorageEntriesByName(hostname, name) {
+  // re-creates dom storage entries from unwanted list in case the user whitelists one
+  let tabs = await browser.tabs.query({});
+  let promises = tabs.map(async function(tab) {
+    if ((new URL(tab.url)).hostname === hostname) {
+      return await browser.tabs.sendMessage(tab.id, {
+        type: 'restoreUnwantedEntriesByName',
+        name: name
+      });
+    }
+  });
+  await Promise.all(promises);
 }
 async function restoreAllTabsUnwantedDomStorageEntries() {
   // re-creates all tabs' wanted dom storage entries from unwanted list
@@ -440,6 +460,19 @@ async function restoreAllTabsUnwantedDomStorageEntries() {
     if (tab.url.startsWith('http')) {
       return await browser.tabs.sendMessage(tab.id, {
         type: 'restoreUnwantedEntries'
+      });
+    }
+  });
+  await Promise.all(promises);
+}
+async function deleteExistingUnwantedDomStorageEntriesByName(hostname, name) {
+  // re-creates dom storage entries from unwanted list in case the user whitelists one
+  let tabs = await browser.tabs.query({});
+  let promises = tabs.map(async function(tab) {
+    if ((new URL(tab.url)).hostname === hostname) {
+      return await browser.tabs.sendMessage(tab.id, {
+        type: 'deleteExistingUnwantedEntriesByName',
+        name: name
       });
     }
   });
