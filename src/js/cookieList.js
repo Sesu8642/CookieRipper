@@ -28,7 +28,7 @@ function initTable() {
     columns: [{
       formatter: 'rowSelection',
       titleFormatter: 'rowSelection',
-      align: 'center',
+      hozAlign: 'center',
       headerSort: false,
       width: '0'
     }, {
@@ -117,7 +117,7 @@ function initTable() {
     }, {
       title: 'Edit',
       formatter: editIconFormatter,
-      align: 'center',
+      hozAlign: 'center',
       cellClick: (e, cell) => {
         e.stopPropagation()
         fillCookieEditor(cell.getRow().getData())
