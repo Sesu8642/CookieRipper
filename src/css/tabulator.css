@@ -739,14 +739,13 @@
   border-top: 1px solid #999;
   padding: 5px;
   padding-left: 10px;
-  background: #ccc;
+  background: var(--hover-color-secondary);
   font-weight: bold;
   min-width: 100%;
 }
 
 .tabulator-row.tabulator-group:hover {
   cursor: pointer;
-  background-color: rgba(0, 0, 0, 0.1);
 }
 
 .tabulator-row.tabulator-group.tabulator-group-visible .tabulator-arrow {
@@ -795,7 +794,6 @@
 
 .tabulator-row.tabulator-group span {
   margin-left: 10px;
-  color: #d00;
 }
 
 .tabulator-menu {

@@ -63,6 +63,8 @@ function initTable() {
       headerSort: false,
       width: '3%'
     }],
+    groupBy: data => getRuleRelevantPartOfDomain(data.domain),
+    groupToggleElement: "header",
     selectable: true,
     layout: 'fitColumns',
     pagination: 'local',
