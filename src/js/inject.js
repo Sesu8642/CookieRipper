@@ -1,10 +1,10 @@
-'use strict';
+'use strict'
 /*
  * this script is injected into websites using a script tag to be able to overwrite the functions used by the website's js
  */
 // overwrite setItem
-let _setItem = Object.getPrototypeOf(localStorage).setItem;
-let _localStorage = window.localStorage;
+let _setItem = Object.getPrototypeOf(localStorage).setItem
+let _localStorage = window.localStorage
 Object.getPrototypeOf(localStorage).setItem = function(name, value) {
   // overwrite setItem
   window.postMessage({
@@ -12,8 +12,8 @@ Object.getPrototypeOf(localStorage).setItem = function(name, value) {
     persistent: this === _localStorage,
     name: name,
     value: value
-  }, window.location.href);
-  _setItem.apply(this, arguments);
+  }, window.location.href)
+  _setItem.apply(this, arguments)
 }
 // overwrite setter (storage.key=value)
 let localStorageProxy = new Proxy(localStorage, {
@@ -23,20 +23,20 @@ let localStorageProxy = new Proxy(localStorage, {
       persistent: true,
       name: name,
       value: value
-    }, window.location.href);
-    return Reflect.set(target, name, value, receiver);
+    }, window.location.href)
+    return Reflect.set(target, name, value, receiver)
   },
   get: function(target, property, receiver) {
-    var val = target[property];
-    if (typeof val !== 'function') return val;
+    var val = target[property]
+    if (typeof val !== 'function') return val
     return function(...args) {
-      var thisVal = this === receiver ? target : this;
-      return Reflect.apply(val, thisVal, args);
+      var thisVal = this === receiver ? target : this
+      return Reflect.apply(val, thisVal, args)
     }
   }
 })
-delete window.localStorage;
-window.localStorage = localStorageProxy;
+delete window.localStorage
+window.localStorage = localStorageProxy
 let sessionStorageProxy = new Proxy(sessionStorage, {
   set: function(target, name, value, receiver) {
     window.postMessage({
@@ -44,21 +44,21 @@ let sessionStorageProxy = new Proxy(sessionStorage, {
       persistent: false,
       name: name,
       value: value
-    }, window.location.href);
-    return Reflect.set(target, name, value, receiver);
+    }, window.location.href)
+    return Reflect.set(target, name, value, receiver)
   },
   get: function(target, property, receiver) {
-    var val = target[property];
-    if (typeof val !== 'function') return val;
+    var val = target[property]
+    if (typeof val !== 'function') return val
     return function(...args) {
-      var thisVal = this === receiver ? target : this;
-      return Reflect.apply(val, thisVal, args);
+      var thisVal = this === receiver ? target : this
+      return Reflect.apply(val, thisVal, args)
     }
   }
 })
-delete window.sessionStorage;
-window.sessionStorage = sessionStorageProxy;
+delete window.sessionStorage
+window.sessionStorage = sessionStorageProxy
 // when done, delete unwanted entries the site may have placed already
 window.postMessage({
   type: 'cookieRipper_injectedScriptIsDone'
-}, window.location.href);
+}, window.location.href)

@@ -1,27 +1,27 @@
-'use strict';
+'use strict'
 // ui elements
-let slider, enableCookieCounterCheckbox, successText, denyOption, sessionOption, allowOption, saveButton, infoIcons;
+let slider, enableCookieCounterCheckbox, successText, denyOption, sessionOption, allowOption, saveButton, infoIcons
 document.addEventListener('DOMContentLoaded', function() {
-  assignUiElements();
-  addEventlisteners();
-  restoreOptions();
-});
+  assignUiElements()
+  addEventlisteners()
+  restoreOptions()
+})
 async function saveOptions() {
   // saves the options from ui
   try {
-    let defaultBehaviour = slider.value;
-    let enableCookieCounter = enableCookieCounterCheckbox.checked;
+    let defaultBehaviour = slider.value
+    let enableCookieCounter = enableCookieCounterCheckbox.checked
     await browser.storage.sync.set({
       defaultBehaviour: defaultBehaviour,
       enableCookieCounter: enableCookieCounter
-    });
-    successText.textContent = 'Settings were saved!';
+    })
+    successText.textContent = 'Settings were saved!'
     setTimeout(function() {
-      successText.textContent = '';
-    }, 1000);
-    await callLoadSettings();
+      successText.textContent = ''
+    }, 1000)
+    await callLoadSettings()
   } catch (e) {
-    console.error(e);
+    console.error(e)
   }
 }
 async function restoreOptions() {
@@ -31,12 +31,12 @@ async function restoreOptions() {
       // defaults
       defaultBehaviour: 0,
       enableCookieCounter: false
-    });
-    slider.value = items.defaultBehaviour;
-    highlightActiveOption(Number(items.defaultBehaviour));
-    enableCookieCounterCheckbox.checked = items.enableCookieCounter;
+    })
+    slider.value = items.defaultBehaviour
+    highlightActiveOption(Number(items.defaultBehaviour))
+    enableCookieCounterCheckbox.checked = items.enableCookieCounter
   } catch (e) {
-    console.error(e);
+    console.error(e)
   }
 }
 
@@ -45,22 +45,22 @@ function highlightActiveOption(option) {
   switch (option) {
     case 0:
       // deny
-      denyOption.classList.add('selectedBehaviour');
-      sessionOption.classList.remove('selectedBehaviour');
-      allowOption.classList.remove('selectedBehaviour');
-      break;
+      denyOption.classList.add('selectedBehaviour')
+      sessionOption.classList.remove('selectedBehaviour')
+      allowOption.classList.remove('selectedBehaviour')
+      break
     case 1:
       // allow session
-      denyOption.classList.remove('selectedBehaviour');
-      sessionOption.classList.add('selectedBehaviour');
-      allowOption.classList.remove('selectedBehaviour');
-      break;
+      denyOption.classList.remove('selectedBehaviour')
+      sessionOption.classList.add('selectedBehaviour')
+      allowOption.classList.remove('selectedBehaviour')
+      break
     case 2:
       // allow all
-      denyOption.classList.remove('selectedBehaviour');
-      sessionOption.classList.remove('selectedBehaviour');
-      allowOption.classList.add('selectedBehaviour');
-      break;
+      denyOption.classList.remove('selectedBehaviour')
+      sessionOption.classList.remove('selectedBehaviour')
+      allowOption.classList.add('selectedBehaviour')
+      break
     default:
       // invalid
   }
@@ -68,43 +68,43 @@ function highlightActiveOption(option) {
 
 function assignUiElements() {
   // gets all the needed ui elements and stores them in variables for later use
-  slider = document.getElementById('slider');
-  enableCookieCounterCheckbox = document.getElementById('enableCookieCounterCheckbox');
-  successText = document.getElementById('successText');
-  denyOption = document.getElementById('denyOption');
-  sessionOption = document.getElementById('sessionOption');
+  slider = document.getElementById('slider')
+  enableCookieCounterCheckbox = document.getElementById('enableCookieCounterCheckbox')
+  successText = document.getElementById('successText')
+  denyOption = document.getElementById('denyOption')
+  sessionOption = document.getElementById('sessionOption')
   allowOption = document.getElementById('allowOption')
-  saveButton = document.getElementById('saveButton');
-  infoIcons = document.getElementsByClassName('infoIcon');
+  saveButton = document.getElementById('saveButton')
+  infoIcons = document.getElementsByClassName('infoIcon')
 }
 
 function addEventlisteners() {
   // adds all the event listeners to ui elements
   slider.addEventListener('change', function() {
-    highlightActiveOption(Number(this.value));
-  });
-  saveButton.addEventListener('click', saveOptions);
+    highlightActiveOption(Number(this.value))
+  })
+  saveButton.addEventListener('click', saveOptions)
   denyOption.addEventListener('click', function() {
-    slider.value = 0;
-    highlightActiveOption(0);
-  });
+    slider.value = 0
+    highlightActiveOption(0)
+  })
   sessionOption.addEventListener('click', function() {
-    slider.value = 1;
-    highlightActiveOption(1);
-  });
+    slider.value = 1
+    highlightActiveOption(1)
+  })
   allowOption.addEventListener('click', function() {
-    slider.value = 2;
-    highlightActiveOption(2);
-  });
+    slider.value = 2
+    highlightActiveOption(2)
+  })
   // info icons
   for (let i = 0; i < infoIcons.length; i++) {
     infoIcons[i].addEventListener('click', async function(e) {
       try {
-        e.stopPropagation();
-        await sendInfoMessage(e.target.title);
+        e.stopPropagation()
+        await sendInfoMessage(e.target.title)
       } catch (e) {
-        console.error(e);
+        console.error(e)
       }
-    });
+    })
   }
 }

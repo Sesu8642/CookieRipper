@@ -1,137 +1,137 @@
-'use strict';
-let tempSiteExceptions = {};
-let openDomainsUnwantedCookies = {};
-var defaultBehaviour, enableCookieCounter;
+'use strict'
+let tempSiteExceptions = {}
+let openDomainsUnwantedCookies = {}
+var defaultBehaviour, enableCookieCounter
 async function loadSettings(skipUpdatingScripts = false) {
   // loads settings from storage and applies them
   let items = await browser.storage.sync.get({
     defaultBehaviour: 2,
     enableCookieCounter: false
-  });
-  defaultBehaviour = Number(items.defaultBehaviour);
-  enableCookieCounter = items.enableCookieCounter;
+  })
+  defaultBehaviour = Number(items.defaultBehaviour)
+  enableCookieCounter = items.enableCookieCounter
   if (skipUpdatingScripts) {
     // when installing, the content scripts are not injected yet
-    await Promise.all([restoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()]);
+    await Promise.all([restoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()])
   } else {
-    await Promise.all([restoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()]);
+    await Promise.all([restoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()])
     try {
       // this can fail if unable to inject content script
-      await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()]);
+      await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()])
     } catch (e) {
-      console.warn(e);
+      console.warn(e)
     }
   }
-  await updateAllTabsIcons();
+  await updateAllTabsIcons()
   if (!enableCookieCounter) {
-    await removeAllTabsCounts();
+    await removeAllTabsCounts()
   } else {
-    await updateActiveTabsCounts();
+    await updateActiveTabsCounts()
   }
 }
 async function injectJsInAllTabs() {
-  // injects js into all open tabs (http*); new tabs are handled by manifest entry
+  // injects js into all open tabs (http*) new tabs are handled by manifest entry
   // also sets the correct icon and count for the open tabs
-  let tabs = await browser.tabs.query({});
-  var promises = [];
+  let tabs = await browser.tabs.query({})
+  var promises = []
   promises.push(...tabs.flatMap(function(tab) {
     if (!tab.url.startsWith('http')) {
-      return [];
+      return []
     }
     return [browser.tabs.executeScript(tab.id, {
       file: 'lib/browser-polyfill/browser-polyfill.js'
     }), browser.tabs.executeScript(tab.id, {
       file: '/js/contentScript.js'
-    })];
-  }));
+    })]
+  }))
   try {
-    await Promise.all(promises);
+    await Promise.all(promises)
   } catch (e) {
-    console.error(e);
+    console.error(e)
   }
 }
 async function getEnableCookieCounter(request) {
   // returns whether cookie counter in enabled
-  return enableCookieCounter;
+  return enableCookieCounter
 }
 async function getTempSiteException(request) {
   // returns the rule of a temporary exception
-  let exception = tempSiteExceptions[encodeURI(request.domain)];
-  exception = typeof exception === "undefined" ? null : exception;
-  return exception;
+  let exception = tempSiteExceptions[encodeURI(request.domain)]
+  exception = typeof exception === "undefined" ? null : exception
+  return exception
 }
 async function addTempSiteException(request) {
   // adds a temporary exception
-  tempSiteExceptions[encodeURI(request.domain)] = request.rule;
-  await Promise.all([restoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()]);
+  tempSiteExceptions[encodeURI(request.domain)] = request.rule
+  await Promise.all([restoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()])
   try {
     // this can fail if unable to inject content script
-    await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()]);
+    await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()])
   } catch (e) {
-    console.warn(e);
+    console.warn(e)
   }
-  await Promise.all([updateAllTabsIcons(), updateActiveTabsCounts()]);
+  await Promise.all([updateAllTabsIcons(), updateActiveTabsCounts()])
 }
 async function deleteTempSiteException(request) {
   // deletes a temporary exception
-  delete tempSiteExceptions[encodeURI(request.domain)];
-  await Promise.all([restoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()]);
+  delete tempSiteExceptions[encodeURI(request.domain)]
+  await Promise.all([restoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()])
   try {
     // this can fail if unable to inject content script
-    await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()]);
+    await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()])
   } catch (e) {
-    console.warn(e);
+    console.warn(e)
   }
-  await Promise.all([updateAllTabsIcons(), updateActiveTabsCounts()]);
+  await Promise.all([updateAllTabsIcons(), updateActiveTabsCounts()])
 }
 async function clearTempSiteExceptions(request) {
   // deletes all temporary exceptions
-  tempSiteExceptions = [];
-  await Promise.all([restoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()]);
+  tempSiteExceptions = []
+  await Promise.all([restoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()])
   try {
     // can fail if unable to inject content script
-    await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()]);
+    await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()])
   } catch (e) {
-    console.warn(e);
+    console.warn(e)
   }
-  await Promise.all([updateAllTabsIcons(), updateActiveTabsCounts()]);
+  await Promise.all([updateAllTabsIcons(), updateActiveTabsCounts()])
 }
 async function getUnwantedCookiesForDomain(request) {
   // returns a domain's cookies from unwanted list
-  let cookies = [];
+  let cookies = []
   if (typeof openDomainsUnwantedCookies[request.domain] === "undefined" || typeof openDomainsUnwantedCookies[request.domain].cookieStores[request.cookieStore] === "undefined") {
-    return [];
+    return []
   }
   for (let key in openDomainsUnwantedCookies[request.domain].cookieStores[request.cookieStore].unwantedCookies) {
-    let cookie = JSON.parse(openDomainsUnwantedCookies[request.domain].cookieStores[request.cookieStore].unwantedCookies[key]);
-    cookies.push(cookie);
+    let cookie = JSON.parse(openDomainsUnwantedCookies[request.domain].cookieStores[request.cookieStore].unwantedCookies[key])
+    cookies.push(cookie)
   }
-  return cookies;
+  return cookies
 }
 async function addUnwantedCookie(request) {
   // adds a single cookie to unwanted list
-  let cookieDomain = getRuleRelevantPartOfDomain(request.cookie.domain);
+  let cookieDomain = getRuleRelevantPartOfDomain(request.cookie.domain)
   // if it is undefined, it is a third party cookie which does not need to be recorded
   if (openDomainsUnwantedCookies[cookieDomain] != undefined) {
     // add cookie store to domain if needed
     if (openDomainsUnwantedCookies[cookieDomain].cookieStores[request.cookie.storeId] === undefined) {
       openDomainsUnwantedCookies[cookieDomain].cookieStores[request.cookie.storeId].unwantedCookies = {}
     }
-    let key = `${encodeURI(request.cookie.domain)}|${encodeURI(request.cookie.name)}`;
-    let value = JSON.stringify(request.cookie);
-    openDomainsUnwantedCookies[cookieDomain].cookieStores[request.cookie.storeId].unwantedCookies[key] = value;
+    let key = `${encodeURI(request.cookie.domain)}|${encodeURI(request.cookie.name)}`
+    let value = JSON.stringify(request.cookie)
+    openDomainsUnwantedCookies[cookieDomain].cookieStores[request.cookie.storeId].unwantedCookies[key] = value
   }
 }
 async function restoreUnwantedCookie(request) {
   // re-creates a cookie from unwanted list for all cookie store where it was listed
-  let domain = getRuleRelevantPartOfDomain(request.domain);
-  let cookieKey = `${encodeURI(request.domain)}|${encodeURI(request.name)}`;
+  let domain = getRuleRelevantPartOfDomain(request.domain)
+  let cookieKey = `${encodeURI(request.domain)}|${encodeURI(request.name)}`
   let cookieStorePromises = Object.keys(openDomainsUnwantedCookies[domain].cookieStores).map(async function(storeKey) {
-    let cookie = JSON.parse(openDomainsUnwantedCookies[domain].cookieStores[storeKey].unwantedCookies[cookieKey]);
-    await addCookieFromObject(cookie, cookie.storeId);
-    delete openDomainsUnwantedCookies[domain].cookieStores[storeKey].unwantedCookies[cookieKey];
-  });
-  await Promise.all(cookieStorePromises);
+    let cookie = JSON.parse(openDomainsUnwantedCookies[domain].cookieStores[storeKey].unwantedCookies[cookieKey])
+    await addCookieFromObject(cookie, cookie.storeId)
+    delete openDomainsUnwantedCookies[domain].cookieStores[storeKey].unwantedCookies[cookieKey]
+  })
+  await Promise.all(cookieStorePromises)
 }
 async function restoreAllDomainsUnwantedCookies(request) {
   // re-creates all domains' wanted cookies from unwanted list
@@ -143,42 +143,42 @@ async function restoreAllDomainsUnwantedCookies(request) {
       if (!(behaviour === 0)) {
         let cookieStorePromises = Object.keys(openDomainsUnwantedCookies[domain].cookieStores).map(async function(storeKey) {
           let cookiePromises = Object.keys(openDomainsUnwantedCookies[domain].cookieStores[storeKey].unwantedCookies).map(async function(cookieKey) {
-            let cookie = JSON.parse(openDomainsUnwantedCookies[domain].cookieStores[storeKey].unwantedCookies[cookieKey]);
+            let cookie = JSON.parse(openDomainsUnwantedCookies[domain].cookieStores[storeKey].unwantedCookies[cookieKey])
             // check if cookie should be restored
             if (behaviour === 2 || behaviour === 1 && cookie.session) {
-              await addCookieFromObject(cookie, cookie.storeId);
-              delete openDomainsUnwantedCookies[domain].cookieStores[storeKey].unwantedCookies[cookieKey];
+              await addCookieFromObject(cookie, cookie.storeId)
+              delete openDomainsUnwantedCookies[domain].cookieStores[storeKey].unwantedCookies[cookieKey]
             }
-          });
-          await Promise.all(cookiePromises);
-        });
-        await Promise.all(cookieStorePromises);
+          })
+          await Promise.all(cookiePromises)
+        })
+        await Promise.all(cookieStorePromises)
       }
     })
-  });
-  await Promise.all(domainPromises);
+  })
+  await Promise.all(domainPromises)
 }
 async function deleteUnwantedCookie(request) {
   // deletes a cookie from unwanted list
-  let domain = getRuleRelevantPartOfDomain(request.domain);
-  let cookieKey = `${encodeURI(request.domain)}|${encodeURI(request.name)}`;
-  delete openDomainsUnwantedCookies[domain].cookieStores[request.cookieStore].unwantedCookies[cookieKey];
+  let domain = getRuleRelevantPartOfDomain(request.domain)
+  let cookieKey = `${encodeURI(request.domain)}|${encodeURI(request.name)}`
+  delete openDomainsUnwantedCookies[domain].cookieStores[request.cookieStore].unwantedCookies[cookieKey]
 }
 async function clearUnwantedCookiesforDomain(request) {
   // deletes a domain's cookies from unwanted list
-  openDomainsUnwantedCookies[request.domain].cookieStores[request.cookieStore].unwantedCookies = {};
+  openDomainsUnwantedCookies[request.domain].cookieStores[request.cookieStore].unwantedCookies = {}
 }
 async function populateopenDomainsUnwantedCookies() {
   // adds all open sites to openDomainsUnwantedCookies
-  let tabs = await browser.tabs.query({});
+  let tabs = await browser.tabs.query({})
   tabs.forEach(async function(tab) {
-    let cookieStore;
+    let cookieStore
     try {
-      cookieStore = await getTabCookieStore(tab.id);
+      cookieStore = await getTabCookieStore(tab.id)
     } catch {
-      return;
+      return
     }
-    let domain = getRuleRelevantPartOfDomain(tab.url);
+    let domain = getRuleRelevantPartOfDomain(tab.url)
     if (typeof(openDomainsUnwantedCookies[domain]) === 'undefined') {
       openDomainsUnwantedCookies[domain] = {
         domain: domain,
@@ -188,26 +188,26 @@ async function populateopenDomainsUnwantedCookies() {
     openDomainsUnwantedCookies[domain].cookieStores[cookieStore] = {
       unwantedCookies: {}
     }
-  });
+  })
 }
 async function removeClosedDomainsFromopenDomainsUnwantedCookies() {
   // removes all sites from openDomainsUnwantedCookies that are not open anymore
   // create array of all open domains
-  let openTabsDomainsCookieStores = {};
-  let tabs = await browser.tabs.query({});
+  let openTabsDomainsCookieStores = {}
+  let tabs = await browser.tabs.query({})
   tabs.forEach(async function(tab) {
-    let cookieStore = await getTabCookieStore(tab.id);
+    let cookieStore = await getTabCookieStore(tab.id)
     if (openTabsDomainsCookieStores[tab.url] === undefined) {
       openTabsDomainsCookieStores[tab.url] = [cookieStore]
     } else {
-      openTabsDomainsCookieStores[tab.url].push(cookieStore);
+      openTabsDomainsCookieStores[tab.url].push(cookieStore)
     }
-  });
+  })
   // iterate all entries in openDomainsUnwantedCookies and remove them if the domain is not open in a tab anymore
   for (let domain in openDomainsUnwantedCookies) {
     for (let cookieStore in openDomainsUnwantedCookies[domain].cookieStores) {
       if (typeof openTabsDomainsCookieStores[domain] !== 'undefined' && !openTabsDomainsCookieStores[domain].includes(cookieStore)) {
-        delete openDomainsUnwantedCookies[domain].cookieStores[cookieStore];
+        delete openDomainsUnwantedCookies[domain].cookieStores[cookieStore]
         if (openDomainsUnwantedCookies.size == 0) {
           delete openDomainsUnwantedCookies[domain]
         }
@@ -217,20 +217,20 @@ async function removeClosedDomainsFromopenDomainsUnwantedCookies() {
 }
 async function getTabDomStorageItemsAllowedStates(request) {
   // returns an array of booleans meaning whether a dom storage entry is allowed or not
-  let behaviour = await getSiteBehaviour(getRuleRelevantPartOfDomain(request.domain));
+  let behaviour = await getSiteBehaviour(getRuleRelevantPartOfDomain(request.domain))
   // if behaviour is allow all --> return true for all items
   if (behaviour == 2) {
     return request.items.map(function() {
-      return true;
-    });
+      return true
+    })
   }
   // if behaviour is not allow all --> check whitelisted state and storage type
   let promises = request.items.map(function(item) {
     return getObjectWhitelistedState(request.domain, item.name, 'd').then(function(whitelisted) {
       return (whitelisted || (behaviour == 1 && !item.persistent))
-    });
-  });
-  return Promise.all(promises);
+    })
+  })
+  return Promise.all(promises)
 }
 
 function handleMessage(request, sender) {
@@ -238,49 +238,49 @@ function handleMessage(request, sender) {
   // call the correct function to respond to them
   switch (request.type) {
     case 'addTempSiteException':
-      return addTempSiteException(request);
-      break;
+      return addTempSiteException(request)
+      break
     case 'getTempSiteException':
-      return getTempSiteException(request);
-      break;
+      return getTempSiteException(request)
+      break
     case 'deleteTempSiteException':
-      return deleteTempSiteException(request);
-      break;
+      return deleteTempSiteException(request)
+      break
     case 'clearTempSiteExceptions':
-      return clearTempSiteExceptions(request);
-      break;
+      return clearTempSiteExceptions(request)
+      break
     case 'addUnwantedCookie':
-      return addUnwantedCookie(request);
-      break;
+      return addUnwantedCookie(request)
+      break
     case 'clearUnwantedCookiesforDomain':
-      return clearUnwantedCookiesforDomain(request);
-      break;
+      return clearUnwantedCookiesforDomain(request)
+      break
     case 'deleteUnwantedCookie':
-      return deleteUnwantedCookie(request);
-      break;
+      return deleteUnwantedCookie(request)
+      break
     case 'restoreUnwantedCookie':
-      return restoreUnwantedCookie(request);
-      break;
+      return restoreUnwantedCookie(request)
+      break
     case 'restoreAllDomainsUnwantedCookies':
-      return restoreAllDomainsUnwantedCookies(request);
-      break;
+      return restoreAllDomainsUnwantedCookies(request)
+      break
     case 'getUnwantedCookiesForDomain':
-      return getUnwantedCookiesForDomain(request);
-      break;
+      return getUnwantedCookiesForDomain(request)
+      break
     case 'getDefaultBehaviour':
-      return Promise.resolve(defaultBehaviour);
-      break;
+      return Promise.resolve(defaultBehaviour)
+      break
     case 'getEnableCookieCounter':
-      return getEnableCookieCounter(request);
-      break;
+      return getEnableCookieCounter(request)
+      break
     case 'loadSettings':
-      return loadSettings();
-      break;
+      return loadSettings()
+      break
     case 'getTabDomStorageItemsAllowedStates':
-      return getTabDomStorageItemsAllowedStates(request);
-      break;
+      return getTabDomStorageItemsAllowedStates(request)
+      break
     default:
-      return Promise.reject(Error(`Unknown request type: ${request.type}`));
+      return Promise.reject(Error(`Unknown request type: ${request.type}`))
   }
 }
 /*
@@ -289,74 +289,74 @@ function handleMessage(request, sender) {
 init()
 async function init() {
   try {
-    await populateopenDomainsUnwantedCookies();
-    await loadSettings(true);
-    await injectJsInAllTabs();
+    await populateopenDomainsUnwantedCookies()
+    await loadSettings(true)
+    await injectJsInAllTabs()
   } catch (e) {
-    console.error(e);
+    console.error(e)
   }
 }
-browser.runtime.onMessage.addListener(handleMessage);
+browser.runtime.onMessage.addListener(handleMessage)
 browser.webNavigation.onCompleted.addListener(async function(details) {
   try {
-    await updateActiveTabsCounts();
+    await updateActiveTabsCounts()
   } catch (e) {
-    console.error(e);
+    console.error(e)
   }
-});
+})
 browser.tabs.onActivated.addListener(async function(activeInfo) {
   try {
-    await updateActiveTabsCounts();
+    await updateActiveTabsCounts()
   } catch (e) {
-    console.error(e);
+    console.error(e)
   }
-});
+})
 browser.runtime.onInstalled.addListener(async function(details) {
-  // shows the user a welcome message and opens the settings page; also injects js in open tabs and takes care of the extension icon
+  // shows the user a welcome message and opens the settings page also injects js in open tabs and takes care of the extension icon
   try {
     if (details.reason === "install") {
       await browser.tabs.create({
         url: '/welcome.html'
-      });
+      })
     }
   } catch (e) {
-    console.error(e);
+    console.error(e)
   }
-});
-browser.cookies.onChanged.addListener(handleCookieEvent);
+})
+browser.cookies.onChanged.addListener(handleCookieEvent)
 browser.webNavigation.onBeforeNavigate.addListener(async function(details) {
   if (!['auto_subframe', 'manual_subframe'].includes(details.transitionType)) {
     // if new domain --> add it to list
-    let newDomain = getRuleRelevantPartOfDomain(details.url);
+    let newDomain = getRuleRelevantPartOfDomain(details.url)
     if (!openDomainsUnwantedCookies.hasOwnProperty(newDomain)) {
       openDomainsUnwantedCookies[newDomain] = {
         domain: newDomain,
         cookieStores: {}
       }
     }
-    let cookieStore = await getTabCookieStore(details.tabId);
+    let cookieStore = await getTabCookieStore(details.tabId)
     if (!openDomainsUnwantedCookies[newDomain].cookieStores.hasOwnProperty(cookieStore)) {
       openDomainsUnwantedCookies[newDomain].cookieStores[cookieStore] = {
         unwantedCookies: {}
       }
     }
   }
-});
+})
 browser.webNavigation.onCommitted.addListener(async function(details) {
   // update icon and count and delete unwanted cookies
   try {
-    await updateTabIcon(details.tabId);
-    await deleteExistingUnwantedCookies(details.url);
-    await updateActiveTabsCounts();
-    await removeClosedDomainsFromopenDomainsUnwantedCookies();
+    await updateTabIcon(details.tabId)
+    await deleteExistingUnwantedCookies(details.url)
+    await updateActiveTabsCounts()
+    await removeClosedDomainsFromopenDomainsUnwantedCookies()
   } catch (e) {
-    console.error(e);
+    console.error(e)
   }
-});
+})
 browser.tabs.onCreated.addListener(async function(tab) {
   try {
-    await updateTabIcon(tab.id);
+    await updateTabIcon(tab.id)
   } catch (e) {
-    console.error(e);
+    console.error(e)
   }
-});
+})

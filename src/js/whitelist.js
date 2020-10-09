@@ -1,27 +1,27 @@
-'use strict';
+'use strict'
 // selected entry for the entry editor
-let entryInEditor = null;
+let entryInEditor = null
 // ui elements
-let http, domainTextBox, nameTextBox, entryEditorError, dom, infoIcons, deleteButton, saveButton, clearButton;
+let http, domainTextBox, nameTextBox, entryEditorError, dom, infoIcons, deleteButton, saveButton, clearButton
 let whitelistTypeDict = {
   c: 'HTTP Cookie',
   d: 'Web Storage'
 }
-let entryList = [];
+let entryList = []
 // table stuff
-let table;
-let selectedAll = false;
+let table
+let selectedAll = false
 document.addEventListener('DOMContentLoaded', async function() {
   try {
-    assignUiElements();
-    addEventlisteners();
-    fillEntryEditor(null);
-    await fillWhitelist();
-    initTable();
+    assignUiElements()
+    addEventlisteners()
+    fillEntryEditor(null)
+    await fillWhitelist()
+    initTable()
   } catch (e) {
-    console.error(e);
+    console.error(e)
   }
-});
+})
 
 function initTable() {
   table = new Tabulator('#table', {
@@ -57,8 +57,8 @@ function initTable() {
       formatter: editIconFormatter,
       align: 'center',
       cellClick: function(e, cell) {
-        e.stopPropagation();
-        fillEntryEditor(cell.getRow().getData());
+        e.stopPropagation()
+        fillEntryEditor(cell.getRow().getData())
       },
       headerSort: false,
       width: '3%'
@@ -79,20 +79,20 @@ function initTable() {
       dir: "asc"
     }],
     columnResized: function(row) {
-      table.redraw();
+      table.redraw()
     },
     rowSelectionChanged: function(data, rows) {
       if (data.length === entryList.length) {
-        selectedAll = true;
+        selectedAll = true
       } else {
-        selectedAll = false;
+        selectedAll = false
       }
     }
-  });
+  })
 
   function editIconFormatter(cell, formatterParams) {
-    return '<img src="/icons/edit.svg" alt="edit" style="height:1.5ch">';
-  };
+    return '<img src="/icons/edit.svg" alt="edit" style="height:1.5ch">'
+  }
 
   function stringTypeFormatter(value, formatterParams) {
     return whitelistTypeDict[value]
@@ -105,30 +105,30 @@ function initTable() {
 
 async function updateTable() {
   // updates the table data
-  await fillWhitelist();
-  table.replaceData(entryList);
+  await fillWhitelist()
+  table.replaceData(entryList)
 }
 
 async function fillWhitelist() {
   // filters whitelist entries and stores them in entryList
-  entryList = [];
+  entryList = []
   // get all the entries
-  let results = await browser.storage.local.get();
+  let results = await browser.storage.local.get()
   // create array of all whitelist entries received from storage (the key contains all the information)
   for (let result in results) {
     if (result.startsWith('wl|')) {
-      let resultContent = result.split('|');
-      let resultObj = {};
-      resultObj.domain = decodeURI(resultContent[1]);
-      resultObj.name = decodeURI(resultContent[2]);
-      resultObj.type = resultContent[3];
+      let resultContent = result.split('|')
+      let resultObj = {}
+      resultObj.domain = decodeURI(resultContent[1])
+      resultObj.name = decodeURI(resultContent[2])
+      resultObj.type = resultContent[3]
       entryList.push(resultObj)
     }
   }
 }
 async function deleteSelectedEntries() {
   // deletes all selected entries
-  let selectedData = table.getSelectedData();
+  let selectedData = table.getSelectedData()
   if (selectedData.length > 10) {
     if (!confirm(`Are you sure you want to delete ${selectedData.length} entries?`)) {
       return
@@ -137,70 +137,70 @@ async function deleteSelectedEntries() {
   let promises = selectedData.map(function(entry) {
     return deleteWhitelistEntry(entry.domain, entry.name, entry.type).then(async function() {
       if (entry.type === 'c') {
-        await deleteAllTabsExistingUnwantedCookies();
+        await deleteAllTabsExistingUnwantedCookies()
       } else {
-        await deleteExistingUnwantedDomStorageEntriesByName(entry.domain, entry.name);
+        await deleteExistingUnwantedDomStorageEntriesByName(entry.domain, entry.name)
       }
-    });
-  });
-  await Promise.all(promises);
+    })
+  })
+  await Promise.all(promises)
   await Promise.all([updateActiveTabsCounts(), updateTable()])
 }
 async function saveEntry() {
   // saves the data from the entry editor
-  let type = (http.checked ? 'c' : 'd');
+  let type = (http.checked ? 'c' : 'd')
   try {
-    await addWhitelistEntry(domainTextBox.value, nameTextBox.value, type, entryInEditor);
+    await addWhitelistEntry(domainTextBox.value, nameTextBox.value, type, entryInEditor)
   } catch (e) {
-    entryEditorError.textContent = `${e.message}\r\n\r\n`;
+    entryEditorError.textContent = `${e.message}\r\n\r\n`
     return
   }
   if (type === 'c') {
-    await callRestoreUnwantedCookie(domainTextBox.value, nameTextBox.value);
+    await callRestoreUnwantedCookie(domainTextBox.value, nameTextBox.value)
   } else {
-    await restoreUnwantedDomStorageEntriesByName(domainTextBox.value, nameTextBox.value);
+    await restoreUnwantedDomStorageEntriesByName(domainTextBox.value, nameTextBox.value)
   }
   await Promise.all([updateActiveTabsCounts(), updateTable()])
-  fillEntryEditor(null);
+  fillEntryEditor(null)
 }
 
 function fillEntryEditor(entry) {
   // fills the entry editor ui elements with the given values
   // reset error text
-  entryEditorError.textContent = '';
+  entryEditorError.textContent = ''
   if (entry !== null) {
     // existing entry
-    saveButton.textContent = 'Save';
-    entryInEditor = entry;
+    saveButton.textContent = 'Save'
+    entryInEditor = entry
     if (entry.type === 'c') {
-      http.checked = true;
+      http.checked = true
     } else {
-      dom.checked = true;
+      dom.checked = true
     }
-    domainTextBox.value = entry.domain;
-    nameTextBox.value = entry.name;
+    domainTextBox.value = entry.domain
+    nameTextBox.value = entry.name
   } else {
     // new entry
-    saveButton.textContent = 'Add';
-    entryInEditor = null;
-    http.checked = true;
-    dom.checked = false;
-    domainTextBox.value = '';
-    nameTextBox.value = '';
+    saveButton.textContent = 'Add'
+    entryInEditor = null
+    http.checked = true
+    dom.checked = false
+    domainTextBox.value = ''
+    nameTextBox.value = ''
   }
 }
 
 function assignUiElements() {
   // gets all the needed ui elements and stores them in variables for later use
-  http = document.getElementById('http');
-  domainTextBox = document.getElementById('domainTextBox');
-  nameTextBox = document.getElementById('nameTextBox');
-  entryEditorError = document.getElementById('entryEditorError');
-  dom = document.getElementById('dom');
-  infoIcons = document.getElementsByClassName('infoIcon');
-  deleteButton = document.getElementById('deleteButton');
-  saveButton = document.getElementById('saveButton');
-  clearButton = document.getElementById('clearButton');
+  http = document.getElementById('http')
+  domainTextBox = document.getElementById('domainTextBox')
+  nameTextBox = document.getElementById('nameTextBox')
+  entryEditorError = document.getElementById('entryEditorError')
+  dom = document.getElementById('dom')
+  infoIcons = document.getElementsByClassName('infoIcon')
+  deleteButton = document.getElementById('deleteButton')
+  saveButton = document.getElementById('saveButton')
+  clearButton = document.getElementById('clearButton')
 }
 
 function addEventlisteners() {
@@ -209,26 +209,26 @@ function addEventlisteners() {
   for (let i = 0; i < infoIcons.length; i++) {
     infoIcons[i].addEventListener('click', async function(e) {
       try {
-        await sendInfoMessage(e.target.title);
+        await sendInfoMessage(e.target.title)
       } catch (e) {
-        console.error(e);
+        console.error(e)
       }
-    });
+    })
   }
   // delete button
   deleteButton.addEventListener('click', function(e) {
-    deleteSelectedEntries();
-  });
+    deleteSelectedEntries()
+  })
   // save button
   saveButton.addEventListener('click', async function() {
     try {
-      await saveEntry();
+      await saveEntry()
     } catch (e) {
-      console.error(e);
+      console.error(e)
     }
-  });
+  })
   // clear button
   clearButton.addEventListener('click', function() {
-    fillEntryEditor(null);
-  });
+    fillEntryEditor(null)
+  })
 }
