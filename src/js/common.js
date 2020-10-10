@@ -118,7 +118,7 @@ async function addCookie(name, value, domain, path, session, date, time, hostOnl
     }
     throw e
   }
-  // make sure that if the cookie is unwanted, it is deleted before resolving to prevent the ui from refreshing too early with incorrect data
+  // make sure that if the cookie is unwanted, it is handled before resolving to prevent the ui from refreshing too early with incorrect data
   // cookie.set returns a cookie object but seems to be unreliable in both chromium and ff so just use the input data instead
   let newDomain
   if (!domain.startsWith(".")) {
@@ -139,10 +139,17 @@ async function addCookie(name, value, domain, path, session, date, time, hostOnl
     expirationDate: expirationDate,
     storeId: cookieStore
   }
-  let allowed = await getCookieAllowedState(newCookie)
-  if (!allowed) {
-    await callAddUnwantedCookie(newCookie)
-    await deleteCookie(newCookie)
+  let allowedState = await getCookieAllowedState(newCookie)
+  switch (allowedState) {
+    case 'd':
+      await Promise.all([callAddUnwantedCookie(newCookie), deleteCookie(newCookie)])
+      break
+    case 'c':
+      await convertCookieToSessionCookie(newCookie)
+      break
+    default:
+      // no action needed to keep the cookie as is
+      break
   }
 }
 async function addCookieFromObject(cookie, cookieStore) {
@@ -193,10 +200,14 @@ async function deleteAllCookies(url, cookieStore) {
   promises.push(callClearUnwantedCookiesforDomain(getRuleRelevantPartOfDomain(url), cookieStore))
   await Promise.all(promises)
 }
-async function deleteExistingUnwantedCookies(url) {
+async function handleExistingUnwantedCookies(url) {
   // deletes all existung but unwanted cookies from a given url
   let domain = getRuleRelevantPartOfDomain(url)
   let behaviour = await getSiteBehaviour(domain)
+  if (behaviour == 2) {
+    // all cookies allowed
+    return
+  }
   let cookieStores = await browser.cookies.getAllCookieStores()
   let siteCookiePromises = cookieStores.map(async cookieStore => {
     return getAllCookies({
@@ -206,11 +217,14 @@ async function deleteExistingUnwantedCookies(url) {
   })
   let siteCookies = (await Promise.all(siteCookiePromises)).flat()
   let promises = siteCookies.flatMap(async cookie => {
-    if (behaviour == 0 || (behaviour == 1 && !cookie.session)) {
-      let whitelisted = await getObjectWhitelistedState(cookie.domain, cookie.name, 'c')
-      if (!whitelisted) {
-        return [deleteCookie(cookie), callAddUnwantedCookie(cookie)]
-      }
+    let whitelisted = await getObjectWhitelistedState(cookie.domain, cookie.name, 'c')
+    if (whitelisted) {
+      return
+    }
+    if (behaviour == 0) {
+      return Promise.all([deleteCookie(cookie), callAddUnwantedCookie(cookie)])
+    } else if (behaviour == 1 && !cookie.session) {
+      await convertCookieToSessionCookie(cookie)
     }
   })
   await Promise.all(promises)
@@ -220,42 +234,52 @@ async function deleteAllTabsExistingUnwantedCookies() {
   let tabs = await browser.tabs.query({})
   let promises = tabs.map(async tab => {
     if (tab.url.startsWith('http')) {
-      return deleteExistingUnwantedCookies(tab.url)
+      return handleExistingUnwantedCookies(tab.url)
     }
   })
   await Promise.all(promises)
 }
 async function getCookieAllowedState(cookie) {
-  // returns if a given cookie is allowed (should be accepted) or not
+  // returns the appropriate action for a cookie
+  // d -> delete
+  // k -> keep
+  // c -> convert
   let caseBehaviour = await getSiteBehaviour(getRuleRelevantPartOfDomain(cookie.domain))
-  // allow if all cookies are allowed for that site
+  // keep if all cookies are allowed for that site
   if (caseBehaviour == 2) {
-    return true
+    return 'k'
   }
-  // allow if the cookie is whitelisted
+  // keep if the cookie is whitelisted
   let whitelisted = await getObjectWhitelistedState(cookie.domain, cookie.name, 'c')
   if (whitelisted) {
-    return true
+    return 'k'
   }
   switch (caseBehaviour) {
     case 0:
-      // dont allow if cookies are not allowed for the site
-      return false
+      // delete if cookies are not allowed for the site
+      return 'd'
       break
     case 1:
-      // allow session
+      // convert to session
       if (cookie.session) {
-        // allow if session cookies are allowed and its a session cookie
-        return true
+        // keep if convert to session is set and its a session cookie
+        return 'k'
       } else {
-        // deny if session cookies are allowed and its not a session cookie
-        return false
+        // convert if convert to session is set and its not a session cookie
+        return 'c'
       }
       break
     default:
       // invalid
       throw Error(`Error: invalid Behaviour: ${caseBehaviour}`)
   }
+}
+async function convertCookieToSessionCookie(cookie) {
+  let sessionCookie = {
+    ...cookie,
+    expirationDate: undefined
+  }
+  await addCookieFromObject(sessionCookie, sessionCookie.storeId)
 }
 async function handleCookieEvent(changeInfo) {
   // is used when a cookie change event needs to be handled
@@ -265,11 +289,17 @@ async function handleCookieEvent(changeInfo) {
   if (changeInfo.removed) {
     return
   }
-  let allowed = await getCookieAllowedState(changeInfo.cookie)
-  if (!allowed) {
-    callAddUnwantedCookie(changeInfo.cookie)
-    await deleteCookie(changeInfo.cookie)
-    await updateActiveTabsCounts()
+  let allowedState = await getCookieAllowedState(changeInfo.cookie);
+  switch (allowedState) {
+    case 'd':
+      await Promise.all([callAddUnwantedCookie(changeInfo.cookie), deleteCookie(changeInfo.cookie)])
+      break
+    case 'c':
+      await convertCookieToSessionCookie(changeInfo.cookie)
+      break
+    default:
+      // no action needed to keep the cookie as is
+      break
   }
 }
 /*

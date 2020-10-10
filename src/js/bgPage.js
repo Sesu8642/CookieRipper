@@ -148,6 +148,9 @@ async function restoreAllDomainsUnwantedCookies(request) {
             if (behaviour === 2 || behaviour === 1 && cookie.session) {
               await addCookieFromObject(cookie, cookie.storeId)
               delete openDomainsUnwantedCookies[domain].cookieStores[storeKey].unwantedCookies[cookieKey]
+            } else if (behaviour === 1 && !cookie.session) {
+              await convertCookieToSessionCookie(cookie)
+              delete openDomainsUnwantedCookies[domain].cookieStores[storeKey].unwantedCookies[cookieKey]
             }
           })
           await Promise.all(cookiePromises)
@@ -346,7 +349,7 @@ browser.webNavigation.onCommitted.addListener(async details => {
   // update icon and count and delete unwanted cookies
   try {
     await updateTabIcon(details.tabId)
-    await deleteExistingUnwantedCookies(details.url)
+    await handleExistingUnwantedCookies(details.url)
     await updateActiveTabsCounts()
     await removeClosedDomainsFromopenDomainsUnwantedCookies()
   } catch (e) {

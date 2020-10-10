@@ -87,7 +87,7 @@ function initCookieTable() {
             if (cell.getValue()) {
               await deleteWhitelistEntry(cell.getRow().getData().domain, cell.getRow().getData().name, 'c', null)
               // could be optimized with function that only checks that one cookie
-              await deleteExistingUnwantedCookies(activeTabUrl)
+              await handleExistingUnwantedCookies(activeTabUrl)
               await Promise.all([updateActiveTabsCounts(), updateCookieTable()])
             } else {
               await addWhitelistEntry(cell.getRow().getData().domain, cell.getRow().getData().name, 'c')

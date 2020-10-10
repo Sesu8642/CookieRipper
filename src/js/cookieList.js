@@ -298,17 +298,30 @@ async function fillCookieEditor(cookie) {
     cookieHttpOnly.checked = false
     firstPartyDomainTextBox.value = ''
     sameSiteSelect.value = 'lax'
+    await checkForUnwantedCookieAndDisplayWarning()
   }
 }
 
 async function checkForUnwantedCookieAndDisplayWarning() {
   cookieEditorWarning.textContent = ''
-  if (!await getCookieAllowedState({
-      domain: domainTextBox.value,
-      name: nameTextBox.value,
-      session: sessionCookie.checked
-    })) {
-    cookieEditorWarning.textContent = `Warning: this cookie is unwanted and will be deleted when you click save.\r\n\r\n`
+  if (domainTextBox.value === '') {
+    return
+  }
+  let allowedState = await getCookieAllowedState({
+    domain: domainTextBox.value,
+    name: nameTextBox.value,
+    session: sessionCookie.checked
+  });
+  switch (allowedState) {
+    case 'd':
+      cookieEditorWarning.textContent = `Warning: this cookie is unwanted and will be deleted when you click save.\r\n\r\n`
+      break
+    case 'c':
+      cookieEditorWarning.textContent = `Warning: this cookie is unwanted and will be converted to a session cookie when you click save.\r\n\r\n`
+      break
+    default:
+      // no action needed to keep the cookie as is
+      break
   }
 }
 
