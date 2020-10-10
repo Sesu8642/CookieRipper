@@ -29,6 +29,9 @@ function initTable() {
     columns: [{
       formatter: 'rowSelection',
       titleFormatter: 'rowSelection',
+      titleFormatterParams: {
+        rowRange: "active"
+      },
       hozAlign: 'center',
       headerSort: false,
       width: '0'
