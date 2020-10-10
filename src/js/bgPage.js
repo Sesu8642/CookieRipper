@@ -5,7 +5,7 @@ var defaultBehaviour, enableCookieCounter
 async function loadSettings(skipUpdatingScripts = false) {
   // loads settings from storage and applies them
   let items = await browser.storage.sync.get({
-    defaultBehaviour: 2,
+    defaultBehaviour: 0,
     enableCookieCounter: false
   })
   defaultBehaviour = Number(items.defaultBehaviour)
