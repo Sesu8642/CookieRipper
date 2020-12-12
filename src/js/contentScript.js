@@ -2,10 +2,12 @@
 /*
  * this script is injected into websites because dom storage is only accessible from there (i think)
  */
+/* prefix for permanent dom storage entries converted into temporary ones */
+const CONVERT_PREFIX = '__CR_'
 var unwantedDomStorageEntries = []
 init()
 async function init() {
-  await deleteExistingUnwantedStorageEntries()
+  await handleExistingUnwantedStorageEntries()
   await injectScript()
 }
 // only answer messages from background script if in the top frame
@@ -20,7 +22,8 @@ window.addEventListener('message', async event => {
           await handleNewDomStorageItem(event.data)
           break
         case 'cookieRipper_injectedScriptIsDone':
-          await deleteExistingUnwantedStorageEntries()
+          await deleteInvalidPrefixItems();
+          await handleExistingUnwantedStorageEntries()
           break
         default:
           // nothing to do, might be some other message the website sent
@@ -39,6 +42,7 @@ function handleMessage(request) {
       break
     case 'getUnwantedStorage':
       return Promise.resolve(unwantedDomStorageEntries)
+      break
     case 'deleteEntry':
       return deleteStorageEntry(request)
       break
@@ -47,17 +51,18 @@ function handleMessage(request) {
       break
     case 'deleteUnwantedEntry':
       return deleteUnwantedStorageEntry(request)
+      break
     case 'restoreUnwantedEntriesByName':
       return restoreUnwantedStorageEntriesByName(request)
       break
     case 'restoreUnwantedEntries':
       return restoreUnwantedStorageEntries()
       break
-    case 'deleteExistingUnwantedEntriesByName':
-      return deleteExistingUnwantedStorageEntriesByName(request)
+    case 'handleExistingUnwantedEntriesByName':
+      return handleExistingUnwantedStorageEntriesByName(request)
       break
-    case 'deleteExistingUnwantedEntries':
-      return deleteExistingUnwantedStorageEntries()
+    case 'handleExistingUnwantedEntries':
+      return handleExistingUnwantedStorageEntries()
       break
     case 'addEntry':
       return addStorageEntry(request)
@@ -114,17 +119,15 @@ async function deleteUnwantedStorageEntry(request) {
 }
 async function restoreUnwantedStorageEntriesByName(request) {
   // re-creates the entries with the given name from unwanted list (possibly two: one permanent, one temporary)
-  unwantedDomStorageEntries.forEach(entry => {
-    if (entry.name === request.name) {
-      let storage = entry.persistent ? localStorage : sessionStorage
-      storage.setItem(entry.name, entry.value)
-    }
+  unwantedDomStorageEntries.filter(entry => entry.name === request.name).forEach(entry => {
+    let storage = entry.persistent ? localStorage : sessionStorage
+    storage.setItem(entry.name, entry.value)
   })
   await deleteUnwantedStorageEntriesByName(request)
 }
 async function restoreUnwantedStorageEntries() {
   // re-creates wanted dom storage entries from unwanted list
-  let domain = window.location.host
+  let domain = window.location.hostname
   let storageItems = []
   unwantedDomStorageEntries.forEach(entry => {
     // create list of storage items and send them to the background page
@@ -140,106 +143,139 @@ async function restoreUnwantedStorageEntries() {
   })
   // restore the wanted items
   for (let i = 0; i < response.length; i++) {
-    if (response[i]) {
-      unwantedDomStorageEntries.forEach(async entry => {
-        if (entry.name === storageItems[i].name && entry.persistent === storageItems[i].persistent) {
-          let storage = entry.persistent ? localStorage : sessionStorage
-          storage.setItem(entry.name, entry.value)
-        }
+    if (response[i] === 'd') {
+      continue;
+    }
+    let storage
+    let prefix = ''
+    if (response[i] === 'c') {
+      // create as temporary entry; c cannot mean to convert the other way bc no info about conversion is in the unwanted list
+      storage = sessionStorage;
+      prefix = CONVERT_PREFIX;
+    } else if (response[i] === 'k') {
+      // create entry in original storage
+      storage = storageItems[i].persistent ? localStorage : sessionStorage
+    }
+    // the response does (on purpose) not contain enough information to restore the entry so it must be found in the unwanted entries again
+    unwantedDomStorageEntries.forEach(async entry => {
+      if (entry.name === storageItems[i].name && entry.persistent === storageItems[i].persistent) {
+        storage.setItem(`${prefix}${entry.name}`, entry.value)
         await deleteUnwantedStorageEntry({
           entry: entry
         })
-      })
-    }
+      }
+    })
   }
 }
-async function deleteExistingUnwantedStorageEntriesByName(request) {
-  // deletes existung but unwanted entries by name
-  let domain = window.location.host
+async function handleExistingUnwantedStorageEntriesByName(request) {
+  // handles existung but unwanted entries by name
+  let domain = window.location.hostname
   // create list of storage items and send them to the background page
   let existingItems = []
-  let singleItemPerm
   if (sessionStorage.getItem(request.name) !== null) {
-    singleItemPerm = false
+    let isConverted = request.name.startsWith(CONVERT_PREFIX);
+    let nameWithoutPrefix = isConverted ? request.name.substring(CONVERT_PREFIX.length) : request.name
     existingItems.push({
-      name: request.name,
-      persistent: false
+      name: nameWithoutPrefix,
+      persistent: false,
+      isConverted: isConverted
     })
   }
   if (localStorage.getItem(request.name) !== null) {
-    singleItemPerm = true
     existingItems.push({
       name: request.name,
-      persistent: true
+      persistent: true,
+      isConverted: false
     })
   }
-  let wanted = await browser.runtime.sendMessage({
+  let response = await browser.runtime.sendMessage({
     type: 'getTabDomStorageItemsAllowedStates',
     items: existingItems,
     domain: domain
   })
-  if (wanted.length === 1) {
-    // either a temporary or permanent entry exists
-    if (wanted[0] === false) {
-      let storage = singleItemPerm ? localStorage : sessionStorage
+  for (let i = 0; i < response.length; i++) {
+    if (response[i] === 'd') {
+      let storage = existingItems[i].persistent ? localStorage : sessionStorage
       unwantedDomStorageEntries.push({
         name: request.name,
         value: storage.getItem(request.name),
-        persistent: singleItemPerm
+        persistent: existingItems[i].persistent
       })
       storage.removeItem(request.name)
+    } else if (response[i] === 'c') {
+      if (existingItems[i].persistent) {
+        // item was previously whitelisted and now needs to be converted
+        convertPermanentEntryToTemporary({
+          name: request.name,
+          value: localStorage.getItem(request.name)
+        })
+      } else {
+        // item was just whitelisted and needs to be converted back
+        convertTemporaryEntryToPermanent({
+          name: request.name.substring(CONVERT_PREFIX.length),
+          value: sessionStorage.getItem(request.name)
+        })
+      }
     }
-    return
-  }
-  if (wanted[0] === false) {
-    unwantedDomStorageEntries.push({
-      name: request.name,
-      value: sessionStorage.getItem(request.name),
-      persistent: false
-    })
-    sessionStorage.removeItem(request.name)
-  }
-  if (wanted[1] === false) {
-    unwantedDomStorageEntries.push({
-      name: request.name,
-      value: localStorage.getItem(request.name),
-      persistent: true
-    })
-    localStorage.removeItem(request.name)
   }
 }
-async function deleteExistingUnwantedStorageEntries() {
-  // deletes all existung but unwanted entries
-  let domain = window.location.host
+async function handleExistingUnwantedStorageEntries() {
+  // handles all existung but unwanted entries
+  let domain = window.location.hostname
   // create list of storage items and send them to the background page
   let storageItems = []
   for (let i = 0; i < localStorage.length; i++) {
     storageItems.push({
       name: localStorage.key(i),
-      persistent: true
+      persistent: true,
+      isConverted: false
     })
   }
   for (let i = 0; i < sessionStorage.length; i++) {
-    storageItems.push({
-      name: sessionStorage.key(i),
-      persistent: false
-    })
+    if (sessionStorage.key(i).startsWith(CONVERT_PREFIX)) {
+      storageItems.push({
+        name: sessionStorage.key(i).substring(CONVERT_PREFIX.length),
+        persistent: true,
+        isConverted: true
+      })
+    } else {
+      storageItems.push({
+        name: sessionStorage.key(i),
+        persistent: false,
+        isConverted: false
+      })
+    }
   }
   let response = await browser.runtime.sendMessage({
     type: 'getTabDomStorageItemsAllowedStates',
     items: storageItems,
     domain: domain
   })
-  // delete the unwanted items
   for (let i = 0; i < response.length; i++) {
-    if (!response[i]) {
-      let storage = storageItems[i].persistent ? localStorage : sessionStorage
+    if (response[i] === 'd') {
+      // delete entry
+      let prefix_name = storageItems[i].isConverted ? CONVERT_PREFIX + storageItems[i].name : storageItems[i].name
+      let readFromStorage = (!storageItems[i].persistent || storageItems[i].isConverted) ? sessionStorage : localStorage;
+      let rememberAsPersistent = (storageItems[i].isConverted || storageItems[i].persistent)
       unwantedDomStorageEntries.push({
         name: storageItems[i].name,
-        value: storage.getItem(storageItems[i].name),
-        persistent: storageItems[i].persistent
+        value: readFromStorage.getItem(prefix_name),
+        persistent: rememberAsPersistent
       })
-      storage.removeItem(storageItems[i].name)
+      readFromStorage.removeItem(prefix_name)
+    } else if (response[i] === 'c') {
+      // convert entry
+      if (!storageItems[i].isConverted) {
+        await convertPermanentEntryToTemporary({
+          name: storageItems[i].name,
+          value: localStorage.getItem(storageItems[i].name)
+        })
+      } else {
+        await convertTemporaryEntryToPermanent({
+          name: storageItems[i].name,
+          value: sessionStorage.getItem(CONVERT_PREFIX + storageItems[i].name)
+        })
+      }
     }
   }
 }
@@ -247,13 +283,13 @@ async function injectScript() {
   // adds a script tag into the html document to notify when dom storage is written
   // using a string loads faster than the js from the website using a separate js file does not
   let script = document.createElement('script')
-  script.src = browser.runtime.getURL('js/inject.js')
+  script.src = chrome.runtime.getURL('js/inject.js');
   // Add the script tag to the DOM
   (document.head || document.documentElement).appendChild(script)
   script.remove()
 }
 async function handleNewDomStorageItem(request) {
-  // if a new dom storage entry was set, delete or keep it
+  // if a new dom storage entry was set, delete, convert or keep it
   let storageItems = [{
     name: request.name,
     persistent: request.persistent
@@ -261,10 +297,10 @@ async function handleNewDomStorageItem(request) {
   let response = await browser.runtime.sendMessage({
     type: 'getTabDomStorageItemsAllowedStates',
     items: storageItems,
-    domain: window.location.host
+    domain: window.location.hostname
   })
   // delete the item if unwanted
-  if (!response[0]) {
+  if (response[0] === 'd') {
     let storage = request.persistent ? localStorage : sessionStorage
     storage.removeItem(request.name)
     // if the item is in the unwanted list already, remove it first
@@ -279,5 +315,39 @@ async function handleNewDomStorageItem(request) {
       value: request.value,
       persistent: request.persistent
     })
+  } else if (response[0] === 'c') {
+    // converting the other way is not applicable
+    await convertPermanentEntryToTemporary(request)
   }
+}
+async function deleteInvalidPrefixItems() {
+  let removeData = []
+  for (let i = 0; i < localStorage.length; i++) {
+    if (localStorage.key(i).startsWith(CONVERT_PREFIX)) {
+      removeData.push({
+        storage: localStorage,
+        name: localStorage.key(i)
+      })
+    }
+  }
+  for (let i = 0; i < sessionStorage.length; i++) {
+    // session storage entries with a single prefix may be legit and from the extension; even when a website can set one, it wont break anything
+    if (sessionStorage.key(i).startsWith(CONVERT_PREFIX + CONVERT_PREFIX)) {
+      removeData.push({
+        storage: sessionStorage,
+        name: sessionStorage.key(i)
+      })
+    }
+  }
+  removeData.forEach(dataPoint => {
+    dataPoint.storage.removeItem(dataPoint.name)
+  })
+}
+async function convertPermanentEntryToTemporary(entry) {
+  sessionStorage.setItem(CONVERT_PREFIX + entry.name, entry.value)
+  localStorage.removeItem(entry.name)
+}
+async function convertTemporaryEntryToPermanent(entry) {
+  sessionStorage.removeItem(CONVERT_PREFIX + entry.name)
+  localStorage.setItem(entry.name, entry.value)
 }

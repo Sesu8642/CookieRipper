@@ -167,11 +167,12 @@ function initDomStorageTable() {
             // whitelisted checkbox clicked
             if (cell.getValue()) {
               await deleteWhitelistEntry(cell.getRow().getData().domain, cell.getRow().getData().name, 'd')
-              await deleteExistingUnwantedDomStorageEntriesByName(cell.getRow().getData().domain, cell.getRow().getData().name)
+              await handleExistingUnwantedDomStorageEntriesByName(cell.getRow().getData().domain, cell.getRow().getData().name)
               await Promise.all([updateActiveTabsCounts(), updateDomStorageTable()])
             } else {
               await addWhitelistEntry(cell.getRow().getData().domain, cell.getRow().getData().name, 'd')
               await restoreUnwantedDomStorageEntriesByName(cell.getRow().getData().domain, cell.getRow().getData().name)
+              await handleExistingUnwantedDomStorageEntriesByName(cell.getRow().getData().domain, cell.getRow().getData().name)
               await Promise.all([updateActiveTabsCounts(), updateDomStorageTable()])
             }
           } else if (classNames.includes('editIcon')) {

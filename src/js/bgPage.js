@@ -17,7 +17,7 @@ async function loadSettings(skipUpdatingScripts = false) {
     await Promise.all([restoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()])
     try {
       // this can fail if unable to inject content script
-      await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()])
+      await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), handleAllTabsExistingUnwantedDomStorageEntries()])
     } catch (e) {
       console.warn(e)
     }
@@ -66,7 +66,7 @@ async function addTempSiteException(request) {
   await Promise.all([restoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()])
   try {
     // this can fail if unable to inject content script
-    await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()])
+    await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), handleAllTabsExistingUnwantedDomStorageEntries()])
   } catch (e) {
     console.warn(e)
   }
@@ -78,7 +78,7 @@ async function deleteTempSiteException(request) {
   await Promise.all([restoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()])
   try {
     // this can fail if unable to inject content script
-    await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()])
+    await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), handleAllTabsExistingUnwantedDomStorageEntries()])
   } catch (e) {
     console.warn(e)
   }
@@ -90,7 +90,7 @@ async function clearTempSiteExceptions(request) {
   await Promise.all([restoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()])
   try {
     // can fail if unable to inject content script
-    await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()])
+    await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), handleAllTabsExistingUnwantedDomStorageEntries()])
   } catch (e) {
     console.warn(e)
   }
@@ -220,18 +220,36 @@ async function removeClosedDomainsFromopenDomainsUnwantedCookies() {
 }
 async function getTabDomStorageItemsAllowedStates(request) {
   // returns an array of booleans meaning whether a dom storage entry is allowed or not
+  // d -> delete
+  // k -> keep
+  // c -> convert
   let behaviour = await getSiteBehaviour(getRuleRelevantPartOfDomain(request.domain))
-  // if behaviour is allow all --> return true for all items
+  // if behaviour is allow all --> return k or c for all items
   if (behaviour == 2) {
-    return request.items.map(_ => {
-      return true
+    return request.items.map(item => {
+      return item.isConverted ? 'c' : 'k'
     })
   }
   // if behaviour is not allow all --> check whitelisted state and storage type
   let promises = request.items.map(async item => {
-    return getObjectWhitelistedState(request.domain, item.name, 'd').then(whitelisted => {
-      return (whitelisted || (behaviour == 1 && !item.persistent))
-    })
+    let whitelisted = await getObjectWhitelistedState(request.domain, item.name, 'd')
+    if (whitelisted) {
+      return item.isConverted ? 'c' : 'k'
+    }
+    switch (behaviour) {
+      case 0:
+        // delete if storage is not allowed for the site
+        return 'd'
+        break
+      case 1:
+        // convert to session
+        // keep if its a session cookie; convert if its not
+        return item.persistent && !item.isConverted ? 'c' : 'k'
+        break
+      default:
+        // invalid
+        throw Error(`Error: invalid Behaviour: ${caseBehaviour}`)
+    }
   })
   return Promise.all(promises)
 }

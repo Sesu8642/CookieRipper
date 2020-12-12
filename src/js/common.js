@@ -4,6 +4,8 @@
  * This file contains functions that may be used by all the other js files.
  *
  */
+/* prefix for permanent dom storage entries converted into temporary ones */
+const CONVERT_PREFIX = '__CR_'
 /* for accessing variables from background page if not in private mode */
 let bgPage = browser.extension.getBackgroundPage()
 /* whether firstPartyIsolation is supported */
@@ -422,6 +424,17 @@ async function getUnwantedDomStorageEntries(tabId) {
 }
 async function addDomStorageEntry(tabId, persistent, name, value, overwriteEntry = null) {
   // adds a new dom storage entry to a given tab
+  // prevent the users from adding the prefix themselves
+  if (persistent) {
+    while (name.startsWith(CONVERT_PREFIX)) {
+      name = name.substr(CONVERT_PREFIX.length)
+    }
+  } else {
+    // allow a single convert prefix for temporary items
+    while (name.startsWith(CONVERT_PREFIX + CONVERT_PREFIX)) {
+      name = name.substr(CONVERT_PREFIX.length)
+    }
+  }
   // delete overwriteEntry
   if (overwriteEntry !== null) {
     await deleteDomStorageEntry(tabId, overwriteEntry)
@@ -441,7 +454,7 @@ async function addDomStorageEntry(tabId, persistent, name, value, overwriteEntry
     throw e
   }
   // delete the entry if unwanted
-  await deleteExistingUnwantedDomStorageEntries(tabId)
+  await handleExistingUnwantedDomStorageEntries(tabId)
 }
 async function deleteDomStorageEntry(tabId, entry) {
   // deletes a given dom storage entry from a given tab
@@ -495,31 +508,31 @@ async function restoreAllTabsUnwantedDomStorageEntries() {
   })
   await Promise.all(promises)
 }
-async function deleteExistingUnwantedDomStorageEntriesByName(hostname, name) {
-  // re-creates dom storage entries from unwanted list in case the user whitelists one
+async function handleExistingUnwantedDomStorageEntriesByName(hostname, name) {
+  // handles existing but unwanted dom storage entries
   let tabs = await browser.tabs.query({})
   let promises = tabs.map(async tab => {
     if ((new URL(tab.url)).hostname === hostname) {
       return await browser.tabs.sendMessage(tab.id, {
-        type: 'deleteExistingUnwantedEntriesByName',
+        type: 'handleExistingUnwantedEntriesByName',
         name: name
       })
     }
   })
   await Promise.all(promises)
 }
-async function deleteExistingUnwantedDomStorageEntries(tabId) {
-  // deletes all existung but unwanted dom storage entries from a given tab
+async function handleExistingUnwantedDomStorageEntries(tabId) {
+  // handles all existung but unwanted dom storage entries from a given tab
   return await browser.tabs.sendMessage(tabId, {
-    type: 'deleteExistingUnwantedEntries'
+    type: 'handleExistingUnwantedEntries'
   })
 }
-async function deleteAllTabsExistingUnwantedDomStorageEntries() {
-  // deletes all existung but unwanted dom storage entries from all open tabs
+async function handleAllTabsExistingUnwantedDomStorageEntries() {
+  // handles all existung but unwanted dom storage entries from all open tabs
   let tabs = await browser.tabs.query({})
   let promises = tabs.map(async tab => {
     if (tab.url.startsWith('http')) {
-      await deleteExistingUnwantedDomStorageEntries(tab.id)
+      await handleExistingUnwantedDomStorageEntries(tab.id)
     }
   })
   await Promise.all(promises)
@@ -591,7 +604,7 @@ async function addSiteException(domain, rule, temporary, overwriteException = nu
     await Promise.all([callRestoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()])
     try {
       // can fail if unable to inject content script
-      await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()])
+      await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), handleAllTabsExistingUnwantedDomStorageEntries()])
     } catch (e) {
       console.warn(e)
     }
@@ -647,7 +660,7 @@ async function deleteSiteException(domain, temporary) {
     await Promise.all([callRestoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()])
     try {
       // can fail if unable to inject content script
-      await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), deleteAllTabsExistingUnwantedDomStorageEntries()])
+      await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), handleAllTabsExistingUnwantedDomStorageEntries()])
     } catch (e) {
       console.warn(e)
     }
@@ -698,6 +711,7 @@ async function getObjectWhitelistedState(domain, name, type) {
 }
 async function addWhitelistEntry(domain, name, type, overwriteEntry = null) {
   // adds a new whitelist with the given data
+  let nameWithoutPrefix = name.startsWith(CONVERT_PREFIX) ? name.substr(CONVERT_PREFIX.length) : name
   domain = domain.startsWith('.') ? domain.substr(1) : domain
   // make sure the domain is valid
   new URL(`http://${domain}`)
@@ -710,7 +724,7 @@ async function addWhitelistEntry(domain, name, type, overwriteEntry = null) {
       // use prefix 'wl' for whitelist entries and both domain and name as key
       // last letter is the type: d --> dom storage, c --> cookie
       //use '|' as separator and encode all the other stuff to prevent fuck ups
-      [`wl|${encodeURI(domain)}|${encodeURI(name)}|${type}`]: ''
+      [`wl|${encodeURI(domain)}|${encodeURI(nameWithoutPrefix)}|${type}`]: ''
     })
   } catch (e) {
     // restore overwriteEntry if new entry could not be set
@@ -722,8 +736,9 @@ async function addWhitelistEntry(domain, name, type, overwriteEntry = null) {
 }
 async function deleteWhitelistEntry(domain, name, type) {
   // removes a whitelist entry matching the given data
+  let nameWithoutPrefix = name.startsWith(CONVERT_PREFIX) ? name.substr(CONVERT_PREFIX.length) : name
   domain = domain.startsWith('.') ? domain.substr(1) : domain
-  let key = `wl|${encodeURI(domain)}|${encodeURI(name)}|${type}`
+  let key = `wl|${encodeURI(domain)}|${encodeURI(nameWithoutPrefix)}|${type}`
   await browser.storage.local.remove(key)
 }
 async function getDomstorageEntryWhitelistedStateAsResponse(request) {

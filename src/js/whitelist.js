@@ -144,7 +144,7 @@ async function deleteSelectedEntries() {
       if (entry.type === 'c') {
         await deleteAllTabsExistingUnwantedCookies()
       } else {
-        await deleteExistingUnwantedDomStorageEntriesByName(entry.domain, entry.name)
+        await handleExistingUnwantedDomStorageEntriesByName(entry.domain, entry.name)
       }
     })
   })
@@ -164,6 +164,7 @@ async function saveEntry() {
     await callRestoreUnwantedCookie(domainTextBox.value, nameTextBox.value)
   } else {
     await restoreUnwantedDomStorageEntriesByName(domainTextBox.value, nameTextBox.value)
+    await handleExistingUnwantedDomStorageEntriesByName(domainTextBox.value, nameTextBox.value)
   }
   await Promise.all([updateActiveTabsCounts(), updateTable()])
   fillEntryEditor(null)
