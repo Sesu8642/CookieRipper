@@ -144,14 +144,9 @@ img.infoIcon {
   }
 }
 
-/* selection area (used in popup and options page) */
+/* selection area (used in popup and options page), exact layout is defined in the respective sections */
 .selectionArea {
   display: grid;
-  grid-template-rows: auto auto auto;
-  grid-template-columns: 2fr 2fr 2fr 2fr 2fr 2fr;
-  grid-template-areas:
-    ". slider slider slider slider ."
-    "denyOption denyOption sessionOption sessionOption allowOption allowOption";
   max-width: 70ch;
 }
 
@@ -159,6 +154,10 @@ img.infoIcon {
   grid-area: slider;
   width: 100%;
   justify-self: center;
+}
+
+.selectionArea #defaultOption {
+  grid-area: defaultOption;
 }
 
 .selectionArea #denyOption {
@@ -173,7 +172,7 @@ img.infoIcon {
   grid-area: allowOption;
 }
 
-.selectionArea .selectedBehaviour {
+.selectedBehaviour {
   color: var(--highlighted-color-text);
 }
 
@@ -200,11 +199,6 @@ img.infoIcon {
   width: 60ch;
   margin: 1ch;
   font-size: 80%;
-}
-
-#useSiteBehaviourArea,
-#useTempBehaviourArea {
-  margin-left: 0.5ex;
 }
 
 .extension-popup .blocked {
@@ -294,13 +288,9 @@ img.infoIcon {
   opacity: 0.5;
 }
 
-.extension-popup img.deleteRuleIcon {
+.extension-popup img.inTextIcon {
   width: 1.8ch;
   vertical-align: middle;
-}
-
-.extension-popup .selectedBehaviourArea {
-  box-shadow: -0.5ex 0 0 0 var(--highlighted-color-secondary);
 }
 
 .extension-popup #mainView {
@@ -358,9 +348,25 @@ img.infoIcon {
   height: 2.5ch;
 }
 
+.extension-popup .selectionArea {
+  grid-template-rows: auto auto auto;
+  grid-template-columns: 2fr 2fr 2fr 2fr 2fr 2fr 2fr 2fr;
+  grid-template-areas:
+    ". slider slider slider slider slider slider ."
+    "defaultOption defaultOption denyOption denyOption sessionOption sessionOption allowOption allowOption";
+}
+
 /* options page */
 .extension-options .selectionArea {
   max-width: 70ch;
+}
+
+.extension-options .selectionArea {
+  grid-template-rows: auto auto auto;
+  grid-template-columns: 2fr 2fr 2fr 2fr 2fr 2fr;
+  grid-template-areas:
+    ". slider slider slider slider ."
+    "denyOption denyOption sessionOption sessionOption allowOption allowOption";
 }
 
 /* cookie list cookie editor */

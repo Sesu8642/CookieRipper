@@ -9,7 +9,7 @@ let contentScriptavailable = true
 const connectToContentScriptMaxRetries = 5
 const connectToContentScriptRetryDelayMs = 50
 // ui elements
-let firstPartyDomainArea, denyOption, sessionOption, allowOption, slider, useSiteBehaviourLbl, useSiteBehaviourIcon, useTempBehaviourArea, useSiteBehaviourArea, useTempBehaviour, useSiteBehaviour, headline, cookieStore, nonHttpInfo, mainView, cookieTable, domStorageTable, cookieDomainTextBox, cookieHostOnly, cookieNameTextBox, cookieValueTextBox, cookieSessionCookie, cookiePersistent, cookieDate, cookieTime, cookiePathTextBox, cookieFirstPartyDomainTextBox, cookieSecure, cookieHttpOnly, sameSiteSelect, cookieDeleteButton, domStorageDomainTextBox, domStorageNameTextBox, domStorageValueTextBox, domStorageTemporary, domStoragePermanent, domStorageDeleteButton, makeRulePerm, cookieEditor, domStorageEditor, advancedCookieProperties, cookieAdvancedToggle, cookieCancelButton, domStorageCancelButton, cookieSaveButton, cookieEditorError, domStorageEditorError, domStorageSaveButton, cookieAddIcon, domAddIcon, cookieDeleteAllIcon, domDeleteAllIcon, optionsDropdown, optionsImage, dropdownItemSettings, dropdownItemClearTemp
+let firstPartyDomainArea, defaultIcon, defaultOption, denyOption, sessionOption, allowOption, slider, useTempBehaviourArea, useSiteBehaviourArea, allowTempCheckBox, allowTempLbl, headline, cookieStore, nonHttpInfo, mainView, cookieTable, domStorageTable, cookieDomainTextBox, cookieHostOnly, cookieNameTextBox, cookieValueTextBox, cookieSessionCookie, cookiePersistent, cookieDate, cookieTime, cookiePathTextBox, cookieFirstPartyDomainTextBox, cookieSecure, cookieHttpOnly, sameSiteSelect, cookieDeleteButton, domStorageDomainTextBox, domStorageNameTextBox, domStorageValueTextBox, domStorageTemporary, domStoragePermanent, domStorageDeleteButton, cookieEditor, domStorageEditor, advancedCookieProperties, cookieAdvancedToggle, cookieCancelButton, domStorageCancelButton, cookieSaveButton, cookieEditorError, domStorageEditorError, domStorageSaveButton, cookieAddIcon, domAddIcon, cookieDeleteAllIcon, domDeleteAllIcon, optionsDropdown, optionsImage, dropdownItemSettings, dropdownItemClearTemp
 document.addEventListener('DOMContentLoaded', async _ => {
   try {
     let tab = await getActiveTab()
@@ -236,10 +236,15 @@ async function updateDomStorageTable() {
     domStorageTable.replaceData(domList)
   }
 }
-async function enableSiteException(temp) {
-  // adds a site exception
-  let option = Number(slider.value)
-  await addSiteException(activeTabDomain, option, temp)
+async function enablePermSiteException() {
+  // adds a permanent site exception
+  let option = Number(slider.value - 1)
+  if (option === -1) {
+    // default
+    await deleteSiteException(activeTabDomain, false)
+  } else {
+    await addSiteException(activeTabDomain, option, false)
+  }
   await Promise.all([fillSiteInfo(), updateCookieTable(), updateDomStorageTable()])
 }
 async function fillSiteInfo() {
@@ -247,9 +252,20 @@ async function fillSiteInfo() {
   if (activeTabUrl.startsWith('http')) {
     headline.textContent = `Settings For ${activeTabDomain}`
     cookieStore.textContent = `Cookie Store ID: ${activeTabCookieStore}`
+    switch (await callGetDefaultBehaviour()) {
+      case 0:
+        defaultIcon.src = "/icons/ban.svg"
+        break
+      case 1:
+        defaultIcon.src = "/icons/clock.svg"
+        break
+      case 2:
+      default:
+        defaultIcon.src = "/icons/check-circle.svg"
+    }
     let permSiteException, tempSiteException;
     [permSiteException, tempSiteException] = await Promise.all([getSiteException(activeTabDomain, false), getSiteException(activeTabDomain, true)])
-    await Promise.all([depictPermException(permSiteException), depictTempException(permSiteException, tempSiteException)])
+    await depictSiteException(permSiteException, tempSiteException)
     if (firstPartyIsolationSupported) {
       firstPartyDomainArea.classList.remove('hidden')
     }
@@ -257,61 +273,52 @@ async function fillSiteInfo() {
     nonHttpInfo.classList.remove('hidden')
     mainView.classList.add('hidden')
   }
-  async function depictPermException(permSiteException) {
-    // deal with permanent exception
-    if (permSiteException === null) {
-      useSiteBehaviourLbl.textContent = `use site behaviour (default ${getBehaviourString(await callGetDefaultBehaviour())})`
-      useSiteBehaviourIcon.classList.add('hidden')
+
+  async function depictSiteException(permSiteException, tempSiteException) {
+    // deal with site exceptions
+    let permHighlightOption
+    if (permSiteException !== null) {
+      slider.value = permSiteException + 1
+      permHighlightOption = permSiteException + 1
     } else {
-      useSiteBehaviourLbl.textContent = `use site behaviour (${getBehaviourString(permSiteException)})`
-      useSiteBehaviourIcon.classList.remove('hidden')
+      slider.value = 0
+      permHighlightOption = 0
     }
-  }
-  async function depictTempException(permSiteException, tempSiteException) {
-    // deal with temporary exception
     if (tempSiteException !== null) {
-      useTempBehaviourArea.classList.add('selectedBehaviourArea')
-      useSiteBehaviourArea.classList.remove('selectedBehaviourArea')
-      slider.value = tempSiteException
-      highlightActiveOption(tempSiteException)
-      useTempBehaviour.checked = true
-      useSiteBehaviour.checked = false
-    } else if (permSiteException !== null) {
-      useTempBehaviourArea.classList.remove('selectedBehaviourArea')
-      useSiteBehaviourArea.classList.add('selectedBehaviourArea')
-      slider.value = permSiteException
-      useTempBehaviour.checked = false
-      useSiteBehaviour.checked = true
-      highlightActiveOption(permSiteException)
+      allowTempCheckBox.checked = true
+      highlightActiveOption(4)
     } else {
-      useTempBehaviourArea.classList.remove('selectedBehaviourArea')
-      useSiteBehaviourArea.classList.add('selectedBehaviourArea')
-      slider.value = await callGetDefaultBehaviour()
-      useTempBehaviour.checked = false
-      useSiteBehaviour.checked = true
-      highlightActiveOption(await callGetDefaultBehaviour())
+      allowTempCheckBox.checked = false
+      highlightActiveOption(permHighlightOption)
     }
   }
   async function highlightActiveOption(option) {
     // highlights the active option in ui
+    defaultOption.classList.remove('selectedBehaviour')
+    denyOption.classList.remove('selectedBehaviour')
+    sessionOption.classList.remove('selectedBehaviour')
+    allowOption.classList.remove('selectedBehaviour')
+    allowTempLbl.classList.remove('selectedBehaviour')
     switch (option) {
       case 0:
-        // deny
-        denyOption.classList.add('selectedBehaviour')
-        sessionOption.classList.remove('selectedBehaviour')
-        allowOption.classList.remove('selectedBehaviour')
+        // default
+        defaultOption.classList.add('selectedBehaviour')
         break
       case 1:
-        // allow session
-        denyOption.classList.remove('selectedBehaviour')
-        sessionOption.classList.add('selectedBehaviour')
-        allowOption.classList.remove('selectedBehaviour')
+        // deny
+        denyOption.classList.add('selectedBehaviour')
         break
       case 2:
+        // allow session
+        sessionOption.classList.add('selectedBehaviour')
+        break
+      case 3:
         // allow all
-        denyOption.classList.remove('selectedBehaviour')
-        sessionOption.classList.remove('selectedBehaviour')
         allowOption.classList.add('selectedBehaviour')
+        break
+      case 4:
+        // temporary allow all
+        allowTempLbl.classList.add('selectedBehaviour')
         break
       default:
         throw Error(`Invalid behaviour: ${option}`)
@@ -532,16 +539,15 @@ function getBehaviourString(behaviour) {
 function assignUiElements() {
   // gets all the needed ui elements and stores them in variables for later use
   firstPartyDomainArea = document.getElementById('firstPartyDomainArea')
+  defaultIcon = document.getElementById('defaultIcon')
+  defaultOption = document.getElementById('defaultOption')
   denyOption = document.getElementById('denyOption')
   sessionOption = document.getElementById('sessionOption')
   allowOption = document.getElementById('allowOption')
   slider = document.getElementById('slider')
-  useSiteBehaviourLbl = document.getElementById('useSiteBehaviourLbl')
-  useSiteBehaviourIcon = document.getElementById('useSiteBehaviourIcon')
-  useTempBehaviourArea = document.getElementById('useTempBehaviourArea')
+  allowTempCheckBox = document.getElementById('allowTempCheckBox')
+  allowTempLbl = document.getElementById('allowTempLbl')
   useSiteBehaviourArea = document.getElementById('useSiteBehaviourArea')
-  useTempBehaviour = document.getElementById('useTempBehaviour')
-  useSiteBehaviour = document.getElementById('useSiteBehaviour')
   headline = document.getElementById('headline')
   cookieStore = document.getElementById('cookieStore')
   nonHttpInfo = document.getElementById('nonHttpInfo')
@@ -568,7 +574,6 @@ function assignUiElements() {
   domStorageTemporary = document.getElementById('domStorageTemporary')
   domStoragePermanent = document.getElementById('domStoragePermanent')
   domStorageDeleteButton = document.getElementById('domStorageDeleteButton')
-  makeRulePerm = document.getElementById('makeRulePerm')
   advancedCookieProperties = document.getElementById('advancedCookieProperties')
   cookieAdvancedToggle = document.getElementById('cookieAdvancedToggle')
   cookieCancelButton = document.getElementById('cookieCancelButton')
@@ -591,37 +596,7 @@ function addEventlisteners() {
   // adds all the event listeners to ui elements
   slider.addEventListener('change', async _ => {
     try {
-      await enableSiteException(true)
-    } catch (e) {
-      console.error(e)
-    }
-  })
-  makeRulePerm.addEventListener('click', async _ => {
-    try {
-      await enableSiteException(false)
-    } catch (e) {
-      console.error(e)
-    }
-  })
-  useTempBehaviour.addEventListener('click', async _ => {
-    try {
-      await enableSiteException(true)
-    } catch (e) {
-      console.error(e)
-    }
-  })
-  useSiteBehaviour.addEventListener('click', async _ => {
-    try {
-      await deleteSiteException(activeTabDomain, true)
-      await Promise.all([fillSiteInfo(), updateCookieTable(), updateDomStorageTable()])
-    } catch (e) {
-      console.error(e)
-    }
-  })
-  useSiteBehaviourIcon.addEventListener('click', async _ => {
-    try {
-      await deleteSiteException(activeTabDomain, false)
-      await Promise.all([fillSiteInfo(), updateCookieTable(), updateDomStorageTable()])
+      await enablePermSiteException()
     } catch (e) {
       console.error(e)
     }
@@ -691,26 +666,46 @@ function addEventlisteners() {
   cookieAdvancedToggle.addEventListener('click', _ => {
     toggleAdvancedProperties()
   })
-  denyOption.addEventListener('click', async _ => {
+  defaultOption.addEventListener('click', async _ => {
     try {
       slider.value = 0
-      await enableSiteException(true)
+      await enablePermSiteException()
+    } catch (e) {
+      console.error(e)
+    }
+  })
+  denyOption.addEventListener('click', async _ => {
+    try {
+      slider.value = 1
+      await enablePermSiteException()
     } catch (e) {
       console.error(e)
     }
   })
   sessionOption.addEventListener('click', async _ => {
     try {
-      slider.value = 1
-      await enableSiteException(true)
+      slider.value = 2
+      await enablePermSiteException()
     } catch (e) {
       console.error(e)
     }
   })
   allowOption.addEventListener('click', async _ => {
     try {
-      slider.value = 2
-      await enableSiteException(true)
+      slider.value = 3
+      await enablePermSiteException()
+    } catch (e) {
+      console.error(e)
+    }
+  })
+  allowTempCheckBox.addEventListener('change', async _ => {
+    try {
+      if (allowTempCheckBox.checked) {
+        await addSiteException(activeTabDomain, 2, true)
+      } else {
+        await deleteSiteException(activeTabDomain, true)
+      }
+      await Promise.all([fillSiteInfo(), updateCookieTable(), updateDomStorageTable()])
     } catch (e) {
       console.error(e)
     }
