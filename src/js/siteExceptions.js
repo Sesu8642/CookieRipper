@@ -150,7 +150,7 @@ async function saveEntry() {
     throw Error(`Invalid rule input: ${rule}`)
   }
   try {
-    await addPermException(domain, rule, exceptionInEditor)
+    await addPermSiteException(domain, rule, exceptionInEditor)
     fillRuleEditor(null)
   } catch (e) {
     entryEditorError.textContent = `${e.message}\r\n\r\n`
