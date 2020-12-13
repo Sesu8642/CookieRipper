@@ -39,9 +39,9 @@
                         <div><img src="/icons/ban.svg" alt="deny" class="selectIcon"></div>
                         <div class="iconText">deny all cookies</div>
                     </div>
-                    <div id="sessionOption" class="optionArea" title="Only session cookies and whitelisted cookes will be kept.">
+                    <div id="sessionOption" class="optionArea" title="Cookies and web storage will be converted to session cookies / temporary entries which will be deleted when your browser session ends.">
                         <div><img src="/icons/clock.svg" alt="allow_session" class="selectIcon"></div>
-                        <div class="iconText">allow session cookies<br></div>
+                        <div class="iconText">convert to session cookies<br></div>
                     </div>
                     <div id="allowOption" class="optionArea" title="All cookies will be accepted. If you use this as your default setting, you're doing it wrong!">
                         <div><img src="/icons/check-circle.svg" alt="allow" class="selectIcon"></div>
@@ -58,7 +58,7 @@
         <div id="cookieArea">
             <h1>
                 Cookies Accessible By This Site
-                <img src="/icons/info-circle.svg" alt="info" class="infoIcon" title="HTTP cookies are small pieces of information websites can save to your device. They can be accessed via HTTP requests as well as JavaScript.">
+                <img src="/icons/info-circle.svg" alt="info" class="infoIcon" title="HTTP cookies are small pieces of information websites can save to your device. They can be accessed via HTTP requests as well as JavaScript. Crossed out cookies were deleted by CookieRipper.">
             </h1>
             <br>
             <span id="cookieStore"></span>
@@ -69,7 +69,7 @@
         </div>
         <div id="domStorageArea">
             <h1>Web Storage Accessible By This Site
-                <img src="/icons/info-circle.svg" alt="info" class="infoIcon" title="Web storage is the more modern alternative to cookies. It can only be accessed via JavaScript."></h1>
+                <img src="/icons/info-circle.svg" alt="info" class="infoIcon" title="Web storage is the more modern alternative to cookies. It can only be accessed via JavaScript. Crossed out entries were deleted by CookieRipper. Any '__CR_' prefix is added by CookieRipper and not visible to websites."></h1>
             <div class="tabulatorContainer">
                 <div id="domStorageTable"></div>
             </div>

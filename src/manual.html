@@ -230,10 +230,10 @@
                 <b>Deny all cookies</b>: All cookies and web storage entries will be rejected. This will break many websites at least partly but prevent tracking via cookies. See 'Use Cases' for a strategy to prevent most tracking and keep using the web.
             </li>
             <li>
-                <b>Allow session cookies</b>: Only session cookies and web storage entries in sessionStorage will be accepted. All other cookies and web storage entries will be rejected. This will break some functionality on some websites but prevent tracking via cookies across browser sessions.
+                <b>Convert to session cookies</b>: Non-session cookies will be converted to session cookies. Web storage in localStorage will be moved to sessionStorage. This should not break websites and prevent tracking via cookies across browser sessions.
             </li>
             <li>
-                <b>Allow all cookies</b>: All cookies and web storage entries will be accepted. This will allow all websites to function properly but not prevent tracking at all.
+                <b>Allow all cookies</b>: All cookies and web storage entries will be accepted. This should allow all websites to function properly but not prevent tracking at all.
             </li>
         </ul>
         <p>These behaviours can be applied on different levels.</p>
@@ -243,10 +243,10 @@
         <p>You can overwrite the default behaviour for specific domains using exceptions. There are two types of exceptions:</p>
         <ul>
             <li>
-                <b>Temporary Exceptions</b>: Will be forgotten when the browser is closed.
+                <b>Permanent Exceptions</b>: Are kept permanently.
             </li>
             <li>
-                <b>Permanent Exceptions</b>: Are kept permanently.
+                <b>Temporary Exceptions</b>: Can be used to allow everything for a domain and will be forgotten when the browser is closed.
             </li>
         </ul>
         <p>Site exceptions are set on the organization level domain and will also apply to all subdomains. Example: an exception for example.com will also apply to sub.example.com. It is not possible to define exceptions for specific subdomains.</p>
@@ -263,12 +263,15 @@
         <p>Both the popup and the cookie list allow editing cookies. Dom Storage entries can only be edited in the popup.</p>
         <h1 id="Use Cases">Use Cases</h1>
         <h2 id="Preventing Tracking">Preventing Tracking</h2>
-        <p>To prevent tracking with cookies, set the default behaviour to
-            <b>deny all cookies</b>. Create permanent site exceptions for websites you trust. If you need to use some functionality which requires cookies on a website you don't trust, create a temporary exception. If you use the functionality regularly or want the cookies to persist, find out which cookies are required for the functionality and whitelist them.</p>
-        <p>Additionally, I recommend to disable third party cookies in your browser as they are rarely needed for anything except tracking and disable IndexedDB in your browser (use your search engine of choice to find out how to do it in the browser you use).</p>
+        <h3>Strict</h3>
+        <p>To prevent tracking with cookies completely, set the default behaviour to
+            <b>deny all cookies</b>. This will break many pages. Create permanent site exceptions for websites you trust. If you need to use some functionality which requires cookies on a website you don't trust, allow everything for the session only. If you use the functionality regularly or want the cookies to persist, find out which cookies are required for the functionality and whitelist them.</p>
+        <h3>Less Strict</h3>
+        <p>Alternatively, cou can set the default behaviour to <b>convert to session cookies</b>. This should not break pages but will allow them to track you with cookies during your browser session. If you trust a website and want its cookies to persist after your session ends, create a permanent exception which allows all cookies.</p>
+        <br><p>Additionally, I recommend to disable third party cookies in your browser as they are rarely needed for anything except tracking and disable IndexedDB in your browser if possible (use your search engine of choice to find out how to do it in the browser you use).</p>
         <h2 id="Web Development / Testing">Web Development / Testing</h2>
         <p>If you are a web developer, Cookie Ripper may be useful for testing how your website reacts to cookies not working or being manipulated. You are probably mostly interested in the popup overview and cookie editor. To prevent other websites from breaking, you may set the default setting to
-            <b>allow all cookies</b>.</p>
+            <b>allow all cookies</b> or disable the extension when you are done testing. Note that blocking cookies with CookieRipper behaves slightly different from disabling them in the browser. The browser might indicate to the website that cookies are enabled when they are actually blocked by CookieRipper. Additionally, cookies can be set and even read back for a slight time window before being deleted by CookieRipper. This tricks many websites into thinking that cookies are working.</p>
         <h1 id="Cookie Ripper vs. Browser Settings">Cookie Ripper vs. Browser Settings</h1>
         <p>If your browser settings and cookie ripper settings contradict each other, the stricter setting will apply. I suggest enabling cookies in your browser to give full control to Cookie Ripper.</p>
     </div>

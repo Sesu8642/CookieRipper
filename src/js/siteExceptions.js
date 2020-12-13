@@ -5,7 +5,7 @@ let exceptionInEditor = null
 let domainTextBox, denyAllRule, allowSessionRule, allowAllRule, entryEditorError, infoIcons, deleteButton, saveButton, clearButton
 let ruleIdDict = {
   0: 'Deny all',
-  1: 'Allow Session Cookies',
+  1: 'Convert to Session Cookies',
   2: 'Allow All Cookies'
 }
 let entryList = []
