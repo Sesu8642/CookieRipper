@@ -19,7 +19,7 @@ async function saveOptions() {
     setTimeout(function() {
       successText.textContent = ''
     }, 1000)
-    await callLoadSettings()
+    await bgPage.loadSettings()
   } catch (e) {
     console.error(e)
   }

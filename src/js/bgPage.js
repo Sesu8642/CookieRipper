@@ -1,5 +1,5 @@
 'use strict'
-let tempSiteExceptions = {}
+let tempSiteExceptions = []
 let openDomainsUnwantedCookies = {}
 var defaultBehaviour, enableCookieCounter
 async function loadSettings(skipUpdatingScripts = false) {
@@ -50,19 +50,22 @@ async function injectJsInAllTabs() {
     console.error(e)
   }
 }
-async function getEnableCookieCounter(request) {
+// these getter functions are needed for the wrapper in common.js as it can not call an async function in a getter but it can do so in a function
+async function getDefaultBehaviour() {
+  // returns the default behaviour
+  return defaultBehaviour
+}
+async function getEnableCookieCounter() {
   // returns whether cookie counter in enabled
   return enableCookieCounter
 }
-async function getTempSiteException(request) {
+async function hasTempSiteException(domain) {
   // returns the rule of a temporary exception
-  let exception = tempSiteExceptions[encodeURI(request.domain)]
-  exception = typeof exception === "undefined" ? null : exception
-  return exception
+  return tempSiteExceptions.includes(encodeURI(domain))
 }
-async function addTempSiteException(request) {
+async function addTempSiteException(domain) {
   // adds a temporary exception
-  tempSiteExceptions[encodeURI(request.domain)] = request.rule
+  tempSiteExceptions.push(encodeURI(domain))
   await Promise.all([restoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()])
   try {
     // this can fail if unable to inject content script
@@ -72,9 +75,9 @@ async function addTempSiteException(request) {
   }
   await Promise.all([updateAllTabsIcons(), updateActiveTabsCounts()])
 }
-async function deleteTempSiteException(request) {
+async function deleteTempSiteException(domain) {
   // deletes a temporary exception
-  delete tempSiteExceptions[encodeURI(request.domain)]
+  tempSiteExceptions = tempSiteExceptions.filter(item => item !== domain)
   await Promise.all([restoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()])
   try {
     // this can fail if unable to inject content script
@@ -84,7 +87,7 @@ async function deleteTempSiteException(request) {
   }
   await Promise.all([updateAllTabsIcons(), updateActiveTabsCounts()])
 }
-async function clearTempSiteExceptions(request) {
+async function clearTempSiteExceptions() {
   // deletes all temporary exceptions
   tempSiteExceptions = []
   await Promise.all([restoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()])
@@ -96,44 +99,44 @@ async function clearTempSiteExceptions(request) {
   }
   await Promise.all([updateAllTabsIcons(), updateActiveTabsCounts()])
 }
-async function getUnwantedCookiesForDomain(request) {
+async function getUnwantedCookiesForDomain(domain, cookieStore) {
   // returns a domain's cookies from unwanted list
   let cookies = []
-  if (typeof openDomainsUnwantedCookies[request.domain] === "undefined" || typeof openDomainsUnwantedCookies[request.domain].cookieStores[request.cookieStore] === "undefined") {
+  if (typeof openDomainsUnwantedCookies[domain] === "undefined" || typeof openDomainsUnwantedCookies[domain].cookieStores[cookieStore] === "undefined") {
     return []
   }
-  for (let key in openDomainsUnwantedCookies[request.domain].cookieStores[request.cookieStore].unwantedCookies) {
-    let cookie = JSON.parse(openDomainsUnwantedCookies[request.domain].cookieStores[request.cookieStore].unwantedCookies[key])
+  for (let key in openDomainsUnwantedCookies[domain].cookieStores[cookieStore].unwantedCookies) {
+    let cookie = JSON.parse(openDomainsUnwantedCookies[domain].cookieStores[cookieStore].unwantedCookies[key])
     cookies.push(cookie)
   }
   return cookies
 }
-async function addUnwantedCookie(request) {
+async function addUnwantedCookie(cookie) {
   // adds a single cookie to unwanted list
-  let cookieDomain = getRuleRelevantPartOfDomain(request.cookie.domain)
+  let cookieDomain = getRuleRelevantPartOfDomain(cookie.domain)
   // if it is undefined, it is a third party cookie which does not need to be recorded
   if (openDomainsUnwantedCookies[cookieDomain] != undefined) {
     // add cookie store to domain if needed
-    if (openDomainsUnwantedCookies[cookieDomain].cookieStores[request.cookie.storeId] === undefined) {
-      openDomainsUnwantedCookies[cookieDomain].cookieStores[request.cookie.storeId].unwantedCookies = {}
+    if (openDomainsUnwantedCookies[cookieDomain].cookieStores[cookie.storeId] === undefined) {
+      openDomainsUnwantedCookies[cookieDomain].cookieStores[cookie.storeId].unwantedCookies = {}
     }
-    let key = `${encodeURI(request.cookie.domain)}|${encodeURI(request.cookie.name)}`
-    let value = JSON.stringify(request.cookie)
-    openDomainsUnwantedCookies[cookieDomain].cookieStores[request.cookie.storeId].unwantedCookies[key] = value
+    let key = `${encodeURI(cookie.domain)}|${encodeURI(cookie.name)}`
+    let value = JSON.stringify(cookie)
+    openDomainsUnwantedCookies[cookieDomain].cookieStores[cookie.storeId].unwantedCookies[key] = value
   }
 }
-async function restoreUnwantedCookie(request) {
+async function restoreUnwantedCookie(domain, name) {
   // re-creates a cookie from unwanted list for all cookie store where it was listed
-  let domain = getRuleRelevantPartOfDomain(request.domain)
-  let cookieKey = `${encodeURI(request.domain)}|${encodeURI(request.name)}`
-  let cookieStorePromises = Object.keys(openDomainsUnwantedCookies[domain].cookieStores).map(async storeKey => {
-    let cookie = JSON.parse(openDomainsUnwantedCookies[domain].cookieStores[storeKey].unwantedCookies[cookieKey])
+  let ruleDomain = getRuleRelevantPartOfDomain(domain)
+  let cookieKey = `${encodeURI(domain)}|${encodeURI(name)}`
+  let cookieStorePromises = Object.keys(openDomainsUnwantedCookies[ruleDomain].cookieStores).map(async storeKey => {
+    let cookie = JSON.parse(openDomainsUnwantedCookies[ruleDomain].cookieStores[storeKey].unwantedCookies[cookieKey])
     await addCookieFromObject(cookie, cookie.storeId)
-    delete openDomainsUnwantedCookies[domain].cookieStores[storeKey].unwantedCookies[cookieKey]
+    delete openDomainsUnwantedCookies[ruleDomain].cookieStores[storeKey].unwantedCookies[cookieKey]
   })
   await Promise.all(cookieStorePromises)
 }
-async function restoreAllDomainsUnwantedCookies(request) {
+async function restoreAllDomainsUnwantedCookies() {
   // re-creates all domains' wanted cookies from unwanted list
   // it is assumed that whitelisted cookies are not in the unwanted list
   let domainPromises = Object.keys(openDomainsUnwantedCookies).map(domain => {
@@ -161,15 +164,15 @@ async function restoreAllDomainsUnwantedCookies(request) {
   })
   await Promise.all(domainPromises)
 }
-async function deleteUnwantedCookie(request) {
+async function deleteUnwantedCookie(domain, name) {
   // deletes a cookie from unwanted list
-  let domain = getRuleRelevantPartOfDomain(request.domain)
-  let cookieKey = `${encodeURI(request.domain)}|${encodeURI(request.name)}`
-  delete openDomainsUnwantedCookies[domain].cookieStores[request.cookieStore].unwantedCookies[cookieKey]
+  let ruleDomain = getRuleRelevantPartOfDomain(domain)
+  let cookieKey = `${encodeURI(ruleDomain)}|${encodeURI(name)}`
+  delete openDomainsUnwantedCookies[ruleDomain].cookieStores[cookieStore].unwantedCookies[cookieKey]
 }
-async function clearUnwantedCookiesforDomain(request) {
+async function clearUnwantedCookiesforDomain(domain, cookieStore) {
   // deletes a domain's cookies from unwanted list
-  openDomainsUnwantedCookies[request.domain].cookieStores[request.cookieStore].unwantedCookies = {}
+  openDomainsUnwantedCookies[domain].cookieStores[cookieStore].unwantedCookies = {}
 }
 async function populateopenDomainsUnwantedCookies() {
   // adds all open sites to openDomainsUnwantedCookies
@@ -218,21 +221,21 @@ async function removeClosedDomainsFromopenDomainsUnwantedCookies() {
     }
   }
 }
-async function getTabDomStorageItemsAllowedStates(request) {
+async function getTabDomStorageItemsAllowedStates(domain, items) {
   // returns an array of booleans meaning whether a dom storage entry is allowed or not
   // d -> delete
   // k -> keep
   // c -> convert
-  let behaviour = await getSiteBehaviour(getRuleRelevantPartOfDomain(request.domain))
+  let behaviour = await getSiteBehaviour(getRuleRelevantPartOfDomain(domain))
   // if behaviour is allow all --> return k or c for all items
   if (behaviour == 2) {
-    return request.items.map(item => {
+    return items.map(item => {
       return item.isConverted ? 'c' : 'k'
     })
   }
   // if behaviour is not allow all --> check whitelisted state and storage type
-  let promises = request.items.map(async item => {
-    let whitelisted = await getObjectWhitelistedState(request.domain, item.name, 'd')
+  let promises = items.map(async item => {
+    let whitelisted = await getObjectWhitelistedState(domain, item.name, 'd')
     if (whitelisted) {
       return item.isConverted ? 'c' : 'k'
     }
@@ -259,46 +262,46 @@ function handleMessage(request, sender) {
   // call the correct function to respond to them
   switch (request.type) {
     case 'addTempSiteException':
-      return addTempSiteException(request)
+      return addTempSiteException(request.domain)
       break
-    case 'getTempSiteException':
-      return getTempSiteException(request)
+    case 'hasTempSiteException':
+      return hasTempSiteException(request.domain)
       break
     case 'deleteTempSiteException':
-      return deleteTempSiteException(request)
+      return deleteTempSiteException(request.domain)
       break
     case 'clearTempSiteExceptions':
-      return clearTempSiteExceptions(request)
+      return clearTempSiteExceptions()
       break
     case 'addUnwantedCookie':
-      return addUnwantedCookie(request)
+      return addUnwantedCookie(request.cookie)
       break
     case 'clearUnwantedCookiesforDomain':
-      return clearUnwantedCookiesforDomain(request)
+      return clearUnwantedCookiesforDomain(request.domain, request.cookieStore)
       break
     case 'deleteUnwantedCookie':
-      return deleteUnwantedCookie(request)
+      return deleteUnwantedCookie(request.domain, request.name)
       break
     case 'restoreUnwantedCookie':
-      return restoreUnwantedCookie(request)
+      return restoreUnwantedCookie(request.domain, request.name)
       break
     case 'restoreAllDomainsUnwantedCookies':
-      return restoreAllDomainsUnwantedCookies(request)
+      return restoreAllDomainsUnwantedCookies()
       break
     case 'getUnwantedCookiesForDomain':
-      return getUnwantedCookiesForDomain(request)
+      return getUnwantedCookiesForDomain(request.domain, request.cookieStore)
       break
     case 'getDefaultBehaviour':
-      return Promise.resolve(defaultBehaviour)
+      return getDefaultBehaviour()
       break
     case 'getEnableCookieCounter':
-      return getEnableCookieCounter(request)
+      return getEnableCookieCounter()
       break
     case 'loadSettings':
       return loadSettings()
       break
     case 'getTabDomStorageItemsAllowedStates':
-      return getTabDomStorageItemsAllowedStates(request)
+      return getTabDomStorageItemsAllowedStates(request.domain, request.items)
       break
     default:
       return Promise.reject(Error(`Unknown request type: ${request.type}`))

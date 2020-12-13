@@ -131,7 +131,7 @@ async function deleteSelectedEntries() {
     }
   }
   let promises = selectedData.map(entry => {
-    return deleteSiteException(getRuleRelevantPartOfDomain(entry.domain))
+    return deletePermSiteException(getRuleRelevantPartOfDomain(entry.domain))
   })
   await Promise.all(promises)
   await updateTable()
@@ -150,7 +150,7 @@ async function saveEntry() {
     throw Error(`Invalid rule input: ${rule}`)
   }
   try {
-    await addSiteException(domain, rule, false, exceptionInEditor)
+    await addPermException(domain, rule, exceptionInEditor)
     fillRuleEditor(null)
   } catch (e) {
     entryEditorError.textContent = `${e.message}\r\n\r\n`

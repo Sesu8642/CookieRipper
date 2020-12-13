@@ -91,7 +91,7 @@ function initCookieTable() {
               await Promise.all([updateActiveTabsCounts(), updateCookieTable()])
             } else {
               await addWhitelistEntry(cell.getRow().getData().domain, cell.getRow().getData().name, 'c')
-              await callRestoreUnwantedCookie(cell.getRow().getData().domain, cell.getRow().getData().name)
+              await bgPage.restoreUnwantedCookie(cell.getRow().getData().domain, cell.getRow().getData().name)
               await Promise.all([updateActiveTabsCounts(), updateCookieTable()])
             }
           } else if (classNames.includes('editIcon')) {
@@ -106,7 +106,7 @@ function initCookieTable() {
               await deleteCookie(cell.getRow().getData())
               await Promise.all([updateActiveTabsCounts(), updateCookieTable()])
             } else {
-              await callDeleteUnwantedCookie(cell.getRow().getData().domain, cell.getRow().getData().name, activeTabCookieStore)
+              await bgPage.deleteUnwantedCookie(cell.getRow().getData().domain, cell.getRow().getData().name, activeTabCookieStore)
               await updateCookieTable()
             }
           }
@@ -241,9 +241,9 @@ async function enablePermSiteException() {
   let option = Number(slider.value - 1)
   if (option === -1) {
     // default
-    await deleteSiteException(activeTabDomain, false)
+    await deletePermSiteException(activeTabDomain)
   } else {
-    await addSiteException(activeTabDomain, option, false)
+    await addPermSiteException(activeTabDomain, option)
   }
   await Promise.all([fillSiteInfo(), updateCookieTable(), updateDomStorageTable()])
 }
@@ -252,7 +252,7 @@ async function fillSiteInfo() {
   if (activeTabUrl.startsWith('http')) {
     headline.textContent = `Settings For ${activeTabDomain}`
     cookieStore.textContent = `Cookie Store ID: ${activeTabCookieStore}`
-    switch (await callGetDefaultBehaviour()) {
+    switch (await bgPage.getDefaultBehaviour()) {
       case 0:
         defaultIcon.src = "/icons/ban.svg"
         break
@@ -264,7 +264,7 @@ async function fillSiteInfo() {
         defaultIcon.src = "/icons/check-circle.svg"
     }
     let permSiteException, tempSiteException;
-    [permSiteException, tempSiteException] = await Promise.all([getSiteException(activeTabDomain, false), getSiteException(activeTabDomain, true)])
+    [permSiteException, tempSiteException] = await Promise.all([getPermSiteException(activeTabDomain), bgPage.hasTempSiteException(activeTabDomain)])
     await depictSiteException(permSiteException, tempSiteException)
     if (firstPartyIsolationSupported) {
       firstPartyDomainArea.classList.remove('hidden')
@@ -284,7 +284,7 @@ async function fillSiteInfo() {
       slider.value = 0
       permHighlightOption = 0
     }
-    if (tempSiteException !== null) {
+    if (tempSiteException) {
       allowTempCheckBox.checked = true
       highlightActiveOption(4)
     } else {
@@ -341,7 +341,7 @@ async function fillCookieList() {
     cookieList.push(cookie)
   })
   let fullDomain = (new URL(activeTabUrl)).hostname
-  let unwantedCookies = await callGetUnwantedCookiesForDomain(activeTabDomain, activeTabCookieStore)
+  let unwantedCookies = await bgPage.getUnwantedCookiesForDomain(activeTabDomain, activeTabCookieStore)
   unwantedCookies.forEach(cookie => {
     // remove leading . from cookie domain for comparison
     let cookieDomain = (cookie.domain.startsWith('.') ? cookie.domain.substring(1) : cookie.domain)
@@ -701,9 +701,9 @@ function addEventlisteners() {
   allowTempCheckBox.addEventListener('change', async _ => {
     try {
       if (allowTempCheckBox.checked) {
-        await addSiteException(activeTabDomain, 2, true)
+        await bgPage.addTempSiteException(activeTabDomain)
       } else {
-        await deleteSiteException(activeTabDomain, true)
+        await bgPage.deleteTempSiteException(activeTabDomain)
       }
       await Promise.all([fillSiteInfo(), updateCookieTable(), updateDomStorageTable()])
     } catch (e) {
@@ -753,7 +753,7 @@ function addEventlisteners() {
   })
   dropdownItemClearTemp.addEventListener('click', async _ => {
     try {
-      await clearTempSiteExceptions()
+      await bgPage.clearTempSiteExceptions()
       await Promise.all([updateDomStorageTable(), updateActiveTabsCounts(), fillSiteInfo()])
       showView(mainView)
     } catch (e) {

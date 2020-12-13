@@ -161,7 +161,7 @@ async function saveEntry() {
     return
   }
   if (type === 'c') {
-    await callRestoreUnwantedCookie(domainTextBox.value, nameTextBox.value)
+    await bgPage.restoreUnwantedCookie(domainTextBox.value, nameTextBox.value)
   } else {
     await restoreUnwantedDomStorageEntriesByName(domainTextBox.value, nameTextBox.value)
     await handleExistingUnwantedDomStorageEntriesByName(domainTextBox.value, nameTextBox.value)

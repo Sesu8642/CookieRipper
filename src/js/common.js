@@ -6,10 +6,92 @@
  */
 /* prefix for permanent dom storage entries converted into temporary ones */
 const CONVERT_PREFIX = '__CR_'
-/* for accessing variables from background page if not in private mode */
-let bgPage = browser.extension.getBackgroundPage()
 /* whether firstPartyIsolation is supported */
 let firstPartyIsolationSupported
+/* shim for accessing background page when in private mode */
+class backgroundPageShim {
+  async getUnwantedCookiesForDomain(domain, cookieStore) {
+    return browser.runtime.sendMessage({
+      type: 'getUnwantedCookiesForDomain',
+      domain: domain,
+      cookieStore: cookieStore
+    })
+  }
+  async addUnwantedCookie(cookie) {
+    return browser.runtime.sendMessage({
+      type: 'addUnwantedCookie',
+      cookie: cookie
+    })
+  }
+  async restoreUnwantedCookie(fullCookieDomain, name) {
+    return browser.runtime.sendMessage({
+      type: 'restoreUnwantedCookie',
+      domain: fullCookieDomain,
+      name: name
+    })
+  }
+  async restoreAllDomainsUnwantedCookies() {
+    return browser.runtime.sendMessage({
+      type: 'restoreAllDomainsUnwantedCookies'
+    })
+  }
+  async deleteUnwantedCookie(domain, name, cookieStore) {
+    return browser.runtime.sendMessage({
+      type: 'deleteUnwantedCookie',
+      domain: domain,
+      name: name,
+      cookieStore: cookieStore
+    })
+  }
+  async clearUnwantedCookiesforDomain(domain, cookieStore) {
+    return browser.runtime.sendMessage({
+      type: 'clearUnwantedCookiesforDomain',
+      domain: domain,
+      cookieStore: cookieStore
+    })
+  }
+  async hasTempSiteException(domain) {
+    return browser.runtime.sendMessage({
+      type: 'hasTempSiteException',
+      domain: domain
+    })
+  }
+  async addTempSiteException(domain) {
+    return browser.runtime.sendMessage({
+      type: 'addTempSiteException',
+      domain: domain
+    })
+  }
+  async deleteTempSiteException(domain) {
+    return browser.runtime.sendMessage({
+      type: 'deleteTempSiteException',
+      domain: domain
+    })
+  }
+  async clearTempSiteExceptions() {
+    return browser.runtime.sendMessage({
+      type: 'clearTempSiteExceptions'
+    })
+  }
+  // getting settings from the background page is better than storing them in a variable because only the background page reloads the settings when changed by the user
+  // it is also less limited and probably faster than reading from the disk even when using the messaging api
+  async getDefaultBehaviour() {
+    return browser.runtime.sendMessage({
+      type: 'getDefaultBehaviour'
+    })
+  }
+  async getEnableCookieCounter() {
+    return browser.runtime.sendMessage({
+      type: 'getEnableCookieCounter'
+    })
+  }
+  async loadSettings() {
+    return browser.runtime.sendMessage({
+      type: 'loadSettings'
+    })
+  }
+}
+let bgPage = browser.extension.getBackgroundPage() || new backgroundPageShim()
 initFirstPartyIsolationSupported()
 async function initFirstPartyIsolationSupported() {
   // inits firstPartyIsolationSupported
@@ -32,46 +114,6 @@ async function checkFirstPartyIsolationSupport() {
   } catch (e) {
     console.log('Browser does not support first party domain cookie property.')
     return false
-  }
-}
-/*
- * functions for getting settings from background page
- * getting them from the background page is better than storing them in a variable because only the background page reloads the settings when changed by the user
- * it is also less limited and probably faster than reading from the disk even when using the messaging api
- * the functions either call a funtion in the background page directly or send a message to do their job
- */
-async function callGetDefaultBehaviour() {
-  // gets default behaviour from background page
-  // use function directly or send message depending on the availability of bgPage
-  if (bgPage !== null) {
-    return bgPage.defaultBehaviour
-  } else {
-    return browser.runtime.sendMessage({
-      type: 'getDefaultBehaviour'
-    })
-  }
-}
-
-function callGetEnableCookieCounter() {
-  // gets default behaviour from background page
-  // use function directly or send message depending on the availability of bgPage
-  if (bgPage !== null) {
-    return bgPage.enableCookieCounter
-  } else {
-    return browser.runtime.sendMessage({
-      type: 'getEnableCookieCounter'
-    })
-  }
-}
-async function callLoadSettings() {
-  // reloads settings in background page
-  // use function directly or send message depending on the availability of bgPage
-  if (bgPage !== null) {
-    await bgPage.loadSettings()
-  } else {
-    await browser.runtime.sendMessage({
-      type: 'loadSettings'
-    })
   }
 }
 /*
@@ -144,7 +186,7 @@ async function addCookie(name, value, domain, path, session, date, time, hostOnl
   let allowedState = await getCookieAllowedState(newCookie)
   switch (allowedState) {
     case 'd':
-      await Promise.all([callAddUnwantedCookie(newCookie), deleteCookie(newCookie)])
+      await Promise.all([bgPage.addUnwantedCookie(newCookie), deleteCookie(newCookie)])
       break
     case 'c':
       await convertCookieToSessionCookie(newCookie)
@@ -199,7 +241,7 @@ async function deleteAllCookies(url, cookieStore) {
     return deleteCookie(cookie)
   })
   // also remove unwanted cookies from memory
-  promises.push(callClearUnwantedCookiesforDomain(getRuleRelevantPartOfDomain(url), cookieStore))
+  promises.push(bgPage.clearUnwantedCookiesforDomain(getRuleRelevantPartOfDomain(url), cookieStore))
   await Promise.all(promises)
 }
 async function handleExistingUnwantedCookies(url) {
@@ -224,7 +266,7 @@ async function handleExistingUnwantedCookies(url) {
       return
     }
     if (behaviour == 0) {
-      return Promise.all([deleteCookie(cookie), callAddUnwantedCookie(cookie)])
+      return Promise.all([deleteCookie(cookie), bgPage.addUnwantedCookie(cookie)])
     } else if (behaviour == 1 && !cookie.session) {
       await convertCookieToSessionCookie(cookie)
     }
@@ -294,7 +336,7 @@ async function handleCookieEvent(changeInfo) {
   let allowedState = await getCookieAllowedState(changeInfo.cookie);
   switch (allowedState) {
     case 'd':
-      await Promise.all([callAddUnwantedCookie(changeInfo.cookie), deleteCookie(changeInfo.cookie)])
+      await Promise.all([bgPage.addUnwantedCookie(changeInfo.cookie), deleteCookie(changeInfo.cookie)])
       break
     case 'c':
       await convertCookieToSessionCookie(changeInfo.cookie)
@@ -302,105 +344,6 @@ async function handleCookieEvent(changeInfo) {
     default:
       // no action needed to keep the cookie as is
       break
-  }
-}
-/*
- * unwanted cookie functions
- * the functions either call a funtion in the background page directly or send a message to do their job
- */
-async function callGetUnwantedCookiesForDomain(domain, cookieStore) {
-  // returns the object that stores the cookies for the given domain in unwanted list
-  // use function directly or send message depending on the availability of bgPage
-  let cookies
-  if (bgPage !== null) {
-    cookies = await bgPage.getUnwantedCookiesForDomain({
-      domain: domain,
-      cookieStore: cookieStore
-    })
-  } else {
-    cookies = await browser.runtime.sendMessage({
-      type: 'getUnwantedCookiesForDomain',
-      domain: domain,
-      cookieStore: cookieStore
-    })
-  }
-  return cookies
-}
-async function callAddUnwantedCookie(cookie) {
-  // adds a cookie to the list of unwanted cookies
-  // only do it if the site is opened in a tab
-  // stringify to prevent some weird ff dead object issue
-  // use function directly or send message depending on the availability of bgPage
-  if (bgPage !== null) {
-    await bgPage.addUnwantedCookie({
-      cookie: cookie
-    })
-  } else {
-    await browser.runtime.sendMessage({
-      type: 'addUnwantedCookie',
-      cookie: cookie
-    })
-  }
-}
-async function callRestoreUnwantedCookie(fullCookieDomain, name) {
-  // re-creates a cookie from unwanted list in case the user whitelists it
-  // use function directly or send message depending on the availability of bgPage
-  if (bgPage !== null) {
-    await bgPage.restoreUnwantedCookie({
-      domain: fullCookieDomain,
-      name: name
-    })
-  } else {
-    await browser.runtime.sendMessage({
-      type: 'restoreUnwantedCookie',
-      domain: fullCookieDomain,
-      name: name
-    })
-  }
-}
-async function callRestoreAllDomainsUnwantedCookies() {
-  // re-creates cookies from unwanted list in case the user changes the behaviour for a domain
-  // use function directly or send message depending on the availability of bgPage
-  if (bgPage !== null) {
-    return await bgPage.restoreAllDomainsUnwantedCookies()
-  } else {
-    return await browser.runtime.sendMessage({
-      type: 'restoreAllDomainsUnwantedCookies'
-    })
-  }
-}
-async function callDeleteUnwantedCookie(domain, name, cookieStore) {
-  // deletes a cookie from the list of unwanted cookies
-  // use function directly or send message depending on the availability of bgPage
-  if (bgPage !== null) {
-    await bgPage.deleteUnwantedCookie({
-      domain: domain,
-      name: name,
-      cookieStore: cookieStore
-    })
-  } else {
-    await browser.runtime.sendMessage({
-      type: 'deleteUnwantedCookie',
-      domain: domain,
-      name: name,
-      cookieStore: cookieStore
-    })
-  }
-}
-async function callClearUnwantedCookiesforDomain(domain, cookieStore) {
-  // clears all unwanted cookies from the list of unwanted cookies for a domain
-  // use function directly or send message depending on the availability of bgPage
-  if (bgPage !== null) {
-    await bgPage.clearUnwantedCookiesforDomain({
-      domain: domain,
-      cookieStore: cookieStore
-    })
-  } else {
-    await browser.runtime.sendMessage({
-      type: 'clearUnwantedCookiesforDomain',
-      domain: domain,
-      cookieStore: cookieStore
-    })
   }
 }
 /*
@@ -546,70 +489,38 @@ async function clearTabDomStorage(tabId) {
 /*
  * site exception functions
  */
-async function getSiteException(domain, temporary) {
-  // returns the exception for the given domain returns null if there is none
-  if (temporary) {
-    // use function directly or send message depending on the availability of bgPage
-    let exception
-    if (bgPage !== null) {
-      exception = await bgPage.getTempSiteException({
-        domain: domain
-      })
-    } else {
-      exception = await browser.runtime.sendMessage({
-        type: 'getTempSiteException',
-        domain: domain
-      })
-    }
-    return exception
-  } else {
-    let key = `ex|${domain}`
-    let items = await browser.storage.local.get({
-      [key]: null
-    })
-    return items[key]
-  }
+async function getPermSiteException(domain) {
+  // returns the permanent exception for the given domain returns null if there is none
+  let key = `ex|${domain}`
+  let items = await browser.storage.local.get({
+    [key]: null
+  })
+  return items[key]
 }
-async function addSiteException(domain, rule, temporary, overwriteException = null) {
+async function addPermSiteException(domain, rule, overwriteException = null) {
   // adds a new site exception for the given domain
   // delete overwriteException
   if (overwriteException !== null) {
-    await deleteSiteException(overwriteException.domain, false)
+    await deletePermSiteException(overwriteException.domain)
   }
-  if (temporary) {
-    // use function directly or send message depending on the availability of bgPage
-    if (bgPage !== null) {
-      await bgPage.addTempSiteException({
-        domain: domain,
-        rule: rule
-      })
-    } else {
-      await browser.runtime.sendMessage({
-        type: 'addTempSiteException',
-        domain: domain,
-        rule: rule
-      })
+  try {
+    await savePermSiteException(domain, rule)
+  } catch (e) {
+    // restore overwriteException if new exception could not be set
+    if (overwriteException !== null) {
+      await addPermSiteException(overwriteException.domain, overwriteException.ruleId, false)
     }
-  } else {
-    try {
-      await savePermSiteException(domain, rule)
-    } catch (e) {
-      // restore overwriteException if new exception could not be set
-      if (overwriteException !== null) {
-        await addSiteException(overwriteException.domain, overwriteException.ruleId, false)
-      }
-      throw e
-    }
-    await deleteSiteException(domain, true)
-    await Promise.all([callRestoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()])
-    try {
-      // can fail if unable to inject content script
-      await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), handleAllTabsExistingUnwantedDomStorageEntries()])
-    } catch (e) {
-      console.warn(e)
-    }
-    await Promise.all([updateAllTabsIcons(), updateActiveTabsCounts()])
+    throw e
   }
+  await bgPage.deleteTempSiteException(domain)
+  await Promise.all([bgPage.restoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()])
+  try {
+    // can fail if unable to inject content script
+    await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), handleAllTabsExistingUnwantedDomStorageEntries()])
+  } catch (e) {
+    console.warn(e)
+  }
+  await Promise.all([updateAllTabsIcons(), updateActiveTabsCounts()])
   async function savePermSiteException(domain, rule) {
     // sets an exception for a given domain
     // requires tld.js to be loaded
@@ -640,59 +551,30 @@ async function deletePermSiteException(domain) {
   // deletes the permanent exception for the given domain (if there is any)
   let key = `ex|${encodeURI(domain)}`
   await browser.storage.local.remove(key)
-}
-async function deleteSiteException(domain, temporary) {
-  // deletes the permanent or temporary exception for the given domain (if there is any)
-  if (temporary) {
-    // use function directly or send message depending on the availability of bgPage
-    if (bgPage !== null) {
-      await bgPage.deleteTempSiteException({
-        domain: domain
-      })
-    } else {
-      await browser.runtime.sendMessage({
-        type: 'deleteTempSiteException',
-        domain: domain
-      })
-    }
-  } else {
-    await deletePermSiteException(domain)
-    await Promise.all([callRestoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()])
-    try {
-      // can fail if unable to inject content script
-      await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), handleAllTabsExistingUnwantedDomStorageEntries()])
-    } catch (e) {
-      console.warn(e)
-    }
-    await Promise.all([updateAllTabsIcons(), updateActiveTabsCounts()])
+  await Promise.all([bgPage.restoreAllDomainsUnwantedCookies(), deleteAllTabsExistingUnwantedCookies()])
+  try {
+    // can fail if unable to inject content script
+    await Promise.all([restoreAllTabsUnwantedDomStorageEntries(), handleAllTabsExistingUnwantedDomStorageEntries()])
+  } catch (e) {
+    console.warn(e)
   }
-}
-async function clearTempSiteExceptions() {
-  // deletes all temp site exceptions
-  // use function directly or send message depending on the availability of bgPage
-  if (bgPage !== null) {
-    await bgPage.clearTempSiteExceptions()
-  } else {
-    await browser.runtime.sendMessage({
-      type: 'clearTempSiteExceptions'
-    })
-  }
+  await Promise.all([updateAllTabsIcons(), updateActiveTabsCounts()])
 }
 async function getSiteBehaviour(domain) {
   // returns the behaviour for a given domain
   // takes temporary and permanent exceptions as well as whitelist entries into account
   // first check if there is a temporary exception
-  let tempException = await getSiteException(domain, true)
-  if (tempException !== null) {
-    return tempException
+  let tempException = await bgPage.hasTempSiteException(domain)
+  if (tempException) {
+    return 2
   } else {
     // if there is no temporary exception, check for a permanent one
-    let permSiteException = await getSiteException(domain, false)
+    let permSiteException = await getPermSiteException(domain)
     if (permSiteException !== null) {
       return permSiteException
     } else {
       // if there is no permanent exception either, use default behaviour
-      return await callGetDefaultBehaviour()
+      return await bgPage.getDefaultBehaviour()
     }
   }
 }
@@ -838,7 +720,7 @@ async function updateAllTabsIcons() {
 }
 async function updateActiveTabsCounts() {
   // sets cookie count on icon batch according to the behaviour for the active tab
-  let enabled = await callGetEnableCookieCounter()
+  let enabled = await bgPage.getEnableCookieCounter()
   if (!enabled) {
     // exit if feature is disabled
     return
