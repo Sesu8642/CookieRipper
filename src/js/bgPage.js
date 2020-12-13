@@ -126,13 +126,16 @@ async function addUnwantedCookie(cookie) {
   }
 }
 async function restoreUnwantedCookie(domain, name) {
-  // re-creates a cookie from unwanted list for all cookie store where it was listed
+  // re-creates a cookie from unwanted list for all cookie stores where it was listed
   let ruleDomain = getRuleRelevantPartOfDomain(domain)
   let cookieKey = `${encodeURI(domain)}|${encodeURI(name)}`
   let cookieStorePromises = Object.keys(openDomainsUnwantedCookies[ruleDomain].cookieStores).map(async storeKey => {
-    let cookie = JSON.parse(openDomainsUnwantedCookies[ruleDomain].cookieStores[storeKey].unwantedCookies[cookieKey])
-    await addCookieFromObject(cookie, cookie.storeId)
-    delete openDomainsUnwantedCookies[ruleDomain].cookieStores[storeKey].unwantedCookies[cookieKey]
+    let json = openDomainsUnwantedCookies[ruleDomain].cookieStores[storeKey].unwantedCookies[cookieKey]
+    if (json !== undefined) {
+      let cookie = JSON.parse(json)
+      await addCookieFromObject(cookie, cookie.storeId)
+      delete openDomainsUnwantedCookies[ruleDomain].cookieStores[storeKey].unwantedCookies[cookieKey]
+    }
   })
   await Promise.all(cookieStorePromises)
 }
