@@ -333,7 +333,7 @@ img.infoIcon {
 .extension-popup .tabulator {
   position: absolute;
   left: 1ch;
-  right: 1ch;
+  width: calc(100% - 2ch);
 }
 
 .extension-popup .tabulator .tabulator-table .tabulator-row .tabulator-cell {
