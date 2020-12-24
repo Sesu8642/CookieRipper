@@ -212,11 +212,11 @@ function addEventlisteners() {
   // adds all the event listeners to ui elements
   addInfoIconEventListeners()
   // delete button
-  deleteButton.addEventListener('click', e => {
+  deleteButton.addEventListener('click', _e => {
     deleteSelectedEntries()
   })
   // save button
-  saveButton.addEventListener('click', async _ => {
+  saveButton.addEventListener('click', async _e => {
     try {
       saveEntry()
     } catch (e) {
@@ -224,7 +224,7 @@ function addEventlisteners() {
     }
   })
   // clear button
-  clearButton.addEventListener('click', _ => {
+  clearButton.addEventListener('click', _e => {
     fillRuleEditor(null)
   })
 }

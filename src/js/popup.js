@@ -595,20 +595,20 @@ function assignUiElements() {
 function addEventlisteners() {
   // adds all the event listeners to ui elements
   addInfoIconEventListeners()
-  slider.addEventListener('change', async _ => {
+  slider.addEventListener('change', async _e => {
     try {
       await enablePermSiteException()
     } catch (e) {
       console.error(e)
     }
   })
-  cookieCancelButton.addEventListener('click', async _ => {
+  cookieCancelButton.addEventListener('click', async _e => {
     showView(mainView)
   })
-  domStorageCancelButton.addEventListener('click', async _ => {
+  domStorageCancelButton.addEventListener('click', async _e => {
     showView(mainView)
   })
-  cookieDeleteButton.addEventListener('click', async _ => {
+  cookieDeleteButton.addEventListener('click', async _e => {
     try {
       await deleteCookie(cookieInEditor)
       await Promise.all([updateCookieTable(), updateActiveTabsCounts()])
@@ -617,7 +617,7 @@ function addEventlisteners() {
       console.error(e)
     }
   })
-  domStorageDeleteButton.addEventListener('click', async _ => {
+  domStorageDeleteButton.addEventListener('click', async _e => {
     try {
       await deleteDomStorageEntry(activeTabId, domStorageEntryInEditor)
       await Promise.all([updateDomStorageTable(), updateActiveTabsCounts()])
@@ -626,7 +626,7 @@ function addEventlisteners() {
       console.error(e)
     }
   })
-  cookieSaveButton.addEventListener('click', async _ => {
+  cookieSaveButton.addEventListener('click', async _e => {
     try {
       try {
         await addCookie(cookieNameTextBox.value, cookieValueTextBox.value, cookieDomainTextBox.value, cookiePathTextBox.value, cookieSessionCookie.checked, cookieDate.valueAsDate, cookieTime.valueAsDate, cookieHostOnly.checked, cookieSecure.checked, cookieHttpOnly.checked, activeTabCookieStore, cookieFirstPartyDomainTextBox.value, sameSiteSelect.value, cookieInEditor)
@@ -641,7 +641,7 @@ function addEventlisteners() {
       console.error(e)
     }
   })
-  domStorageSaveButton.addEventListener('click', async _ => {
+  domStorageSaveButton.addEventListener('click', async _e => {
     try {
       try {
         await addDomStorageEntry(activeTabId, domStoragePermanent.checked, domStorageNameTextBox.value, domStorageValueTextBox.value, domStorageEntryInEditor)
@@ -656,18 +656,18 @@ function addEventlisteners() {
       console.error(e)
     }
   })
-  cookieAddIcon.addEventListener('click', _ => {
+  cookieAddIcon.addEventListener('click', _e => {
     fillCookieEditor(null, (new URL(activeTabUrl)).hostname)
     showView(cookieEditor)
   })
-  domAddIcon.addEventListener('click', _ => {
+  domAddIcon.addEventListener('click', _e => {
     fillDomStorageEditor(null, (new URL(activeTabUrl)).hostname)
     showView(domStorageEditor)
   })
-  cookieAdvancedToggle.addEventListener('click', _ => {
+  cookieAdvancedToggle.addEventListener('click', _e => {
     toggleAdvancedProperties()
   })
-  defaultOption.addEventListener('click', async _ => {
+  defaultOption.addEventListener('click', async _e => {
     try {
       slider.value = 0
       await enablePermSiteException()
@@ -675,7 +675,7 @@ function addEventlisteners() {
       console.error(e)
     }
   })
-  denyOption.addEventListener('click', async _ => {
+  denyOption.addEventListener('click', async _e => {
     try {
       slider.value = 1
       await enablePermSiteException()
@@ -683,7 +683,7 @@ function addEventlisteners() {
       console.error(e)
     }
   })
-  sessionOption.addEventListener('click', async _ => {
+  sessionOption.addEventListener('click', async _e => {
     try {
       slider.value = 2
       await enablePermSiteException()
@@ -691,7 +691,7 @@ function addEventlisteners() {
       console.error(e)
     }
   })
-  allowOption.addEventListener('click', async _ => {
+  allowOption.addEventListener('click', async _e => {
     try {
       slider.value = 3
       await enablePermSiteException()
@@ -699,7 +699,7 @@ function addEventlisteners() {
       console.error(e)
     }
   })
-  allowTempCheckBox.addEventListener('change', async _ => {
+  allowTempCheckBox.addEventListener('change', async _e => {
     try {
       if (allowTempCheckBox.checked) {
         await bgPage.addTempSiteException(activeTabDomain)
@@ -711,7 +711,7 @@ function addEventlisteners() {
       console.error(e)
     }
   })
-  cookieDeleteAllIcon.addEventListener('click', async _ => {
+  cookieDeleteAllIcon.addEventListener('click', async _e => {
     try {
       await deleteAllCookies(activeTabUrl, activeTabCookieStore)
       await Promise.all([updateActiveTabsCounts(), updateCookieTable()])
@@ -719,7 +719,7 @@ function addEventlisteners() {
       console.error(e)
     }
   })
-  domDeleteAllIcon.addEventListener('click', async _ => {
+  domDeleteAllIcon.addEventListener('click', async _e => {
     try {
       try {
         await clearTabDomStorage(activeTabId)
@@ -731,7 +731,7 @@ function addEventlisteners() {
       console.error(e)
     }
   })
-  settingsImage.addEventListener('click', _ => {
+  settingsImage.addEventListener('click', _e => {
     settingsImage.classList.toggle('active')
     settingsDropdown.classList.toggle('hidden')
   })
@@ -743,7 +743,7 @@ function addEventlisteners() {
       }
     }
   })
-  dropdownItemSettings.addEventListener('click', async _ => {
+  dropdownItemSettings.addEventListener('click', async _e => {
     try {
       await browser.tabs.create({
         url: '/settings.html'
@@ -752,7 +752,7 @@ function addEventlisteners() {
       console.error(e)
     }
   })
-  dropdownItemClearTemp.addEventListener('click', async _ => {
+  dropdownItemClearTemp.addEventListener('click', async _e => {
     try {
       await bgPage.clearTempSiteExceptions()
       await Promise.all([updateDomStorageTable(), updateActiveTabsCounts(), fillSiteInfo()])

@@ -81,19 +81,19 @@ function assignUiElements() {
 function addEventlisteners() {
   // adds all the event listeners to ui elements
   addInfoIconEventListeners()
-  slider.addEventListener('change', _ => {
+  slider.addEventListener('change', _e => {
     highlightActiveOption(Number(this.value))
   })
   saveButton.addEventListener('click', saveOptions)
-  denyOption.addEventListener('click', _ => {
+  denyOption.addEventListener('click', _e => {
     slider.value = 0
     highlightActiveOption(0)
   })
-  sessionOption.addEventListener('click', _ => {
+  sessionOption.addEventListener('click', _e => {
     slider.value = 1
     highlightActiveOption(1)
   })
-  allowOption.addEventListener('click', _ => {
+  allowOption.addEventListener('click', _e => {
     slider.value = 2
     highlightActiveOption(2)
   })

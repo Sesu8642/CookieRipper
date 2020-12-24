@@ -355,7 +355,7 @@ function addEventlisteners() {
   // adds all the event listeners to ui elements
   addInfoIconEventListeners()
   // cookie Store select
-  cookieStoreSelect.addEventListener('change', async e => {
+  cookieStoreSelect.addEventListener('change', async _e => {
     try {
       await Promise.all([fillCookieList(), fillCookieEditor(null)])
     } catch (e) {
@@ -363,7 +363,7 @@ function addEventlisteners() {
     }
   })
   // delete button
-  deleteButton.addEventListener('click', async e => {
+  deleteButton.addEventListener('click', async _e => {
     try {
       await deleteSelectedCookies()
     } catch (e) {
@@ -371,7 +371,7 @@ function addEventlisteners() {
     }
   })
   // save button
-  saveButton.addEventListener('click', async e => {
+  saveButton.addEventListener('click', async _e => {
     try {
       try {
         await addCookie(nameTextBox.value, valueTextBox.value, domainTextBox.value, pathTextBox.value, sessionCookie.checked, date.valueAsDate, time.valueAsDate, cookieHostOnly.checked, cookieSecure.checked, cookieHttpOnly.checked, cookieStoreSelect.value, firstPartyDomainTextBox.value, sameSiteSelect.value, cookieInEditor)
@@ -385,7 +385,7 @@ function addEventlisteners() {
     }
   })
   // clear button
-  clearButton.addEventListener('click', async _ => {
+  clearButton.addEventListener('click', async _e => {
     await fillCookieEditor(null)
   })
   // triggers for cookie warning
