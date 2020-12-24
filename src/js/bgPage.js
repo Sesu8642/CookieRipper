@@ -133,7 +133,7 @@ async function restoreUnwantedCookie(domain, name) {
     let json = openDomainsUnwantedCookies[ruleDomain].cookieStores[storeKey].unwantedCookies[cookieKey]
     if (json !== undefined) {
       let cookie = JSON.parse(json)
-      await addCookieFromObject(cookie, cookie.storeId)
+      await addCookieFromObject(cookie)
       delete openDomainsUnwantedCookies[ruleDomain].cookieStores[storeKey].unwantedCookies[cookieKey]
     }
   })
@@ -152,7 +152,7 @@ async function restoreAllDomainsUnwantedCookies() {
             let cookie = JSON.parse(openDomainsUnwantedCookies[domain].cookieStores[storeKey].unwantedCookies[cookieKey])
             // check if cookie should be restored
             if (behaviour === 2 || behaviour === 1 && cookie.session) {
-              await addCookieFromObject(cookie, cookie.storeId)
+              await addCookieFromObject(cookie)
               delete openDomainsUnwantedCookies[domain].cookieStores[storeKey].unwantedCookies[cookieKey]
             } else if (behaviour === 1 && !cookie.session) {
               await convertCookieToSessionCookie(cookie)

@@ -196,7 +196,7 @@ async function addCookie(name, value, domain, path, session, date, time, hostOnl
       break
   }
 }
-async function addCookieFromObject(cookie, cookieStore) {
+async function addCookieFromObject(cookie) {
   // creates a new cookie from the given cookie object
   // create new cookie
   let parameters = {
@@ -211,7 +211,7 @@ async function addCookieFromObject(cookie, cookieStore) {
     secure: cookie.secure,
     httpOnly: cookie.httpOnly,
     expirationDate: cookie.expirationDate,
-    storeId: cookieStore,
+    storeId: cookie.storeId,
     sameSite: cookie.sameSite
   }
   if (firstPartyIsolationSupported) {
@@ -323,7 +323,7 @@ async function convertCookieToSessionCookie(cookie) {
     ...cookie,
     expirationDate: undefined
   }
-  await addCookieFromObject(sessionCookie, sessionCookie.storeId)
+  await addCookieFromObject(sessionCookie)
 }
 async function handleCookieEvent(changeInfo) {
   // is used when a cookie change event needs to be handled
