@@ -144,7 +144,7 @@ img.infoIcon {
   }
 }
 
-/* selection area (used in popup and options page), exact layout is defined in the respective sections */
+/* selection area (used in popup and settings page), exact layout is defined in the respective sections */
 .selectionArea {
   display: grid;
   max-width: 70ch;
@@ -241,16 +241,16 @@ img.infoIcon {
   display: inline-block;
 }
 
-.extension-popup #optionsImage {
+.extension-popup #settingsImage {
   cursor: pointer;
   width: 3ch;
 }
 
-.extension-popup #optionsImage.active {
+.extension-popup #settingsImage.active {
   fill: var(--highlighted-color-primary);
 }
 
-.extension-popup #optionsImage:hover {
+.extension-popup #settingsImage:hover {
   fill: var(--highlighted-color-primary);
 }
 
@@ -260,7 +260,7 @@ img.infoIcon {
   display: inline-block;
 }
 
-.extension-popup #optionsDropdown {
+.extension-popup #settingsDropdown {
   position: absolute;
   background-color: var(--hover-color-secondary);
   min-width: 30ch;
@@ -270,7 +270,7 @@ img.infoIcon {
   z-index: +1;
 }
 
-.extension-popup #optionsDropdown .dropdownItem {
+.extension-popup #settingsDropdown .dropdownItem {
   padding: 1.5ch 4ex;
   display: block;
 }
@@ -356,12 +356,12 @@ img.infoIcon {
     "defaultOption defaultOption denyOption denyOption sessionOption sessionOption allowOption allowOption";
 }
 
-/* options page */
-.extension-options .selectionArea {
+/* settings page */
+.extension-settings .selectionArea {
   max-width: 70ch;
 }
 
-.extension-options .selectionArea {
+.extension-settings .selectionArea {
   grid-template-rows: auto auto auto;
   grid-template-columns: 2fr 2fr 2fr 2fr 2fr 2fr;
   grid-template-areas:

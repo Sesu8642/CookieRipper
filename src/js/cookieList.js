@@ -353,13 +353,7 @@ function assignUiElements() {
 
 function addEventlisteners() {
   // adds all the event listeners to ui elements
-  // info icons
-  let infoIcons = document.getElementsByClassName('infoIcon')
-  for (let i = 0; i < infoIcons.length; i++) {
-    infoIcons[i].addEventListener('click', async e => {
-      await sendInfoMessage(e.target.title)
-    })
-  }
+  addInfoIconEventListeners()
   // cookie Store select
   cookieStoreSelect.addEventListener('change', async e => {
     try {

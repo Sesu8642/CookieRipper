@@ -80,6 +80,7 @@ function assignUiElements() {
 
 function addEventlisteners() {
   // adds all the event listeners to ui elements
+  addInfoIconEventListeners()
   slider.addEventListener('change', _ => {
     highlightActiveOption(Number(this.value))
   })
@@ -96,15 +97,4 @@ function addEventlisteners() {
     slider.value = 2
     highlightActiveOption(2)
   })
-  // info icons
-  for (let i = 0; i < infoIcons.length; i++) {
-    infoIcons[i].addEventListener('click', async e => {
-      try {
-        e.stopPropagation()
-        await sendInfoMessage(e.target.title)
-      } catch (e) {
-        console.error(e)
-      }
-    })
-  }
 }

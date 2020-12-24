@@ -9,7 +9,7 @@ let contentScriptavailable = true
 const connectToContentScriptMaxRetries = 5
 const connectToContentScriptRetryDelayMs = 50
 // ui elements
-let firstPartyDomainArea, defaultIcon, defaultOption, denyOption, sessionOption, allowOption, slider, useTempBehaviourArea, useSiteBehaviourArea, allowTempCheckBox, allowTempLbl, headline, cookieStore, nonHttpInfo, mainView, cookieTable, domStorageTable, cookieDomainTextBox, cookieHostOnly, cookieNameTextBox, cookieValueTextBox, cookieSessionCookie, cookiePersistent, cookieDate, cookieTime, cookiePathTextBox, cookieFirstPartyDomainTextBox, cookieSecure, cookieHttpOnly, sameSiteSelect, cookieDeleteButton, domStorageDomainTextBox, domStorageNameTextBox, domStorageValueTextBox, domStorageTemporary, domStoragePermanent, domStorageDeleteButton, cookieEditor, domStorageEditor, advancedCookieProperties, cookieAdvancedToggle, cookieCancelButton, domStorageCancelButton, cookieSaveButton, cookieEditorError, domStorageEditorError, domStorageSaveButton, cookieAddIcon, domAddIcon, cookieDeleteAllIcon, domDeleteAllIcon, optionsDropdown, optionsImage, dropdownItemSettings, dropdownItemClearTemp
+let firstPartyDomainArea, defaultIcon, defaultOption, denyOption, sessionOption, allowOption, slider, useTempBehaviourArea, useSiteBehaviourArea, allowTempCheckBox, allowTempLbl, headline, cookieStore, nonHttpInfo, mainView, cookieTable, domStorageTable, cookieDomainTextBox, cookieHostOnly, cookieNameTextBox, cookieValueTextBox, cookieSessionCookie, cookiePersistent, cookieDate, cookieTime, cookiePathTextBox, cookieFirstPartyDomainTextBox, cookieSecure, cookieHttpOnly, sameSiteSelect, cookieDeleteButton, domStorageDomainTextBox, domStorageNameTextBox, domStorageValueTextBox, domStorageTemporary, domStoragePermanent, domStorageDeleteButton, cookieEditor, domStorageEditor, advancedCookieProperties, cookieAdvancedToggle, cookieCancelButton, domStorageCancelButton, cookieSaveButton, cookieEditorError, domStorageEditorError, domStorageSaveButton, cookieAddIcon, domAddIcon, cookieDeleteAllIcon, domDeleteAllIcon, settingsDropdown, settingsImage, dropdownItemSettings, dropdownItemClearTemp
 document.addEventListener('DOMContentLoaded', async _ => {
   try {
     let tab = await getActiveTab()
@@ -586,14 +586,15 @@ function assignUiElements() {
   domAddIcon = document.getElementById('domAddIcon')
   cookieDeleteAllIcon = document.getElementById('cookieDeleteAllIcon')
   domDeleteAllIcon = document.getElementById('domDeleteAllIcon')
-  optionsDropdown = document.getElementById('optionsDropdown')
-  optionsImage = document.getElementById('optionsImage')
+  settingsDropdown = document.getElementById('settingsDropdown')
+  settingsImage = document.getElementById('settingsImage')
   dropdownItemSettings = document.getElementById('dropdownItemSettings')
   dropdownItemClearTemp = document.getElementById('dropdownItemClearTemp')
 }
 
 function addEventlisteners() {
   // adds all the event listeners to ui elements
+  addInfoIconEventListeners()
   slider.addEventListener('change', async _ => {
     try {
       await enablePermSiteException()
@@ -730,22 +731,22 @@ function addEventlisteners() {
       console.error(e)
     }
   })
-  optionsImage.addEventListener('click', _ => {
-    optionsImage.classList.toggle('active')
-    optionsDropdown.classList.toggle('hidden')
+  settingsImage.addEventListener('click', _ => {
+    settingsImage.classList.toggle('active')
+    settingsDropdown.classList.toggle('hidden')
   })
   window.addEventListener('click', e => {
-    if (!e.target.matches('#optionsImage') && !e.target.matches('#optionsImagePath')) {
-      if (window.getComputedStyle(optionsDropdown).getPropertyValue('display') === 'block') {
-        optionsDropdown.classList.add('hidden')
-        optionsImage.classList.remove('active')
+    if (!e.target.matches('#settingsImage') && !e.target.matches('#settingsImagePath')) {
+      if (window.getComputedStyle(settingsDropdown).getPropertyValue('display') === 'block') {
+        settingsDropdown.classList.add('hidden')
+        settingsImage.classList.remove('active')
       }
     }
   })
   dropdownItemSettings.addEventListener('click', async _ => {
     try {
       await browser.tabs.create({
-        url: '/options.html'
+        url: '/settings.html'
       })
     } catch (e) {
       console.error(e)
@@ -760,16 +761,4 @@ function addEventlisteners() {
       console.error(e)
     }
   })
-  // info icons
-  let infoIcons = document.getElementsByClassName('infoIcon')
-  for (let i = 0; i < infoIcons.length; i++) {
-    infoIcons[i].addEventListener('click', async _ => {
-      try {
-        e.stopPropagation()
-        await sendInfoMessage(e.target.title)
-      } catch (e) {
-        console.error(e)
-      }
-    })
-  }
 }

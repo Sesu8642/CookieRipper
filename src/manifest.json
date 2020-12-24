@@ -23,7 +23,7 @@
     "default_area": "navbar"
   },
   "options_ui": {
-    "page": "options.html",
+    "page": "settings.html",
     "open_in_tab": false,
     "browser_style": false
   },

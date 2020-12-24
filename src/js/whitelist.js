@@ -211,16 +211,7 @@ function assignUiElements() {
 
 function addEventlisteners() {
   // adds all the event listeners to ui elements
-  // info icons
-  for (let i = 0; i < infoIcons.length; i++) {
-    infoIcons[i].addEventListener('click', async e => {
-      try {
-        await sendInfoMessage(e.target.title)
-      } catch (e) {
-        console.error(e)
-      }
-    })
-  }
+  addInfoIconEventListeners()
   // delete button
   deleteButton.addEventListener('click', e => {
     deleteSelectedEntries()
