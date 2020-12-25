@@ -345,6 +345,10 @@ browser.runtime.onInstalled.addListener(async details => {
       await browser.tabs.create({
         url: '/welcome.html'
       })
+    } else if (details.reason === "update") {
+      await browser.tabs.create({
+        url: '/changelog.html?updated=true'
+      })
     }
   } catch (e) {
     console.error(e)
