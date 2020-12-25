@@ -135,7 +135,7 @@ img.infoIcon {
   background-color: var(--hover-color-primary);
 }
 
-@media screen and (max-width: 70ch) {
+@media screen and (max-width: 50ch) {
   .header a {
     float: none;
     display: block;
