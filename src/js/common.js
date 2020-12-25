@@ -790,7 +790,6 @@ async function sendInfoMessage(message) {
 function addInfoIconEventListeners() {
   // adds the correct event listener to all info icons on the page
   let infoIcons = document.querySelectorAll('.infoIcon')
-  console.log(infoIcons)
   infoIcons.forEach(icon => icon.addEventListener('click', async e => {
     try {
       e.stopPropagation()
