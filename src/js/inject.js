@@ -44,7 +44,6 @@ Object.getPrototypeOf(localStorage).getItem = function(name) {
 let localStorageProxy = new Proxy(localStorage, {
   set: function(target, name, value, receiver) {
     // prevent websites from trying to manupulate the extension by using the prefix themselves
-    console.log("name: " + name)
     if (name.toString().startsWith(CONVERT_PREFIX)) {
       return
     }
@@ -159,7 +158,6 @@ window.localStorage = localStorageProxy
 let sessionStorageProxy = new Proxy(sessionStorage, {
   set: function(target, name, value, receiver) {
     // prevent websites from trying to manupulate the extension by using the prefix themselves
-    console.log("name: " + name)
     if (name.toString().startsWith(CONVERT_PREFIX)) {
       return
     }
