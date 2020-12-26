@@ -9,7 +9,7 @@ let _localStorage = window.localStorage
 let _sessionStorage = window.sessionStorage
 Object.getPrototypeOf(localStorage).setItem = function(name, value) {
   // prevent websites from trying to manupulate the extension by using the prefix themselves
-  if (name.startsWith(CONVERT_PREFIX)) {
+  if (name.toString().startsWith(CONVERT_PREFIX)) {
     return
   }
   window.postMessage({
@@ -33,7 +33,7 @@ Object.getPrototypeOf(localStorage).getItem = function(name) {
     }
   } else {
     // when reading from session storage and an item starts with the prefix, ignore it
-    if (name == null || name.startsWith(CONVERT_PREFIX)) {
+    if (name == null || name.toString().startsWith(CONVERT_PREFIX)) {
       return null
     } else {
       return _getItem.apply(this, arguments)
@@ -44,7 +44,8 @@ Object.getPrototypeOf(localStorage).getItem = function(name) {
 let localStorageProxy = new Proxy(localStorage, {
   set: function(target, name, value, receiver) {
     // prevent websites from trying to manupulate the extension by using the prefix themselves
-    if (name.startsWith(CONVERT_PREFIX)) {
+    console.log("name: " + name)
+    if (name.toString().startsWith(CONVERT_PREFIX)) {
       return
     }
     window.postMessage({
@@ -60,7 +61,7 @@ let localStorageProxy = new Proxy(localStorage, {
     if (property === 'length') {
       let length = target.length
       for (let i = 0; i < _sessionStorage.length; i++) {
-        name = _sessionStorage.key(i)
+        let name = _sessionStorage.key(i)
         // entries might exist in the original and converted form for a brief moment of time; do not count those twice
         if (name.startsWith(CONVERT_PREFIX) && target.getItem(name) === null) {
           length++
@@ -158,7 +159,8 @@ window.localStorage = localStorageProxy
 let sessionStorageProxy = new Proxy(sessionStorage, {
   set: function(target, name, value, receiver) {
     // prevent websites from trying to manupulate the extension by using the prefix themselves
-    if (name.startsWith(CONVERT_PREFIX)) {
+    console.log("name: " + name)
+    if (name.toString().startsWith(CONVERT_PREFIX)) {
       return
     }
     window.postMessage({
@@ -185,7 +187,7 @@ let sessionStorageProxy = new Proxy(sessionStorage, {
     if (typeof val !== 'function') {
       // reading data using storage.key
       // when reading from session storage and an item starts with the prefix, ignore it
-      if (property.startsWith(CONVERT_PREFIX)) {
+      if (property.toString().startsWith(CONVERT_PREFIX)) {
         return undefined
       } else {
         return val
@@ -210,13 +212,13 @@ let sessionStorageProxy = new Proxy(sessionStorage, {
     // overwrite hasOwnProperty
     if (property === 'hasOwnProperty') {
       return function(key) {
-        return key.startsWith(CONVERT_PREFIX) ? false : target.hasOwnProperty(key)
+        return key.toString().startsWith(CONVERT_PREFIX) ? false : target.hasOwnProperty(key)
       }
     }
     // overwrite removeItem function (ignore entries starting with the prefix)
     if (property === "removeItem") {
       return function(...args) {
-        if (args[0].startsWith(CONVERT_PREFIX)) {
+        if (args[0].toString().startsWith(CONVERT_PREFIX)) {
           return
         }
         let thisVal = this === receiver ? target : this
